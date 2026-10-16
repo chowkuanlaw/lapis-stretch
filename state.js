@@ -116,13 +116,14 @@ function readStateFile(dir) {
   }
   return { saved: null, from: null };
 }
-function writeStateFile(dir, state, now) {
+// opts.noBackup: don't copy the current file to the backup first (used by Reset my data).
+function writeStateFile(dir, state, now, opts) {
   const main = path.join(dir, MAIN), tmp = path.join(dir, TMP), bak = path.join(dir, BAK);
   const today = dayKey(now ? new Date(now) : new Date());
   try {
     let bakDay = '';
     try { bakDay = dayKey(fs.statSync(bak).mtime); } catch (e) { /* no backup yet */ }
-    if (bakDay !== today) {
+    if (bakDay !== today && !(opts && opts.noBackup)) {
       try {
         if (parseFile(main)) { fs.copyFileSync(main, bak); const t = new Date(); fs.utimesSync(bak, t, t); } // Windows keeps the old date on copies
       } catch (e) { /* nothing good to back up */ }
@@ -134,4 +135,7 @@ function writeStateFile(dir, state, now) {
   } catch (e) { return false; }
 }
 
-module.exports = { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState, readStateFile, writeStateFile };
+// Reset my data also removes the backup, so the old history doesn't linger on disk (1.11.2).
+function removeBackup(dir) { try { fs.rmSync(path.join(dir, BAK), { force: true }); fs.rmSync(path.join(dir, TMP), { force: true }); } catch (e) { /* ignore */ } }
+
+module.exports = { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState, readStateFile, writeStateFile, removeBackup };

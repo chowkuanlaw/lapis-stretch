@@ -108,3 +108,16 @@ test('the backup is refreshed once a day, not on every save', () => {
 test('nothing saved and no backup gives nothing', () => {
   assert.deepEqual(readStateFile(tmpDir()), { saved: null, from: null });
 });
+
+test('Reset my data leaves no copy of the old history behind', () => {
+  const { removeBackup } = require('../state.js');
+  const dir = tmpDir();
+  writeStateFile(dir, { history: { '2026-10-01': { total: 5 } } });
+  writeStateFile(dir, { history: { '2026-10-02': { total: 6 } } }); // the backup now holds old history
+  removeBackup(dir);
+  writeStateFile(dir, { history: {} }, Date.now(), { noBackup: true });
+  assert.equal(fs.existsSync(path.join(dir, 'state.bak.json')), false);
+  assert.deepEqual(readStateFile(dir).saved, { history: {} });
+  writeStateFile(dir, { history: {}, goal: 9 }); // later saves start a fresh backup from the reset data
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'state.bak.json'), 'utf8')), { history: {} });
+});

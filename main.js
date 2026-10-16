@@ -15,7 +15,7 @@ const { pathToFileURL } = require('url');
 const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn, NEWS, newer } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
 const QUIET = require('./quiet.js');
-const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState, readStateFile, writeStateFile } = require('./state.js');
+const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState, readStateFile, writeStateFile, removeBackup } = require('./state.js');
 
 const AUMID = 'app.lapis.stretch';
 const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
@@ -387,7 +387,10 @@ function run() {
     if (R.mode !== 'active') { R.mode = 'waiting'; R.cur = null; }
     if (!S.paused) schedule(S.interval * 60e3);
     R.resetUntil = Date.now() + 6000;
-    writeNow(); broadcast(); setTimeout(broadcast, 6100);
+    clearTimeout(saveTimer);
+    const dir = app.getPath('userData');
+    removeBackup(dir); writeStateFile(dir, S, Date.now(), { noBackup: true }); // nothing of the old history stays behind
+    broadcast(); setTimeout(broadcast, 6100);
   }
   function restartCountdown() {
     if (S.paused || R.resting) return;

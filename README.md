@@ -59,7 +59,7 @@ To stay quiet in meetings, Lapis asks Windows two things when a reminder is due:
 
 The only network traffic is the update check against this repository's GitHub releases: when Lapis starts, once a day, and when you click **Check now**. It sends nothing about you or your stretches, just the standard request any download makes. Turn off **Update automatically** in Settings and Lapis only goes online when you click **Check now**.
 
-**Reset my data** in Settings clears your history, collected kuih and badges from your PC (it asks you to click twice). When you uninstall Lapis, it asks whether to remove your data too; choose No to keep it for a reinstall. It's all in the `%APPDATA%\Lapis` folder.
+**Reset my data** in Settings clears your history, collected kuih and badges from your PC, including the daily backup copy (it asks you to click twice). When you uninstall Lapis, it asks whether to remove your data too; choose No to keep it for a reinstall. It's all in the `%APPDATA%\Lapis` folder.
 
 See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
 

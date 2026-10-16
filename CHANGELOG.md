@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.2 (2026-10-17)
+
+Security and privacy review of everything added since 1.5.1.
+- **Reset my data now also deletes the daily backup copy**, so none of the old history stays on your PC.
+- The uninstaller double-checks the Lapis data folder can be found before removing it.
+- SECURITY.md describes the backup file, the uninstall question, the widget's full-screen check and the idle check.
+
 ## 1.11.1 (2026-10-16)
 
 - One of the secret codes can now be switched off again by entering it a second time.
