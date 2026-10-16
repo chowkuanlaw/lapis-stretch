@@ -23,7 +23,36 @@
   ];
   const CYCLE = ['chin', 'neck', 'thoracic', 'eyes', 'walk', 'shoulders', 'twist', 'wrist', 'eyes', 'reach', 'chin', 'walk'];
   const BY = Object.fromEntries(EX.map(e => [e.id, e]));
-  const api = { EX, CYCLE, BY };
+  const KUIH_GROUPS = [
+    { id: 'malay', title: 'Malay', sub: 'From the Malay kitchen' },
+    { id: 'chinese', title: 'Chinese & Nyonya', sub: 'Festival and kopitiam favourites' },
+    { id: 'indian', title: 'Indian', sub: 'Deepavali and mamak treats' },
+    { id: 'borneo', title: 'Sabah & Sarawak', sub: 'From Borneo, for Gawai, Kaamatan and Raya' }
+  ];
+  const KUIH = [
+    { id: 'lapis', group: 'malay', name: 'Kuih Lapis', origin: 'Malay', note: 'Layered steamed rice-flour cake, peeled one layer at a time.' },
+    { id: 'onde', group: 'malay', name: 'Onde-onde', origin: 'Malay', note: 'Pandan balls filled with gula melaka and rolled in grated coconut.' },
+    { id: 'serimuka', group: 'malay', name: 'Seri Muka', origin: 'Malay', note: 'Green pandan custard on a layer of glutinous rice.' },
+    { id: 'karipap', group: 'malay', name: 'Karipap', origin: 'Malay', note: 'Curry puff with a crimped edge, the tea-time classic.' },
+    { id: 'bahulu', group: 'malay', name: 'Kuih Bahulu', origin: 'Malay', note: 'Little golden sponge cakes, a Hari Raya favourite.' },
+    { id: 'angku', group: 'chinese', name: 'Ang Ku Kueh', origin: 'Chinese', note: 'Red tortoise cake, for luck and a long life.' },
+    { id: 'kapit', group: 'chinese', name: 'Kuih Kapit', origin: 'Chinese', note: 'Crispy rolled "love letters" for Chinese New Year.' },
+    { id: 'huat', group: 'chinese', name: 'Huat Kueh', origin: 'Chinese', note: 'Steamed "prosperity" cake that splits into a smile.' },
+    { id: 'bulan', group: 'chinese', name: 'Kuih Bulan', origin: 'Chinese', note: 'Mooncake for the Mid-Autumn Festival.' },
+    { id: 'tart', group: 'chinese', name: 'Tart Nenas', origin: 'Nyonya', note: 'Pineapple tart with buttery pastry, a festive must.' },
+    { id: 'murukku', group: 'indian', name: 'Murukku', origin: 'Indian', note: 'Crunchy spiral of rice and lentil flour, made for Deepavali.' },
+    { id: 'ladoo', group: 'indian', name: 'Ladoo', origin: 'Indian', note: 'Sweet round treat for festivals and celebrations.' },
+    { id: 'putu', group: 'indian', name: 'Putu Mayam', origin: 'Indian', note: 'String hoppers with grated coconut and gula melaka.' },
+    { id: 'vadai', group: 'indian', name: 'Vadai', origin: 'Indian', note: 'Savoury lentil doughnut, best with teh tarik.' },
+    { id: 'jalebi', group: 'indian', name: 'Jalebi', origin: 'Indian', note: 'Syrupy orange swirls, crisp and sticky.' },
+    { id: 'keklapis', group: 'borneo', name: 'Kek Lapis Sarawak', origin: 'Sarawak', note: 'The patterned layer cake Sarawak is famous for, sliced to show its colours.' },
+    { id: 'celorot', group: 'borneo', name: 'Kuih Celorot', origin: 'Sarawak', note: 'Gula apong kuih steamed in a cone of rolled palm leaf.' },
+    { id: 'pinjaram', group: 'borneo', name: 'Pinjaram', origin: 'Sabah & Sarawak', note: 'Fried "UFO" kuih with a domed middle and crispy rim, also called penyaram.' },
+    { id: 'cincin', group: 'borneo', name: 'Kuih Cincin', origin: 'Sabah', note: 'Crunchy ring-shaped kuih made with palm sugar, a Raya favourite.' },
+    { id: 'hinompuka', group: 'borneo', name: 'Hinompuka', origin: 'Sabah', note: 'KadazanDusun rice cake steamed in leaves, served at Kaamatan.' }
+  ];
+  const KUIH_BY = Object.fromEntries(KUIH.map(k => [k.id, k]));
+  const api = { EX, CYCLE, BY, KUIH, KUIH_GROUPS, KUIH_BY };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.LapisData = api;
 })(typeof self !== 'undefined' ? self : this);

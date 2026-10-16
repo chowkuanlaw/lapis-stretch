@@ -10,7 +10,7 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeImage, nativeTheme, shell, powerMonitor, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { CYCLE, BY } = require('./renderer/data.js');
+const { CYCLE, BY, KUIH_BY } = require('./renderer/data.js');
 
 const AUMID = 'app.lapis.stretch';
 const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
@@ -37,7 +37,7 @@ function run() {
   const DEFAULTS = {
     interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
     autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
-    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0
+    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis'
   };
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = Object.assign({}, DEFAULTS);
@@ -49,6 +49,7 @@ function run() {
   function loadState() {
     try { S = Object.assign({}, DEFAULTS, JSON.parse(fs.readFileSync(stateFile(), 'utf8'))); } catch (e) { S = Object.assign({}, DEFAULTS); }
     delete S.updateCheck; // replaced by autoUpdate in 1.1.0
+    if (!KUIH_BY[S.kuih]) S.kuih = 'lapis';
     // A fresh launch (e.g. first thing in the morning) starts a new countdown instead of firing at once.
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
     S.nextDue = Date.now() + S.interval * 60e3;
@@ -211,6 +212,7 @@ function run() {
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
+      case 'kuih': if (!KUIH_BY[value]) return; S.kuih = value; break;
       case 'autoUpdate':
         S.autoUpdate = !!value;
         if (S.autoUpdate) setTimeout(() => checkForUpdate(false), 0);
@@ -366,6 +368,18 @@ function run() {
     tray.on('click', () => { if (mainWin && mainWin.isVisible() && mainWin.isFocused()) mainWin.hide(); else showMain(); });
     tray.on('right-click', () => tray.popUpContextMenu(buildMenu()));
   }
+  // The widget window draws the chosen kuih at tray sizes and sends PNGs here.
+  function setTrayIcon(images) {
+    if (!tray || !Array.isArray(images)) return;
+    const img = nativeImage.createEmpty();
+    for (const it of images.slice(0, 4)) {
+      const url = it && typeof it.url === 'string' ? it.url : '';
+      const scale = Number(it && it.scale);
+      if (!url.startsWith('data:image/png;base64,') || url.length > 200000 || !(scale >= 1 && scale <= 4)) continue;
+      img.addRepresentation({ scaleFactor: scale, dataURL: url });
+    }
+    if (!img.isEmpty()) tray.setImage(img);
+  }
   function updateTray() { if (tray) tray.setToolTip(`Lapis · ${statusLabel()}`); }
 
   /* ---------- Windows integration ---------- */
@@ -407,6 +421,7 @@ function run() {
       case 'check-update': checkForUpdate(true); break;
       case 'open-release': openReleases(); break;
       case 'install-update': installUpdate(); break;
+      case 'tray-icon': setTrayIcon(a.images); break;
       default: break;
     }
   });

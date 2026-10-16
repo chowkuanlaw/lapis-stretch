@@ -2,8 +2,10 @@
   'use strict';
   const api = window.lapis;
   const view = api.view;
-  const { EX, BY } = window.LapisData;
-  const lapis = window.lapisSVG;
+  const { EX, BY, KUIH, KUIH_GROUPS, KUIH_BY } = window.LapisData;
+  // Draw with the kuih the user picked (Kuih Lapis until the first state arrives).
+  const lapis = (pose, label, bob, skin) => window.lapisSVG(pose, label, bob, skin || (st && st.kuih) || 'lapis');
+  const kuihName = () => (KUIH_BY[(st && st.kuih) || 'lapis'] || KUIH_BY.lapis).name;
   const root = document.getElementById('root');
   document.body.classList.add('view-' + view);
 
@@ -57,14 +59,14 @@
       actions = `<p class="cue">See you in ${st.snooze} min.</p>`;
     }
     const showHow = m !== 'done' && m !== 'snoozed';
-    return `<div class="tile">${lapis(pose, 'Lapis doing ' + ex.name.toLowerCase(), m !== 'active')}</div>
+    return `<div class="tile">${lapis(pose, kuihName() + ' doing ' + ex.name.toLowerCase(), m !== 'active')}</div>
       <div class="body">${top}<div class="head"><h3>${ex.name}</h3><span class="count">${n} today</span></div>
       <p class="cue">${ex.cue}</p><p class="dose">${ex.dose}</p>${extra}${showHow ? howto : ''}
       <div class="row">${actions}</div>${links}</div>
       ${m === 'active' ? '<div class="bar"><i data-bar></i></div>' : ''}`;
   }
   function renderCard(el, compact) {
-    const key = [st.mode, st.cur, st.upNext, st.paused, st.switched, todayRec().total, st.snooze].join('|');
+    const key = [st.mode, st.cur, st.upNext, st.paused, st.switched, todayRec().total, st.snooze, st.kuih].join('|');
     if (key === cardKey) return;
     if (st.mode === 'due' && !cardKey.startsWith('due')) howOpen = false;
     cardKey = key;
@@ -90,7 +92,7 @@
     const s = e.target.closest('[data-set]');
     if (s) {
       const k = s.dataset.set;
-      api.act('set', { key: k, value: s.dataset.val !== undefined ? +s.dataset.val : !st[k] });
+      api.act('set', { key: k, value: s.dataset.sval !== undefined ? s.dataset.sval : s.dataset.val !== undefined ? +s.dataset.val : !st[k] });
       return;
     }
     const w = e.target.closest('[data-w]');
@@ -111,7 +113,7 @@
     root.innerHTML = `
     <div class="app">
       <header class="top">
-        <div class="brand"><span class="logo">${lapis('wave', 'Lapis')}</span>
+        <div class="brand"><span class="logo" id="logo"></span>
           <div><h1>Lapis</h1><p>Stretch nudges from a kuih lapis while you work</p></div></div>
         <button class="btn ghost" data-w="pause" id="pauseBtn" type="button">Pause reminders</button>
       </header>
@@ -145,19 +147,34 @@
           </section>
         </aside>
       </main>
+      <section class="panel kuih-panel" aria-labelledby="kuihTitle">
+        <div class="lib-head"><h2 id="kuihTitle">Your kuih</h2><p id="kuihNote"></p></div>
+        ${KUIH_GROUPS.map(g => `<div class="kgroup"><h3>${g.title} <span>${g.sub}</span></h3><div class="kgrid">${KUIH.filter(k => k.group === g.id).map(k => `<button type="button" class="ktile" data-set="kuih" data-sval="${k.id}" aria-pressed="false" title="${k.note.replace(/"/g, '&quot;')}"><span class="kimg">${lapis('idle', k.name, false, k.id)}</span><b>${k.name}</b></button>`).join('')}</div></div>`).join('')}
+      </section>
       <section class="panel library">
         <div class="lib-head"><h2>All stretches</h2><p>Click one to do it now. Lapis rotates through these, with a walk every few rounds.</p></div>
-        <div class="lib">${EX.map(e => `<button type="button" data-ex="${e.id}"><div class="mini">${lapis(e.pose, 'Lapis doing ' + e.name.toLowerCase())}</div><b>${e.name}</b><span>${e.dose}</span></button>`).join('')}</div>
+        <div class="lib" id="lib"></div>
       </section>
     </div>`;
   }
-  let heroKey = '';
+  let heroKey = '', kuihKey = '';
+  function renderKuihParts() {
+    if (kuihKey === st.kuih) return;
+    kuihKey = st.kuih;
+    const k = KUIH_BY[st.kuih] || KUIH_BY.lapis;
+    $('#logo').innerHTML = lapis('wave', k.name);
+    $('#lib').innerHTML = EX.map(e => `<button type="button" data-ex="${e.id}"><div class="mini">${lapis(e.pose, k.name + ' doing ' + e.name.toLowerCase())}</div><b>${e.name}</b><span>${e.dose}</span></button>`).join('');
+    $('#kuihNote').innerHTML = `<b>${k.name}</b> · ${k.origin}. ${k.note} Your kuih appears on reminders, the widget and the tray icon.`;
+    document.querySelectorAll('.ktile').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sval === st.kuih)));
+    heroKey = '';
+  }
   function renderMain() {
+    renderKuihParts();
     renderCard($('#card'), false);
     $('#banner').hidden = st.mode !== 'due';
     $('#pauseBtn').textContent = st.paused ? 'Resume reminders' : 'Pause reminders';
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : (st.paused || st.away) ? 'sleep' : 'idle';
-    if (pose !== heroKey) { heroKey = pose; $('#heroMascot').innerHTML = lapis(pose, 'Lapis', st.mode !== 'active'); }
+    if (pose !== heroKey) { heroKey = pose; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active'); }
     $('#ring').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     document.querySelectorAll('.seg [data-set]').forEach(b => b.setAttribute('aria-pressed', String(st[b.dataset.set] === +b.dataset.val)));
     document.querySelectorAll('.switch[data-set]').forEach(b => b.setAttribute('aria-checked', String(!!st[b.dataset.set])));
@@ -228,10 +245,27 @@
       <div class="w-bar"><i id="wBar"></i></div>
     </div>`;
   }
-  let wPoseKey = '';
+  let wPoseKey = '', trayKuih = '';
+  function sendTrayIcon(skin) {
+    // Draw the kuih's body at tray sizes; the main process turns these into the tray icon.
+    const svg = window.lapisBodySVG(skin);
+    const img = new Image();
+    img.onload = () => {
+      const images = [[16, 1], [24, 1.5], [32, 2], [48, 3]].map(([px, scale]) => {
+        const c = document.createElement('canvas'); c.width = c.height = px;
+        const g = c.getContext('2d'), r = Math.min(px / 92, px / 98);
+        const w = 92 * r, h = 98 * r;
+        g.drawImage(img, (px - w) / 2, (px - h) / 2, w, h);
+        return { scale, url: c.toDataURL('image/png') };
+      });
+      api.act('tray-icon', { images });
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
   function renderWidget() {
+    if (trayKuih !== st.kuih) { trayKuih = st.kuih; wPoseKey = ''; sendTrayIcon(st.kuih || 'lapis'); }
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : st.mode === 'snoozed' || st.paused || st.away ? 'sleep' : 'idle';
-    if (pose !== wPoseKey) { wPoseKey = pose; $('#wMascot').innerHTML = lapis(pose, 'Lapis', st.mode !== 'active'); }
+    if (pose !== wPoseKey) { wPoseKey = pose; $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active'); }
     $('#widget').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     const p = $('#wPause');
     p.innerHTML = st.paused ? ICONS.resume : ICONS.pause;

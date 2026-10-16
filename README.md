@@ -2,7 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/chowkuanlaw/lapis-stretch?label=download)](https://github.com/chowkuanlaw/lapis-stretch/releases/latest) [![Release build](https://github.com/chowkuanlaw/lapis-stretch/actions/workflows/release.yml/badge.svg)](https://github.com/chowkuanlaw/lapis-stretch/actions/workflows/release.yml) [![MIT licence](https://img.shields.io/badge/licence-MIT-2A7F4F)](LICENSE) ![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-C92A62)
 
-A small Windows desktop app that reminds you to stretch while you work. Every 20 minutes, Lapis (a kuih lapis with arms and legs) pops up in the corner of your screen with one quick desk stretch, a timer, and a tally of how many you've done today.
+A small Windows desktop app that reminds you to stretch while you work. Every 20 minutes, Lapis (a kuih lapis with arms and legs, or any of 19 other Malaysian kuih you pick) pops up in the corner of your screen with one quick desk stretch, a timer, and a tally of how many you've done today.
 
 ![The Lapis desktop widget and pop-up reminder](docs/widget-and-reminder.png)
 
@@ -14,9 +14,12 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Knows when you're away.** After 5 minutes of no keyboard or mouse activity, or when you lock or sleep your PC, the timer restarts so you're not nagged the moment you sit back down.
 - **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, chime on or off, widget on or off, optional Windows notification and start with Windows.
+- **Pick your kuih.** Choose from 20 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon.
 - **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.
 
 ![The Lapis main window](docs/main-window.png)
+
+![The 20 kuih you can choose from](docs/kuih-friends.png)
 
 ## Install
 

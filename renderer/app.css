@@ -184,3 +184,16 @@ body.view-widget,body.view-popup{background:transparent;overflow:hidden;user-sel
 .update-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--pandan-soft);color:var(--ink);border-radius:16px;padding:10px 10px 10px 18px;font-weight:600}
 .btn:disabled{opacity:.5;cursor:default}
 .w-sub.w-update{color:var(--pink);font-weight:600}
+
+/* kuih picker (main window) */
+.kuih-panel .lib-head p b{color:var(--ink)}
+.kgroup{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.kgroup h3{font-size:17px;font-weight:700}
+.kgroup h3 span{font-family:var(--f-body);font-size:13px;font-weight:400;color:var(--muted);margin-left:6px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.ktile{border:2px solid var(--line);background:var(--bg);border-radius:14px;padding:8px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;transition:border-color .15s,transform .15s}
+.ktile:hover{border-color:var(--pandan);transform:translateY(-2px)}
+.ktile[aria-pressed="true"]{border-color:var(--pink);box-shadow:0 0 0 3px var(--pink-soft)}
+.kimg{background:var(--pandan-soft);border-radius:10px;width:100%;height:88px;display:grid;place-items:center}
+.kimg svg{height:80px;width:auto}
+.ktile b{font-family:var(--f-display);font-size:14px;font-weight:700;line-height:1.15}
