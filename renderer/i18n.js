@@ -110,7 +110,7 @@
     'teh.tag': 'Friday · {time}', 'teh.title': 'Teh tarik time!', 'teh.sub': 'Almost the weekend. Stand up, pull a long stretch, then go pull a teh.', 'teh.btn': 'Jom!',
     'night.title': 'Dah lewat, tidur lah.', 'night.sub': "It's late. Save your work and get some rest.", 'night.see': 'See you {when}.', 'night.seeTomorrow': 'See you tomorrow.',
     'night.ok': 'Okay, goodnight', 'night.more': '5 more minutes',
-    'code.flag': 'Merdeka! Every kuih waves the Jalur Gemilang for the rest of today.',
+    'code.flag': 'Merdeka! Every kuih waves the Jalur Gemilang for the rest of today. Enter the same code again to turn it off.', 'code.flagOff': 'Flags down. Your kuih is back in its usual look.',
     'code.remixOn': 'Remix on! The dance songs get a faster beat, tabla drums and clinking teh cups. Enter the same code again to turn it off.',
     'code.remixOff': 'Remix off. Back to the usual songs.',
     // 1.8.0
@@ -259,7 +259,7 @@
     'teh.tag': 'Jumaat · {time}', 'teh.title': 'Masa teh tarik!', 'teh.sub': 'Hujung minggu dah dekat. Bangun, regang panjang-panjang, kemudian pergi tarik teh.', 'teh.btn': 'Jom!',
     'night.title': 'Dah lewat, tidur lah.', 'night.sub': 'Dah lewat malam. Simpan kerja anda dan berehat.', 'night.see': 'Jumpa {when}.', 'night.seeTomorrow': 'Jumpa esok.',
     'night.ok': 'Okey, selamat malam', 'night.more': '5 minit lagi',
-    'code.flag': 'Merdeka! Semua kuih mengibarkan Jalur Gemilang sepanjang hari ini.',
+    'code.flag': 'Merdeka! Semua kuih mengibarkan Jalur Gemilang sepanjang hari ini. Masukkan kod yang sama sekali lagi untuk matikan.', 'code.flagOff': 'Bendera diturunkan. Kuih anda kembali seperti biasa.',
     'code.remixOn': 'Remix dihidupkan! Lagu tarian kini lebih rancak, dengan tabla dan bunyi cawan teh. Masukkan kod yang sama sekali lagi untuk matikan.',
     'code.remixOff': 'Remix dimatikan. Kembali ke lagu biasa.',
     // 1.8.0

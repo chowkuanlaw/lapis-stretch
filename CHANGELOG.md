@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.1 (2026-10-16)
+
+- One of the secret codes can now be switched off again by entering it a second time.
+
 ## 1.11.0 (2026-10-16)
 
 - **Safer saving.** Lapis now writes your progress to a temporary file and swaps it in, so a power cut mid-save can't break it. It also keeps a daily backup (`state.bak.json`) and, if the main file ever can't be read, picks up from the backup and tells you.

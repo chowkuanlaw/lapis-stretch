@@ -186,7 +186,10 @@ function run() {
     const norm = code.replace(/\s+/g, '').toUpperCase();
     const h = crypto.createHash('sha256').update('lapis:' + norm).digest('hex');
     if (h === CODE_HASH) { S.codeUnlocked = true; R.codeMsg = 'ok'; }
-    else if (h === CODE2_HASH) { S.flagDay = dayKey(new Date()); R.codeMsg = 'flag'; }
+    else if (h === CODE2_HASH) { // the same code again turns it off (1.11.1)
+      const on = S.flagDay !== dayKey(new Date());
+      S.flagDay = on ? dayKey(new Date()) : ''; R.codeMsg = on ? 'flag' : 'flagOff';
+    }
     else if (h === CODE3_HASH) { S.remix = !S.remix; R.codeMsg = S.remix ? 'remixOn' : 'remixOff'; }
     else R.codeMsg = 'bad';
     R.codeMsgUntil = Date.now() + 9000;
