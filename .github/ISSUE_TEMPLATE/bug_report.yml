@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Lapis isn't working the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report this. Please don't include personal or work information in screenshots.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did Lapis do instead?
+      placeholder: The reminder card appeared behind my Teams window instead of on top.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Teams full screen
+        2. Wait for the next reminder
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Lapis version
+      description: Shown at the bottom of Settings in the Lapis window.
+      placeholder: 1.0.3
+    validations:
+      required: true
+  - type: dropdown
+    id: windows
+    attributes:
+      label: Windows version
+      options:
+        - Windows 11
+        - Windows 10
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Optional. Drag images here.
+    validations:
+      required: false

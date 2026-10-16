@@ -1,0 +1,40 @@
+name: Stretch idea
+description: Suggest a desk stretch for Lapis to add to its rotation.
+labels: [enhancement]
+title: "Stretch idea: "
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Name of the stretch
+      placeholder: Doorway chest stretch
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How to do it
+      description: Two or three short steps, like the "How to" list in the app.
+      placeholder: |
+        1. Stand in a doorway with forearms on the frame.
+        2. Step one foot forward until you feel a stretch across your chest.
+        3. Hold, breathing slowly.
+    validations:
+      required: true
+  - type: input
+    id: dose
+    attributes:
+      label: Reps or time
+      placeholder: 30 seconds, or 10 reps
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it helps desk workers
+      description: Optional. What does it ease, such as tight hips, a stiff neck or tired eyes?
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: Lapis only suggests gentle stretches that are safe to do at a desk or in an office. Stretch ideas are general wellness tips, not medical advice.

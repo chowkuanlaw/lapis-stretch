@@ -179,3 +179,7 @@ body.view-widget,body.view-popup{background:transparent;overflow:hidden;user-sel
 @keyframes pop{from{transform:scale(.94) translateY(8px);opacity:.3}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.bob,.pop{animation:none}.ring .arc,.card .bar i,.w-bar i{transition:none}}
 .view-popup .card.due .row .left{display:none}
+
+/* update notice (main window) */
+.update-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--pandan-soft);color:var(--ink);border-radius:16px;padding:10px 10px 10px 18px;font-weight:600}
+.btn:disabled{opacity:.5;cursor:default}

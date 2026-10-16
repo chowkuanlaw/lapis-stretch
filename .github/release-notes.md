@@ -7,6 +7,6 @@ Lapis, a desk-stretch reminder for Windows.
 - Desktop countdown widget and a tray icon
 - Nine desk stretches with "How to" guides, plus a daily and weekly tally
 - Timer restarts after 5 minutes away, or when you lock or sleep your PC
-- No network access; settings and counts stay in `%APPDATA%\Lapis\state.json`
+- No tracking; settings and counts stay in `%APPDATA%\Lapis\state.json`. The only network request is an optional update check, off by default
 
 This zip was built by GitHub Actions from the source in this repository (see `.github/workflows/release.yml`), using the official Electron Windows x64 build verified against Electron's published checksums.

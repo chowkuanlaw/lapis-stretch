@@ -13,7 +13,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. Closing the window keeps reminders running.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Knows when you're away.** After 5 minutes of no keyboard or mouse activity, or when you lock or sleep your PC, the timer restarts so you're not nagged the moment you sit back down.
-- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, chime on or off, widget on or off, optional Windows notification, start with Windows.
+- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, chime on or off, widget on or off, optional Windows notification, start with Windows, and an optional daily update check.
 
 ![The Lapis main window](docs/main-window.png)
 
@@ -29,7 +29,9 @@ To uninstall, quit Lapis from the tray menu, turn off **Start with Windows** fir
 
 ## Privacy
 
-Lapis makes no network requests and has no analytics or accounts. Fonts and images are bundled, and every window runs under a content security policy that only allows the app's own files. The only thing it saves is your settings and stretch counts per day, in `%APPDATA%\Lapis\state.json` on your own PC.
+Lapis has no analytics, no accounts and no tracking. Fonts and images are bundled, and every window runs under a content security policy that only allows the app's own files. The only thing it saves is your settings and stretch counts per day, in `%APPDATA%\Lapis\state.json` on your own PC.
+
+The one network request Lapis can make is the update check, and it's **off by default**. If you turn on **Check for updates** in Settings (or click **Check now**), Lapis asks GitHub's public API for the latest release of this repository, at most once a day. It sends nothing about you or your stretches; if a newer version exists, Lapis shows a **Download** button that opens the releases page. It never downloads or installs anything by itself.
 
 ## Build from source
 
@@ -62,6 +64,10 @@ renderer/          the UI: index.html, app.css, app.js, the mascot drawing, the 
 assets/            app and tray icons
 scripts/           Windows build script
 ```
+
+## Feedback
+
+Found a bug or have a stretch you'd like Lapis to suggest? [Open an issue](../../issues/new/choose).
 
 ## Licence
 

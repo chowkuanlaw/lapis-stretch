@@ -7,7 +7,7 @@
  *   widget      : small always-on-top countdown card on the desktop
  *   popup       : the reminder card that slides up in the bottom-right corner
  */
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeImage, nativeTheme, shell, powerMonitor } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeImage, nativeTheme, shell, powerMonitor, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { CYCLE, BY } = require('./renderer/data.js');
@@ -17,6 +17,11 @@ const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
 const POPUP_W = 440, WIDGET_W = 300, WIDGET_H = 100;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
 const TRAY_ICON = path.join(__dirname, 'assets', process.platform === 'win32' ? 'tray.ico' : 'tray.png');
+// Update check (off unless the user turns it on): the only network request Lapis can make.
+const REPO = 'chowkuanlaw/lapis-stretch';
+const RELEASES_URL = `https://github.com/${REPO}/releases/latest`;
+const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
+const UPDATE_EVERY = 24 * 3600e3;
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -32,11 +37,11 @@ function run() {
   const DEFAULTS = {
     interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
     autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
-    history: {}, widgetPos: null, firstRun: true
+    history: {}, widgetPos: null, firstRun: true, updateCheck: false, lastUpdateCheck: 0
   };
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = Object.assign({}, DEFAULTS);
-  const R = { mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null };
+  const R = { mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null, update: null, updateMsg: '', checking: false };
 
   let mainWin = null, widgetWin = null, popupWin = null, tray = null, quitting = false;
   let popupH = 230, saveTimer = null, lastDay = dayKey(new Date());
@@ -57,10 +62,11 @@ function run() {
   function upNext() { return BY[CYCLE[S.idx % CYCLE.length]]; }
 
   function publicState() {
-    const { widgetPos, firstRun, ...rest } = S;
+    const { widgetPos, firstRun, lastUpdateCheck, ...rest } = S;
     return Object.assign(rest, {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
-      switched: R.switched, away: !!R.awaySince
+      switched: R.switched, away: !!R.awaySince,
+      version: app.getVersion(), update: R.update, updateMsg: R.updateMsg, checking: R.checking
     });
   }
   function broadcast() {
@@ -120,6 +126,31 @@ function run() {
     if (R.mode === 'waiting' && !S.paused) { R.awaySince = null; schedule(S.interval * 60e3); broadcast(); }
   }
 
+  /* ---------- update check ---------- */
+  function isNewer(a, b) {
+    const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+    return false;
+  }
+  async function checkForUpdate(manual) {
+    if (R.checking) return;
+    R.checking = true; if (manual) R.updateMsg = 'Checking...';
+    broadcast();
+    try {
+      // Plain public request: no account, no identifiers, nothing about your stretches.
+      const res = await net.fetch(LATEST_API, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Lapis' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const tag = String((await res.json()).tag_name || '');
+      const m = /^v?(\d+\.\d+\.\d+)$/.exec(tag);
+      if (m && isNewer(m[1], app.getVersion())) { R.update = { version: m[1] }; R.updateMsg = `Lapis ${m[1]} is available`; }
+      else { R.update = null; R.updateMsg = `You have the latest version`; }
+    } catch (e) {
+      if (manual) R.updateMsg = "Couldn't reach GitHub. Check your connection and try again.";
+    }
+    R.checking = false; S.lastUpdateCheck = Date.now(); save(); broadcast();
+  }
+  function openReleases() { shell.openExternal(RELEASES_URL); }
+
   function setSetting(key, value) {
     switch (key) {
       case 'interval': S.interval = [15, 20, 30, 45, 60].includes(+value) ? +value : 20; if (R.mode === 'waiting') schedule(S.interval * 60e3); break;
@@ -128,6 +159,11 @@ function run() {
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
+      case 'updateCheck':
+        S.updateCheck = !!value;
+        if (S.updateCheck) setTimeout(() => checkForUpdate(false), 0);
+        else { R.update = null; R.updateMsg = ''; }
+        break;
       default: return;
     }
     save(); broadcast();
@@ -151,6 +187,7 @@ function run() {
 
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
+    if (S.updateCheck && !R.checking && now - (S.lastUpdateCheck || 0) > UPDATE_EVERY) checkForUpdate(false);
     if (tray) tray.setToolTip(`Lapis · ${statusLabel()}`);
   }
 
@@ -249,7 +286,9 @@ function run() {
     return `Next stretch in ${mmss(S.nextDue - Date.now())}`;
   }
   function buildMenu() {
+    const updateItems = R.update ? [{ label: `Download Lapis ${R.update.version}`, click: openReleases }, { type: 'separator' }] : [];
     return Menu.buildFromTemplate([
+      ...updateItems,
       { label: statusLabel(), enabled: false },
       { label: `${today().total} stretches today`, enabled: false },
       { type: 'separator' },
@@ -309,6 +348,8 @@ function run() {
         break;
       }
       case 'test-chime': chime('due'); break;
+      case 'check-update': checkForUpdate(true); break;
+      case 'open-release': openReleases(); break;
       default: break;
     }
   });

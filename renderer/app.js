@@ -104,7 +104,8 @@
     ['widgetOnTop', 'Keep widget on top', 'Stays above your other windows'],
     ['toast', 'Windows notification too', 'Also shows in the Windows notification centre'],
     ['awayReset', 'Restart timer when I am away', 'After 5 min idle, or when you lock or sleep your PC'],
-    ['autostart', 'Start with Windows', 'Lapis starts quietly in the tray when you sign in']
+    ['autostart', 'Start with Windows', 'Lapis starts quietly in the tray when you sign in'],
+    ['updateCheck', 'Check for updates', 'Asks GitHub once a day if a newer Lapis is out. Off by default']
   ];
   function buildMain() {
     root.innerHTML = `
@@ -114,6 +115,7 @@
           <div><h1>Lapis</h1><p>Stretch nudges from a kuih lapis while you work</p></div></div>
         <button class="btn ghost" data-w="pause" id="pauseBtn" type="button">Pause reminders</button>
       </header>
+      <div class="update-bar" id="updateBar" hidden><span id="updateText"></span><button class="btn" data-w="open-release" type="button">Download</button></div>
       <main class="grid">
         <section class="stage">
           <div class="clock">
@@ -139,6 +141,7 @@
             <div class="set"><div class="lbl">Remind me every<small>Minutes between nudges</small></div><div class="seg" id="segInterval">${[15, 20, 30, 45, 60].map(v => `<button type="button" data-set="interval" data-val="${v}">${v}</button>`).join('')}</div></div>
             <div class="set"><div class="lbl">Snooze for<small>When you're mid-meeting</small></div><div class="seg" id="segSnooze">${[5, 10, 15].map(v => `<button type="button" data-set="snooze" data-val="${v}">${v} min</button>`).join('')}</div></div>
             ${SWITCHES.map(([k, t, d]) => `<div class="set"><div class="lbl" id="lbl-${k}">${t}<small>${d}</small></div><button class="switch" role="switch" aria-labelledby="lbl-${k}" data-set="${k}" type="button"></button></div>`).join('')}
+            <div class="set"><div class="lbl">Version <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">Check now</button></div>
           </section>
         </aside>
       </main>
@@ -170,6 +173,11 @@
     const max = Math.max(8, ...days.map(d => d.n)), sum = days.reduce((a, d) => a + d.n, 0);
     $('#week').innerHTML = days.map(d => `<div class="d${d.today ? ' today' : ''}${d.n ? ' has' : ''}"><span class="n">${d.n || ''}</span><div class="b" style="height:${Math.max(6, (d.n / max) * 78)}px"></div><span class="l">${d.l}</span></div>`).join('');
     $('#weekFoot').textContent = sum ? `${sum} stretches in the last 7 days.` : 'Your week fills in as you stretch.';
+    $('#version').textContent = st.version || '';
+    $('#updateMsg').textContent = st.updateMsg || (st.updateCheck ? 'Checks once a day' : 'Lapis only checks when you click Check now');
+    $('#checkBtn').disabled = !!st.checking;
+    $('#updateBar').hidden = !st.update;
+    if (st.update) $('#updateText').textContent = `Lapis ${st.update.version} is available. You have ${st.version}.`;
     tickMain();
   }
   function tickMain() {
