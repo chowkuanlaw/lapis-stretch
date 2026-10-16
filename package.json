@@ -1,0 +1,9 @@
+{
+  "name": "lapis",
+  "productName": "Lapis",
+  "version": "1.0.0",
+  "description": "Lapis stretch reminder: desk stretch nudges with a desktop widget and pop-up reminders",
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "private": true
+}
