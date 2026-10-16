@@ -1,0 +1,15 @@
+# Opens pull requests when Electron, electron-updater or the release workflow's actions
+# get updates, so security fixes aren't missed.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      electron:
+        patterns: ['electron', 'electron-builder', 'electron-updater']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

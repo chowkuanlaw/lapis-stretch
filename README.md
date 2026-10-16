@@ -44,6 +44,8 @@ Lapis has no analytics, no accounts and no tracking. Fonts and images are bundle
 
 The only network traffic is the update check against this repository's GitHub releases: when Lapis starts, once a day, and when you click **Check now**. It sends nothing about you or your stretches, just the standard request any download makes. Turn off **Update automatically** in Settings and Lapis only goes online when you click **Check now**.
 
+See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
+
 ## Build from source
 
 Run it in development (any OS, Node 22):
@@ -80,11 +82,11 @@ The workflow refuses to run if the tag doesn't match `package.json`. It builds t
 ## Project layout
 
 ```
-main.js            timer, state, tray, updates, and the three windows (runs in the main process)
+main.js            timer, state, tray, updates and the app windows (runs in the main process)
 preload.js         the small bridge the windows use to talk to main.js
 renderer/          the UI: index.html, app.css, app.js, the mascot drawing, the stretch list, fonts
 assets/            app and tray icons
-scripts/           portable build script
+scripts/           portable build script, exe icon and Electron fuses
 package.json       app details, plus the installer settings under "build"
 ```
 

@@ -317,7 +317,7 @@
     $('#stStreak').textContent = streak;
     $('#stStreakLbl').textContent = streak === 1 ? 'day streak' : 'day streak';
     $('#weekBig').innerHTML = weekBars(days, 150);
-    const by = Object.entries(t.by || {}).filter(([id]) => BY[id]).sort((a, b) => b[1] - a[1]);
+    const by = Object.entries(t.by || {}).filter(([id, n]) => Object.prototype.hasOwnProperty.call(BY, id) && Number.isInteger(n)).sort((a, b) => b[1] - a[1]);
     const top = Math.max(1, ...by.map(([, n]) => n));
     $('#byList').innerHTML = by.length
       ? by.map(([id, n]) => `<div class="byrow"><span>${BY[id].name}</span><div class="bybar"><i style="width:${(n / top) * 100}%"></i></div><b>${n}</b></div>`).join('')
@@ -524,10 +524,8 @@
     borneo: { title: 'Jom sumazau!', moves: ['wingsUp', 'wingsDown', 'wingsUp', 'wingsDown', 'wingsUp', 'walk', 'wingsUp', 'cheer'], flipEvery: 2 }
   };
   const eggStyle = skin => {
-    const forced = new URLSearchParams(location.search).get('song');
-    if (DANCES[forced]) return forced;
     const g = (KUIH_BY[skin] || KUIH_BY.lapis).group;
-    return DANCES[g] ? g : 'malay';
+    return Object.prototype.hasOwnProperty.call(DANCES, g) ? g : 'malay';
   };
   let eggStarted = false, eggEnding = false, eggTimer = null, eggMaster = null;
   function buildEgg() {

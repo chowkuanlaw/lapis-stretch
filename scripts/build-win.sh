@@ -2,10 +2,10 @@
 # Builds the Windows x64 app into dist/Lapis and dist/Lapis-win-x64.zip.
 # Runs on Linux, macOS or WSL. Needs: curl, unzip, zip, node and npm.
 #   ./scripts/build-win.sh
-#   ELECTRON_VERSION=44.5.1 ./scripts/build-win.sh
+#   ELECTRON_VERSION=44.8.0 ./scripts/build-win.sh
 set -euo pipefail
 
-ELECTRON_VERSION="${ELECTRON_VERSION:-44.5.1}"
+ELECTRON_VERSION="${ELECTRON_VERSION:-44.8.0}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIST="$ROOT/dist"
 CACHE="$DIST/.cache"
@@ -34,12 +34,15 @@ cp -r "$ROOT/main.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/LICENSE" "$
 cp "$ROOT/scripts/README.txt" "$OUT/README.txt"
 
 echo "Setting the Lapis icon and file details on Lapis.exe..."
-if [ ! -d "$CACHE/node_modules/resedit" ]; then
-  (cd "$CACHE" && echo '{"private":true}' > package.json && npm install --silent --no-audit --no-fund resedit@2.0.3)
+if [ ! -d "$CACHE/node_modules/resedit" ] || [ ! -d "$CACHE/node_modules/@electron/fuses" ]; then
+  (cd "$CACHE" && echo '{"private":true}' > package.json && npm install --silent --no-audit --no-fund --ignore-scripts resedit@2.0.3 @electron/fuses@1.8.0)
 fi
-cp "$ROOT/scripts/set-exe-icon.mjs" "$CACHE/set-exe-icon.mjs"
+cp "$ROOT/scripts/set-exe-icon.mjs" "$ROOT/scripts/set-fuses.mjs" "$CACHE/"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
 node "$CACHE/set-exe-icon.mjs" "$OUT/Lapis.exe" "$ROOT/assets/icon.ico" "$VERSION"
+
+echo "Locking down Electron features Lapis doesn't use..."
+node "$CACHE/set-fuses.mjs" "$OUT/Lapis.exe"
 
 echo "Zipping..."
 (cd "$DIST" && rm -f Lapis-win-x64.zip && zip -qr -9 Lapis-win-x64.zip Lapis)

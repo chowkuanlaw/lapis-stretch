@@ -7,9 +7,10 @@
  *   widget      : small always-on-top countdown card on the desktop
  *   popup       : the reminder card that slides up in the bottom-right corner
  */
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeImage, nativeTheme, shell, powerMonitor, net } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeImage, nativeTheme, shell, powerMonitor, net, protocol, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { pathToFileURL } = require('url');
 const { CYCLE, BY, KUIH_BY } = require('./renderer/data.js');
 
 const AUMID = 'app.lapis.stretch';
@@ -22,6 +23,11 @@ const REPO = 'chowkuanlaw/lapis-stretch';
 const RELEASES_URL = `https://github.com/${REPO}/releases/latest`;
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 const UPDATE_EVERY = 24 * 3600e3;
+// The windows load the app's own pages from lapis://app/ (never file:// or the web).
+const SCHEME = 'lapis', ORIGIN = `${SCHEME}://app`, RENDERER_DIR = path.join(__dirname, 'renderer');
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true } }]);
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -46,14 +52,40 @@ function run() {
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
   let popupH = 230, saveTimer = null, lastDay = dayKey(new Date());
 
+  // Only known settings with the right types are read back from disk; anything else falls back to the default.
+  function cleanState(saved) {
+    const out = JSON.parse(JSON.stringify(DEFAULTS));
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return out;
+    const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : undefined);
+    const pick = (k, v) => { if (v !== undefined) out[k] = v; };
+    pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
+    pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
+    for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded']) {
+      if (typeof saved[k] === 'boolean') out[k] = saved[k];
+    }
+    pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
+    pick('idx', Number.isInteger(saved.idx) ? num(saved.idx, 0, 1e9) : undefined);
+    pick('lastUpdateCheck', num(saved.lastUpdateCheck, 0, 1e15));
+    if (own(KUIH_BY, saved.kuih)) out.kuih = saved.kuih;
+    const wp = saved.widgetPos;
+    if (wp && typeof wp === 'object' && num(wp.x, -1e5, 1e5) !== undefined && num(wp.y, -1e5, 1e5) !== undefined) out.widgetPos = { x: Math.round(wp.x), y: Math.round(wp.y) };
+    const h = saved.history;
+    if (h && typeof h === 'object' && !Array.isArray(h)) {
+      for (const day of Object.keys(h).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().slice(-400)) {
+        const v = h[day]; if (!v || typeof v !== 'object') continue;
+        const by = {};
+        if (v.by && typeof v.by === 'object') for (const id of Object.keys(v.by)) if (own(BY, id) && Number.isInteger(v.by[id]) && v.by[id] > 0 && v.by[id] < 1e4) by[id] = v.by[id];
+        out.history[day] = { total: Number.isInteger(v.total) && v.total >= 0 && v.total < 1e5 ? v.total : 0, by };
+      }
+    }
+    // People upgrading from 1.2 or earlier already know Lapis: skip the first-launch setup.
+    if (saved.onboarded === undefined) out.onboarded = true;
+    return out;
+  }
   function loadState() {
     let saved = null;
     try { saved = JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { saved = null; }
-    S = Object.assign({}, DEFAULTS, saved || {});
-    // People upgrading from 1.2 or earlier already know Lapis: skip the first-launch setup.
-    if (saved && saved.onboarded === undefined) S.onboarded = true;
-    delete S.updateCheck; // replaced by autoUpdate in 1.1.0
-    if (!KUIH_BY[S.kuih]) S.kuih = 'lapis';
+    S = cleanState(saved);
     // A fresh launch (e.g. first thing in the morning) starts a new countdown instead of firing at once.
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
     S.nextDue = Date.now() + S.interval * 60e3;
@@ -94,7 +126,7 @@ function run() {
     n.show();
   }
   function becomeDue(exId, quiet) {
-    R.cur = exId && BY[exId] ? exId : upNext().id;
+    R.cur = own(BY, exId) ? exId : upNext().id;
     R.mode = 'due'; R.dueAt = Date.now(); R.rechimes = 0;
     if (!quiet) { chime('due'); toast(BY[R.cur]); }
     broadcast();
@@ -217,7 +249,7 @@ function run() {
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
-      case 'kuih': if (!KUIH_BY[value]) return; S.kuih = value; break;
+      case 'kuih': if (!own(KUIH_BY, value)) return; S.kuih = value; break;
       case 'onboarded': S.onboarded = !!value; break;
       case 'autoUpdate':
         S.autoUpdate = !!value;
@@ -258,18 +290,29 @@ function run() {
       autoplayPolicy: 'no-user-gesture-required', spellcheck: false
     }, extra || {});
   }
-  function lockDown(win) {
-    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-    win.webContents.on('will-navigate', e => e.preventDefault());
+  function viewURL(view, extra) { return `${ORIGIN}/index.html?` + new URLSearchParams(Object.assign({ view }, extra || {})); }
+  function loadView(win, view, extra) { win.loadURL(viewURL(view, extra)); }
+  // Serves only files inside the renderer folder, read-only.
+  function serveApp(req) {
+    let u; try { u = new URL(req.url); } catch (e) { return new Response('', { status: 400 }); }
+    const rel = decodeURIComponent(u.pathname).replace(/^\/+/, '');
+    const file = path.resolve(RENDERER_DIR, rel || 'index.html');
+    const type = MIME[path.extname(file).toLowerCase()];
+    if (u.host !== 'app' || req.method !== 'GET' || !type || !file.startsWith(RENDERER_DIR + path.sep)) return new Response('', { status: 404 });
+    return net.fetch(pathToFileURL(file).toString()).then(r => new Response(r.body, { status: r.status, headers: { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff' } }))
+      .catch(() => new Response('', { status: 404 }));
   }
-  function loadView(win, view) { win.loadFile(path.join(__dirname, 'renderer', 'index.html'), { query: { view } }); }
+  // IPC is only accepted from Lapis's own pages.
+  function trusted(evt) {
+    const f = evt.senderFrame;
+    return !!f && !f.parent && typeof f.url === 'string' && f.url.startsWith(ORIGIN + '/');
+  }
 
   function createMain(show) {
     mainWin = new BrowserWindow({
       width: 1120, height: 760, minWidth: 720, minHeight: 560, show: false, title: 'Lapis',
       icon: ICON, backgroundColor: bg(), autoHideMenuBar: true, webPreferences: webPrefs()
     });
-    lockDown(mainWin);
     loadView(mainWin, 'main');
     mainWin.once('ready-to-show', () => { if (show) mainWin.show(); });
     mainWin.on('close', e => { if (!quitting) { e.preventDefault(); mainWin.hide(); } });
@@ -295,7 +338,6 @@ function run() {
       alwaysOnTop: S.widgetOnTop, show: false, title: 'Lapis widget', icon: ICON, webPreferences: webPrefs()
     });
     if (S.widgetOnTop) widgetWin.setAlwaysOnTop(true, 'floating');
-    lockDown(widgetWin);
     loadView(widgetWin, 'widget');
     widgetWin.once('ready-to-show', () => { if (S.widget) widgetWin.showInactive(); });
     let moveT;
@@ -319,7 +361,6 @@ function run() {
       webPreferences: webPrefs({ backgroundThrottling: false })
     });
     popupWin.setAlwaysOnTop(true, 'pop-up-menu');
-    lockDown(popupWin);
     loadView(popupWin, 'popup');
     popupWin.on('close', e => { if (!quitting) { e.preventDefault(); popupWin.hide(); } });
   }
@@ -350,8 +391,7 @@ function run() {
       show: false, title: 'Lapis', icon: ICON, webPreferences: webPrefs({ backgroundThrottling: false })
     });
     eggWin.setAlwaysOnTop(true, 'screen-saver');
-    lockDown(eggWin);
-    eggWin.loadFile(path.join(__dirname, 'renderer', 'index.html'), { query: { view: 'egg', fx: String(pt.x - d.x), fy: String(pt.y - d.y) } });
+    loadView(eggWin, 'egg', { fx: String(pt.x - d.x), fy: String(pt.y - d.y) });
     eggWin.once('ready-to-show', () => { if (eggWin && !eggWin.isDestroyed()) { eggWin.show(); eggWin.focus(); } });
     eggWin.on('closed', () => { eggWin = null; });
     clearTimeout(eggSafety);
@@ -437,9 +477,9 @@ function run() {
   }
 
   /* ---------- IPC ---------- */
-  ipcMain.handle('get-state', () => publicState());
+  ipcMain.handle('get-state', evt => (trusted(evt) ? publicState() : null));
   ipcMain.on('action', (evt, a) => {
-    if (!a || typeof a.type !== 'string') return;
+    if (!trusted(evt) || !a || typeof a !== 'object' || typeof a.type !== 'string') return;
     switch (a.type) {
       case 'now': becomeDue(a.ex, true); break;
       case 'start': if (R.mode === 'due' || R.mode === 'waiting') start(); break;
@@ -468,10 +508,24 @@ function run() {
 
   /* ---------- lifecycle ---------- */
   app.on('second-instance', showMain);
+  // Defence in depth for every page Lapis ever creates: no new windows, no navigating away,
+  // no embedded webviews, and no browser permissions (camera, mic, location, notifications...).
+  app.on('web-contents-created', (_e, wc) => {
+    wc.setWindowOpenHandler(() => ({ action: 'deny' }));
+    wc.on('will-navigate', e => e.preventDefault());
+    wc.on('will-redirect', e => e.preventDefault());
+    wc.on('will-attach-webview', e => e.preventDefault());
+  });
   app.on('window-all-closed', () => { /* keep running in the tray */ });
   app.on('before-quit', () => { quitting = true; clearTimeout(saveTimer); writeNow(); });
 
   app.whenReady().then(() => {
+    protocol.handle(SCHEME, serveApp);
+    const ses = session.defaultSession;
+    ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+    ses.setPermissionCheckHandler(() => false);
+    ses.setDevicePermissionHandler(() => false);
+    ses.on('will-download', e => e.preventDefault());
     loadState();
     const startHidden = process.argv.includes('--hidden') && !S.firstRun && S.onboarded; // the first-launch setup always shows
     createPopup();

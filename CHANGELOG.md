@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.1 (2026-10-16)
+
+Security hardening. Nothing changes in how Lapis looks or works, and your settings and history are kept.
+
+- Updated Electron to 44.8.0 for the latest Chromium security fixes.
+- The app's pages now load from a private `lapis://app/` address that serves only Lapis's own files, instead of `file://`.
+- Every browser permission (camera, microphone, location, notifications...) is denied, and windows can't navigate away, open new windows, embed webviews or download files.
+- The main process only accepts messages from Lapis's own pages, and the saved settings file is checked field by field when it's loaded.
+- Tighter Content Security Policy: no network requests, plugins, frames or workers from the pages.
+- Electron fuses: Lapis.exe can no longer be run as Node.js or opened for debugging with `--inspect` or `NODE_OPTIONS`; the installer also checks the integrity of its app files.
+- Release pipeline: least-privilege tokens, actions pinned to exact commits, a Windows start-up check before publishing, and Dependabot for security updates.
+- Added SECURITY.md.
+
 ## 1.5.0 (2026-10-16)
 
 - The surprise hidden in your kuih now has four versions, one for each kuih group: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Try a different kuih to find them all.

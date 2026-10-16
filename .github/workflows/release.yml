@@ -15,8 +15,9 @@ on:
         description: 'Version tag to publish; must match package.json, e.g. v1.1.0'
         required: true
 
+# Least privilege: jobs can only read the repo, except the final publish step.
 permissions:
-  contents: write
+  contents: read
 
 env:
   TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
@@ -25,14 +26,16 @@ jobs:
   check-version:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - name: Tag matches package.json
         run: |
           VERSION="v$(node -p "require('./package.json').version")"
           if [ "$TAG" != "$VERSION" ]; then
             echo "::error::Tag $TAG does not match package.json version $VERSION"; exit 1
           fi
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null && [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             echo "::error::Tag $TAG already exists. Bump the version in package.json first."; exit 1
           fi
 
@@ -40,15 +43,27 @@ jobs:
     needs: check-version
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - name: Build the installer
         run: npx electron-builder --win nsis --x64 --publish never
-      - uses: actions/upload-artifact@v5
+      - name: Smoke test (fuses are set and the hardened app starts)
+        shell: pwsh
+        run: |
+          $exe = "dist/installer/win-unpacked/Lapis.exe"
+          node node_modules/@electron/fuses/dist/bin.js read --app $exe
+          $p = Start-Process $exe -ArgumentList '--hidden' -PassThru
+          Start-Sleep -Seconds 20
+          if ($p.HasExited) { throw "Lapis exited early (code $($p.ExitCode)); not publishing" }
+          Get-Process Lapis -ErrorAction SilentlyContinue | Stop-Process -Force
+          Write-Host "Lapis started and stayed running."
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: installer
           path: |
@@ -61,13 +76,15 @@ jobs:
     needs: check-version
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
       - name: Build the portable zip
         run: ./scripts/build-win.sh
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: portable
           path: dist/Lapis-win-x64.zip
@@ -76,9 +93,13 @@ jobs:
   publish:
     needs: [installer, portable]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           path: out
           merge-multiple: true
