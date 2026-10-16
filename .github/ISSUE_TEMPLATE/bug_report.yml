@@ -27,7 +27,7 @@ body:
     attributes:
       label: Lapis version
       description: Shown at the bottom of Settings in the Lapis window.
-      placeholder: 1.5.1
+      placeholder: 1.5.2
     validations:
       required: true
   - type: dropdown

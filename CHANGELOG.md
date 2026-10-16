@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.2 (2026-10-16)
+
+- **The countdown carries on after a quick restart.** If Lapis is back within 5 minutes (after "Restart to update", or quitting and reopening), it picks up the countdown where it left off instead of starting a fresh 20 minutes. After a longer break, such as overnight, it still starts fresh.
+- If a stretch was already due, it pops up again right after the restart.
+- Updating from the tray menu while the Lapis window is closed no longer opens the window afterwards.
+
 ## 1.5.1 (2026-10-16)
 
 Security hardening. Nothing changes in how Lapis looks or works, and your settings and history are kept.

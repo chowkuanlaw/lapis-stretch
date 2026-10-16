@@ -43,14 +43,15 @@ function run() {
   const DEFAULTS = {
     interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
     autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
-    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis', onboarded: false
+    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis', onboarded: false,
+    closedAt: 0, reopenHidden: false // for picking up where Lapis left off after a quick restart
   };
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = Object.assign({}, DEFAULTS);
   const R = { mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null, update: null, updateMsg: '', checking: false };
 
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
-  let popupH = 230, saveTimer = null, lastDay = dayKey(new Date());
+  let popupH = 230, saveTimer = null, lastDay = dayKey(new Date()), resumeHidden = false;
 
   // Only known settings with the right types are read back from disk; anything else falls back to the default.
   function cleanState(saved) {
@@ -66,6 +67,9 @@ function run() {
     pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
     pick('idx', Number.isInteger(saved.idx) ? num(saved.idx, 0, 1e9) : undefined);
     pick('lastUpdateCheck', num(saved.lastUpdateCheck, 0, 1e15));
+    pick('nextDue', num(saved.nextDue, 0, 1e15));
+    pick('closedAt', num(saved.closedAt, 0, 1e15));
+    if (typeof saved.reopenHidden === 'boolean') out.reopenHidden = saved.reopenHidden;
     if (own(KUIH_BY, saved.kuih)) out.kuih = saved.kuih;
     const wp = saved.widgetPos;
     if (wp && typeof wp === 'object' && num(wp.x, -1e5, 1e5) !== undefined && num(wp.y, -1e5, 1e5) !== undefined) out.widgetPos = { x: Math.round(wp.x), y: Math.round(wp.y) };
@@ -86,11 +90,17 @@ function run() {
     let saved = null;
     try { saved = JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { saved = null; }
     S = cleanState(saved);
-    // A fresh launch (e.g. first thing in the morning) starts a new countdown instead of firing at once.
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
-    S.nextDue = Date.now() + S.interval * 60e3;
+    // Back within a few minutes (an update restart, or quit and reopen): carry on with the same countdown.
+    // A launch after a longer break (e.g. first thing in the morning) starts a fresh countdown instead of firing at once.
+    const now = Date.now(), off = now - S.closedAt;
+    const quickRestart = S.closedAt > 0 && off >= 0 && off < AWAY_SECS * 1000 && S.nextDue > 0;
+    S.nextDue = quickRestart ? Math.min(Math.max(S.nextDue, now + 5000), now + S.interval * 60e3) : now + S.interval * 60e3;
+    resumeHidden = quickRestart && S.reopenHidden;
+    S.closedAt = 0; S.reopenHidden = false;
   }
   function writeNow() { try { fs.writeFileSync(stateFile(), JSON.stringify(S)); } catch (e) { /* best effort */ } }
+  function writeOnQuit() { clearTimeout(saveTimer); S.closedAt = Date.now(); writeNow(); }
   function save() { clearTimeout(saveTimer); saveTimer = setTimeout(writeNow, 300); }
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -100,7 +110,7 @@ function run() {
   function upNext() { return BY[CYCLE[S.idx % CYCLE.length]]; }
 
   function publicState() {
-    const { widgetPos, firstRun, lastUpdateCheck, ...rest } = S;
+    const { widgetPos, firstRun, lastUpdateCheck, closedAt, reopenHidden, ...rest } = S;
     return Object.assign(rest, {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
       switched: R.switched, away: !!R.awaySince,
@@ -236,7 +246,9 @@ function run() {
   }
   function installUpdate() {
     if (!autoUpdater || !R.update || R.update.state !== 'ready') return;
-    quitting = true; clearTimeout(saveTimer); writeNow();
+    quitting = true;
+    S.reopenHidden = !(mainWin && !mainWin.isDestroyed() && mainWin.isVisible()); // come back the way you left it
+    writeOnQuit();
     setImmediate(() => autoUpdater.quitAndInstall(true, true)); // silent install, then reopen Lapis
   }
   function openReleases() { shell.openExternal(RELEASES_URL); }
@@ -517,7 +529,7 @@ function run() {
     wc.on('will-attach-webview', e => e.preventDefault());
   });
   app.on('window-all-closed', () => { /* keep running in the tray */ });
-  app.on('before-quit', () => { quitting = true; clearTimeout(saveTimer); writeNow(); });
+  app.on('before-quit', () => { quitting = true; writeOnQuit(); });
 
   app.whenReady().then(() => {
     protocol.handle(SCHEME, serveApp);
@@ -527,7 +539,7 @@ function run() {
     ses.setDevicePermissionHandler(() => false);
     ses.on('will-download', e => e.preventDefault());
     loadState();
-    const startHidden = process.argv.includes('--hidden') && !S.firstRun && S.onboarded; // the first-launch setup always shows
+    const startHidden = (process.argv.includes('--hidden') || resumeHidden) && !S.firstRun && S.onboarded; // the first-launch setup always shows
     createPopup();
     createWidget();
     createMain(!startHidden);
