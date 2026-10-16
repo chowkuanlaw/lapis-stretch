@@ -11,7 +11,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Pop-up reminder.** A card slides up in the bottom-right corner, above whatever app you're in, without stealing focus. Start, Snooze, Skip or pick a different stretch. It chimes, and for one-side-at-a-time stretches it chimes again when to switch sides.
 - **Desktop widget.** A small countdown card that stays on top of your windows. Drag it anywhere.
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. Closing the window keeps reminders running.
-- **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Stretches**, **Your kuih**, **Progress** (week chart, best day, streak) and **Settings**.
+- **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Progress** (week chart, best day, streak, water), **Stretches**, **Your kuih** and **Settings**.
 - **Quick setup on first launch.** Say hello, choose English or Bahasa Melayu, pick your kuih, choose how often, done.
 - **Working hours.** Reminds you only during your working days and hours (Monday to Friday, 9 to 6 by default) and skips lunch. Outside them Lapis rests, and the widget says when it's back.
 - **Quiet in meetings.** While an app is full screen or presenting, or Windows Do not disturb is on, reminders wait and come 2 minutes after you're done.

@@ -467,3 +467,21 @@ input[data-code]:focus-visible{outline:3px solid var(--pink);outline-offset:1px}
   .today-cards{grid-template-columns:minmax(0,1fr)}
   .kuih-side{width:100%;position:static}
 }
+
+/* ===== 1.6.1: settings in two balanced columns, water on Progress ===== */
+.settings-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.settings-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.about-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:start}
+.about-grid .set:first-child{border-top:0}
+.about-text{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-top:6px}
+.about-text .note-p{margin:0}
+.nav-brand .logo.kuih-tap{display:block;border-radius:10px}
+.wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.wstats div{background:var(--bg);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.wstats b{font-family:var(--f-display);font-size:30px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.wstats span{font-size:13px;color:var(--muted)}
+.week.water .d.has .b{background:#5BC0EB}
+.week.water .d.today .b{background:var(--water)}
+@media (max-width:900px){
+  .settings-cols,.about-grid{grid-template-columns:minmax(0,1fr)}
+}

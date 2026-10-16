@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.1 (2026-10-16)
+
+- Sidebar order is now Today, Progress, Stretches, Your kuih, Settings.
+- Settings tidied into fewer, grouped cards in two balanced columns: Reminders, Working hours, Meetings and breaks on the left; Daily goal, Water, Kuih collection, Display and language on the right; About and updates along the bottom.
+- Progress now shows water too: glasses today, the daily average and days at your goal, with a 7-day chart. The Water tile on Today has a "See progress" link straight to it.
+- The kuih in the sidebar responds to taps, just like the one on Today.
+
 ## 1.6.0 (2026-10-16)
 
 - **Working hours.** Reminders only on your working days and hours (Monday to Friday, 9:00 am to 6:00 pm by default), with lunch (1:00 to 2:00 pm) skipped. Outside them Lapis rests and the widget shows when it's back. All of it can be changed in Settings.

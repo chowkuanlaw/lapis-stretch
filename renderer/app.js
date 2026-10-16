@@ -114,7 +114,12 @@
     const kt = e.target.closest('.kuih-tap');
     if (kt) { onKuihTap(kt); return; }
     const pg = e.target.closest('[data-page]');
-    if (pg) { setPage(pg.dataset.page); return; }
+    if (pg) {
+      setPage(pg.dataset.page);
+      const target = pg.dataset.anchor && document.getElementById(pg.dataset.anchor);
+      if (target) target.scrollIntoView({ block: 'start' });
+      return;
+    }
     const ob = e.target.closest('[data-ob]');
     if (ob) { obAction(ob.dataset.ob); return; }
     const a = e.target.closest('[data-act]');
@@ -145,9 +150,9 @@
   /* ---------- main window: sidebar app ---------- */
   const PAGES = [
     { id: 'today', icon: '<path d="M3 9.5 10 4l7 5.5V16a1 1 0 0 1-1 1h-3.5v-4.5h-5V17H4a1 1 0 0 1-1-1z"/>' },
+    { id: 'progress', icon: '<path d="M4 16V11M8.5 16V6M13 16V9M17 16V4"/>' },
     { id: 'stretches', icon: '<path d="M7 5h10M7 10h10M7 15h10"/><circle cx="3.5" cy="5" r="1"/><circle cx="3.5" cy="10" r="1"/><circle cx="3.5" cy="15" r="1"/>' },
     { id: 'kuih', icon: '<circle cx="10" cy="10" r="7"/><circle cx="7.5" cy="8.5" r=".6"/><circle cx="12.5" cy="8.5" r=".6"/><path d="M7.5 12.2q2.5 2 5 0"/>' },
-    { id: 'progress', icon: '<path d="M4 16V11M8.5 16V6M13 16V9M17 16V4"/>' },
     { id: 'settings', icon: '<path d="M3 6h8M15 6h2M3 14h2M9 14h8"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="14" r="2"/>' }
   ];
   const svgIcon = body => `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
@@ -179,7 +184,7 @@
     root.innerHTML = `
     <div class="shell">
       <nav class="side-nav" aria-label="Lapis">
-        <div class="nav-brand"><span class="logo" id="logo"></span><span class="nav-title">Lapis</span></div>
+        <div class="nav-brand"><button type="button" class="logo kuih-tap" id="logo" aria-label="${esc(T('w.kuih'))}"></button><span class="nav-title">Lapis</span></div>
         ${PAGES.map(p => `<button type="button" class="nav-item" data-page="${p.id}" aria-label="${esc(T('nav.' + p.id))}" title="${esc(T('nav.' + p.id))}">${svgIcon(p.icon)}<span>${T('nav.' + p.id)}</span></button>`).join('')}
         <div class="nav-spacer"></div>
         <button type="button" class="nav-item nav-pause" data-w="pause" id="navPause">${svgIcon('<rect x="5" y="4" width="3.2" height="12" rx="1"/><rect x="11.8" y="4" width="3.2" height="12" rx="1"/>')}</button>
@@ -218,7 +223,7 @@
               <p class="tp-note" id="goalNote"></p>
             </section>
             <section class="panel tpanel" aria-labelledby="h-water" id="waterPanel">
-              <h2 id="h-water">${T('water.title')}</h2>
+              <div class="tp-head"><h2 id="h-water">${T('water.title')}</h2><button class="linkbtn" data-page="progress" data-anchor="progWater" type="button">${T('btn.seeProgress')}</button></div>
               <div class="glasses" id="glasses"></div>
               <p class="tp-note" id="waterNote"></p>
               <button class="btn soft small" data-w="water-add" type="button" id="waterBtn">${T('water.drank')}</button>
@@ -267,60 +272,67 @@
             <div class="panel stat" title="${esc(T('prog.streakHint'))}"><b id="stStreak">0</b><span>${T('prog.streak')}</span></div>
           </div>
           <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall" id="weekBig"></div></section>
+          <section class="panel" id="progWater" aria-labelledby="h-pwater">
+            <h2 id="h-pwater">${T('prog.water')}</h2>
+            <div class="wstats">
+              <div><b id="pwToday">0</b><span>${T('prog.waterToday')}</span></div>
+              <div><b id="pwAvg">0</b><span>${T('prog.waterAvg')}</span></div>
+              <div><b id="pwGoal">0</b><span id="pwGoalLbl"></span></div>
+            </div>
+            <div class="week tall water" id="waterBig"></div>
+          </section>
           <section class="panel"><h2>${T('prog.byStretch')}</h2><div class="bylist" id="byList"></div></section>
         </section>
 
         <section class="page" id="page-settings" aria-labelledby="h-set" hidden>
           <header class="page-head"><h1 id="h-set">${T('set.title')}</h1></header>
-          <div class="settings-grid">
-            <section class="panel settings"><h2>${T('set.reminders')}</h2>
-              <div class="set"><div class="lbl">${T('set.every')}<small>${T('set.everySub')}</small></div>${segGroup('interval', T('set.every'), [15, 20, 30, 45, 60], v => v)}</div>
-              <div class="set"><div class="lbl">${T('set.snooze')}<small>${T('set.snoozeSub')}</small></div>${segGroup('snooze', T('set.snooze'), [5, 10, 15], v => T('mins', { n: v }))}</div>
-            </section>
-            <section class="panel settings"><h2>${T('set.work')}</h2>
-              ${switchRow('workOn', T('set.workOn'), T('set.workOnSub'))}
-              <div class="set stack"><div class="lbl">${T('set.days')}</div><div class="days" role="group" aria-label="${esc(T('set.days'))}">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" class="day" data-set="workDay" data-val="${d}" aria-pressed="false">${days[d]}</button>`).join('')}</div></div>
-              <div class="set tsels">${timeSelect('workStart', T('set.from'), 300, 780)}${timeSelect('workEnd', T('set.to'), 720, 1410)}</div>
-              ${switchRow('lunchOn', T('set.lunch'), T('set.lunchSub'))}
-              <div class="set tsels" id="lunchTimes">${timeSelect('lunchStart', T('set.from'), 660, 900)}${timeSelect('lunchEnd', T('set.to'), 690, 960)}</div>
-            </section>
-            <section class="panel settings"><h2>${T('set.meet')}</h2>
-              ${switchRow('quietMeetings', T('set.quiet'), T('set.quietSub'))}
-              <p class="note-p boxed">${T('set.quietHow')}</p>
-            </section>
-            <section class="panel settings"><h2>${T('set.water')}</h2>
-              ${switchRow('waterOn', T('set.waterOn'), T('set.waterOnSub'))}
-              <div class="set tsels">${numSelect('waterEvery', T('set.waterEvery'), [30, 45, 60, 90, 120], v => (v === 60 ? T('hour') : v === 120 ? T('hours', { n: 2 }) : v === 90 ? T('hours', { n: 1.5 }) : T('minsShort', { n: v })))}${numSelect('waterGoal', T('set.waterGoal'), [4, 5, 6, 7, 8, 9, 10, 11, 12], v => v)}</div>
-            </section>
-            <section class="panel settings"><h2>${T('set.goal')}</h2>
-              <div class="set"><div class="lbl">${T('set.goalN')}<small>${T('set.goalSub')}</small></div><div class="stepper"><button type="button" class="stp" data-step="goal" data-d="-1" aria-label="${esc(T('set.fewer'))}">−</button><b id="goalVal">8</b><button type="button" class="stp" data-step="goal" data-d="1" aria-label="${esc(T('set.more'))}">+</button></div></div>
-              ${switchRow('summaryOn', T('set.summary'), T('set.summarySub'))}
-            </section>
-            <section class="panel settings"><h2>${T('set.alerts')}</h2>
-              ${switchRow('sound', T('set.sound'), T('set.soundSub'))}${switchRow('toast', T('set.toast'), T('set.toastSub'))}
-            </section>
-            <section class="panel settings"><h2>${T('set.desktop')}</h2>
-              ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}
-            </section>
-            <section class="panel settings"><h2>${T('set.away')}</h2>
-              ${switchRow('awayReset', T('set.awayReset'), T('set.awayResetSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
-            </section>
-            <section class="panel settings"><h2>${T('set.lang')}</h2>
-              <div class="set"><div class="lbl">${T('set.lang')}</div>${langSeg()}</div>
-            </section>
-            <section class="panel settings"><h2>${T('set.collect')}</h2>
-              ${switchRow('collect', T('set.collectOn'), T('set.collectOnSub'))}
-              <div class="set stack"><label class="lbl" for="codeIn2">${T('code.title')}</label><div class="code-row"><input id="codeIn2" data-code type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="${esc(T('code.ph'))}"><button class="btn" data-redeem="codeIn2" type="button">${T('code.btn')}</button></div><p class="code-msg" id="codeMsg2" aria-live="polite"></p></div>
-            </section>
-            <section class="panel settings"><h2>${T('set.updates')}</h2>
-              ${switchRow('autoUpdate', T('set.autoUpdate'), T('set.autoUpdateSub'))}
-              <div class="set"><div class="lbl">${T('set.version')} <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">${T('set.check')}</button></div>
-            </section>
-            <section class="panel settings"><h2>${T('set.about')}</h2>
-              <p class="note-p">${T('set.aboutText')}</p>
-              <button class="btn ghost" data-ob="open" type="button">${T('set.welcome')}</button>
-            </section>
+          <div class="settings-cols">
+            <div class="settings-col">
+              <section class="panel settings"><h2>${T('set.reminders')}</h2>
+                <div class="set"><div class="lbl">${T('set.every')}<small>${T('set.everySub')}</small></div>${segGroup('interval', T('set.every'), [15, 20, 30, 45, 60], v => v)}</div>
+                <div class="set"><div class="lbl">${T('set.snooze')}<small>${T('set.snoozeSub')}</small></div>${segGroup('snooze', T('set.snooze'), [5, 10, 15], v => T('mins', { n: v }))}</div>
+                ${switchRow('sound', T('set.sound'), T('set.soundSub'))}${switchRow('toast', T('set.toast'), T('set.toastSub'))}
+              </section>
+              <section class="panel settings"><h2>${T('set.work')}</h2>
+                ${switchRow('workOn', T('set.workOn'), T('set.workOnSub'))}
+                <div class="set stack"><div class="lbl">${T('set.days')}</div><div class="days" role="group" aria-label="${esc(T('set.days'))}">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" class="day" data-set="workDay" data-val="${d}" aria-pressed="false">${days[d]}</button>`).join('')}</div></div>
+                <div class="set tsels">${timeSelect('workStart', T('set.from'), 300, 780)}${timeSelect('workEnd', T('set.to'), 720, 1410)}</div>
+                ${switchRow('lunchOn', T('set.lunch'), T('set.lunchSub'))}
+                <div class="set tsels" id="lunchTimes">${timeSelect('lunchStart', T('set.from'), 660, 900)}${timeSelect('lunchEnd', T('set.to'), 690, 960)}</div>
+              </section>
+              <section class="panel settings"><h2>${T('set.meetBreaks')}</h2>
+                ${switchRow('quietMeetings', T('set.quiet'), T('set.quietSub') + ' ' + T('set.quietHow'))}
+                ${switchRow('awayReset', T('set.awayReset'), T('set.awayResetSub'))}
+              </section>
+            </div>
+            <div class="settings-col">
+              <section class="panel settings"><h2>${T('set.goal')}</h2>
+                <div class="set"><div class="lbl">${T('set.goalN')}<small>${T('set.goalSub')}</small></div><div class="stepper"><button type="button" class="stp" data-step="goal" data-d="-1" aria-label="${esc(T('set.fewer'))}">−</button><b id="goalVal">8</b><button type="button" class="stp" data-step="goal" data-d="1" aria-label="${esc(T('set.more'))}">+</button></div></div>
+                ${switchRow('summaryOn', T('set.summary'), T('set.summarySub'))}
+              </section>
+              <section class="panel settings"><h2>${T('set.water')}</h2>
+                ${switchRow('waterOn', T('set.waterOn'), T('set.waterOnSub'))}
+                <div class="set tsels">${numSelect('waterEvery', T('set.waterEvery'), [30, 45, 60, 90, 120], v => (v === 60 ? T('hour') : v === 120 ? T('hours', { n: 2 }) : v === 90 ? T('hours', { n: 1.5 }) : T('minsShort', { n: v })))}${numSelect('waterGoal', T('set.waterGoal'), [4, 5, 6, 7, 8, 9, 10, 11, 12], v => v)}</div>
+              </section>
+              <section class="panel settings"><h2>${T('set.collect')}</h2>
+                ${switchRow('collect', T('set.collectOn'), T('set.collectOnSub'))}
+                <div class="set stack"><label class="lbl" for="codeIn2">${T('code.title')}</label><div class="code-row"><input id="codeIn2" data-code type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="${esc(T('code.ph'))}"><button class="btn" data-redeem="codeIn2" type="button">${T('code.btn')}</button></div><p class="code-msg" id="codeMsg2" aria-live="polite"></p></div>
+              </section>
+              <section class="panel settings"><h2>${T('set.display')}</h2>
+                <div class="set"><div class="lbl">${T('set.lang')}</div>${langSeg()}</div>
+                ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
+              </section>
+            </div>
           </div>
+          <section class="panel settings about-card"><h2>${T('set.aboutUpd')}</h2>
+            <div class="about-grid">
+              <div>
+                <div class="set"><div class="lbl">${T('set.version')} <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">${T('set.check')}</button></div>
+                ${switchRow('autoUpdate', T('set.autoUpdate'), T('set.autoUpdateSub'))}
+              </div>
+              <div class="about-text"><p class="note-p">${T('set.aboutText')}</p><button class="btn ghost" data-ob="open" type="button">${T('set.welcome')}</button></div>
+            </div>
+          </section>
         </section>
       </div>
     </div>
@@ -452,17 +464,17 @@
     $('#coming').innerHTML = ids.map(id => { const e = BY[id]; return `<button type="button" class="coming-item" data-ex="${e.id}" title="${esc(T('coming.do', { ex: exName(e) }))}"><span class="ci-img">${lapis(e.pose, doing(e))}</span><b>${exName(e)}</b></button>`; }).join('');
   }
 
-  function lastDays(count) {
+  function lastDays(count, field) {
     const out = [], DN = T('days').split(',');
     for (let i = count - 1; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const h = (st.history || {})[dayKey(d)];
-      out.push({ l: i === 0 ? T('prog.dayToday') : DN[d.getDay()], n: h ? h.total : 0, today: i === 0 });
+      out.push({ l: i === 0 ? T('prog.dayToday') : DN[d.getDay()], n: h ? (h[field || 'total'] || 0) : 0, today: i === 0 });
     }
     return out;
   }
-  function weekBars(days, maxH) {
-    const max = Math.max(st.goal || 8, ...days.map(d => d.n));
+  function weekBars(days, maxH, goal) {
+    const max = Math.max(goal || st.goal || 8, ...days.map(d => d.n));
     return days.map(d => `<div class="d${d.today ? ' today' : ''}${d.n ? ' has' : ''}"><span class="n">${d.n || ''}</span><div class="b" style="height:${Math.max(6, (d.n / max) * maxH)}px"></div><span class="l">${d.l}</span></div>`).join('');
   }
   function renderProgress(s) {
@@ -472,6 +484,12 @@
     $('#stBest').textContent = Math.max(0, ...days.map(d => d.n));
     $('#stStreak').textContent = s.streak;
     $('#weekBig').innerHTML = weekBars(days, 150);
+    const wd = lastDays(7, 'water'), wsum = wd.reduce((x, d) => x + d.n, 0), g = st.waterGoal;
+    $('#pwToday').textContent = todayRec().water || 0;
+    $('#pwAvg').textContent = (Math.round(wsum / 7 * 10) / 10).toLocaleString(loc());
+    $('#pwGoal').textContent = wd.filter(d => d.n >= g).length;
+    $('#pwGoalLbl').textContent = T('prog.waterGoalDays', { g });
+    $('#waterBig').innerHTML = weekBars(wd, 150, g);
     const by = Object.entries(tr.by || {}).filter(([id, n]) => own(BY, id) && Number.isInteger(n)).sort((a, b) => b[1] - a[1]);
     const top = Math.max(1, ...by.map(([, n]) => n));
     $('#byList').innerHTML = by.length
