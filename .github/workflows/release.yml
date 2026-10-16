@@ -1,10 +1,17 @@
 name: Release
 
 # Builds the Windows app from this repository's source and publishes it as a
-# GitHub Release whenever a version tag such as v1.0.0 is pushed.
+# GitHub Release. Runs when a version tag such as v1.0.1 is pushed, or from the
+# Actions tab with "Run workflow" (it then creates the tag on the current commit).
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to publish, e.g. v1.0.0'
+        required: true
+        default: 'v1.0.0'
 
 permissions:
   contents: write
@@ -25,7 +32,7 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           SHA=$(sha256sum dist/Lapis-win-x64.zip | cut -d' ' -f1)
           cp .github/release-notes.md notes.md
@@ -33,5 +40,5 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/Lapis-win-x64.zip --clobber
           else
-            gh release create "$TAG" dist/Lapis-win-x64.zip --title "Lapis ${TAG#v}" --notes-file notes.md
+            gh release create "$TAG" dist/Lapis-win-x64.zip --target "$GITHUB_SHA" --title "Lapis ${TAG#v}" --notes-file notes.md
           fi

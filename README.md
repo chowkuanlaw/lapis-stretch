@@ -49,7 +49,7 @@ Build the Windows app and zip (on Linux, macOS or WSL; needs `curl`, `unzip`, `z
 
 The script downloads the official Electron Windows build, checks it against Electron's published SHA-256 checksums, copies the app in, and sets the Lapis icon on `Lapis.exe`.
 
-Releases are built the same way by GitHub Actions: pushing a tag such as `v1.0.1` runs `.github/workflows/release.yml`, which builds the zip from the tagged source and attaches it to a new release.
+Releases are built the same way by GitHub Actions (`.github/workflows/release.yml`): push a tag such as `v1.0.1`, or open the Actions tab, pick **Release** and click **Run workflow** with the new version. It builds the zip from the source and attaches it to a new release.
 
 ## Project layout
 
