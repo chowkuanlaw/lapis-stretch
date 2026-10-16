@@ -53,6 +53,14 @@ jobs:
       - run: npm ci
       - name: Build the installer
         run: npx electron-builder --win nsis --x64 --publish never
+      - name: Meeting detection works on Windows
+        run: node scripts/check-quiet.cjs
+      - name: Native helper is unpacked next to the app
+        shell: pwsh
+        run: |
+          $f = "dist/installer/win-unpacked/resources/app.asar.unpacked/node_modules/@koromix/koffi-win32-x64/win32_x64/koffi.node"
+          if (-not (Test-Path $f)) { throw "koffi.node missing from the installer build" }
+          Write-Host "Found $f"
       - name: Smoke test (fuses are set and the hardened app starts)
         shell: pwsh
         run: |
@@ -63,6 +71,17 @@ jobs:
           if ($p.HasExited) { throw "Lapis exited early (code $($p.ExitCode)); not publishing" }
           Get-Process Lapis -ErrorAction SilentlyContinue | Stop-Process -Force
           Write-Host "Lapis started and stayed running."
+      - name: Self-test (the packaged app can run its meeting checks)
+        shell: pwsh
+        run: |
+          Start-Sleep -Seconds 2
+          $p = Start-Process "dist/installer/win-unpacked/Lapis.exe" -ArgumentList '--self-test' -PassThru
+          if (-not $p.WaitForExit(60000)) { Stop-Process -Id $p.Id -Force; throw "self-test did not finish" }
+          $f = Join-Path $env:APPDATA 'Lapis/self-test.json'
+          if (-not (Test-Path $f)) { throw "self-test wrote no result" }
+          Get-Content $f
+          $j = Get-Content $f | ConvertFrom-Json
+          if ($j.state -lt 1 -or $j.state -gt 7) { throw "full-screen check did not run in the packaged app" }
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: installer

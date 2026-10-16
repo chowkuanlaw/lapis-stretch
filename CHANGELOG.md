@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0 (2026-10-16)
+
+- **Working hours.** Reminders only on your working days and hours (Monday to Friday, 9:00 am to 6:00 pm by default), with lunch (1:00 to 2:00 pm) skipped. Outside them Lapis rests and the widget shows when it's back. All of it can be changed in Settings.
+- **Quiet in meetings and presentations.** While an app is full screen or presenting, or Windows Do not disturb is on, the reminder waits and comes 2 minutes after you're done. No microphone or camera checks.
+- **Water reminders.** Every hour (you choose), your kuih holds up a glass of water; "Done, I drank" counts it toward your 8 glasses a day. New artwork of every kuih holding and drinking a glass.
+- **Daily goal** of 8 stretches (you choose), shown on Today and the widget, and a **Friday summary** of your week 30 minutes before the end of your last working day.
+- **Kuih collection.** New users start with Kuih Lapis, Ang Ku Kueh, Murukku and Kek Lapis Sarawak and unlock the other 16 by stretching, with each kuih's rule and progress shown on Your kuih. Existing users keep what their history has already earned and the kuih they use now. Turn off Collect kuih in Settings to have all 20 at once. There's also a place to enter a secret code.
+- **Festive outfits.** For Hari Raya Aidilfitri, Chinese New Year, Deepavali, Pesta Kaamatan and Hari Gawai, every kuih wears that festival's traditional outfit for the 4 days before and on the day itself.
+- **Bahasa Melayu.** Choose English or Bahasa Melayu on the welcome screen or in Settings; every screen, reminder, the tray menu and notifications follow it.
+- Streaks now count working days where you reach your daily goal; days off don't break them.
+
 ## 1.5.2 (2026-10-16)
 
 - **The countdown carries on after a quick restart.** If Lapis is back within 5 minutes (after "Restart to update", or quitting and reopening), it picks up the countdown where it left off instead of starting a fresh 20 minutes. After a longer break, such as overnight, it still starts fresh.

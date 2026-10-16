@@ -11,6 +11,10 @@ repository and choose **Report a vulnerability**. Please don't open a public iss
   your chosen kuih and how many stretches you did each day. It has no accounts, analytics or tracking.
 - Its only network traffic is checking this repository's GitHub releases for updates (you can
   turn automatic checks off in Settings). Nothing about you is sent.
+- To stay quiet in meetings it asks Windows, only when a reminder is due, whether an app is full
+  screen or presenting (SHQueryUserNotificationState, called in-process through the koffi library)
+  and whether Do not disturb is on (one read-only PowerShell command with a fixed script). It never
+  uses the microphone or camera. Turning off "Stay quiet in meetings and presentations" stops both.
 - Updates are downloaded from this repository's GitHub releases over HTTPS and checked against
   the SHA-512 hash published with each release before they install.
 
@@ -30,6 +34,10 @@ repository and choose **Report a vulnerability**. Please don't open a public iss
   actions pinned to exact commits; each release lists SHA-256 checksums.
 
 ## Known limitations
+
+- Some workplace security tools log or flag apps that start PowerShell. Lapis only runs the one
+  read-only Do not disturb query above; turn off "Stay quiet in meetings and presentations" if
+  your IT team prefers it doesn't.
 
 - The Windows builds are not code-signed yet, so Windows SmartScreen may warn on first run and
   the updater can't check a publisher signature (it still checks the release hash).

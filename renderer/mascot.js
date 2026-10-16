@@ -27,6 +27,11 @@
     mudraR: { body: 'translate(3 2)', arms: [[[33, 60], [16, 60], [0, 54]], [[87, 60], [106, 56], [100, 36]]], legs: [[[50, 100], [36, 118], [42, 138]], [[70, 100], [84, 118], [78, 138]]], face: 'happy' },
     salute: { body: 'translate(0 3)', front: true, arms: [[[33, 62], [42, 86], [56, 82]], [[87, 62], [78, 86], [64, 82]]], face: 'happy' },
     horse: { body: 'translate(0 4)', arms: [[[33, 60], [18, 46], [10, 26]], [[87, 60], [104, 66], [118, 62]]], legs: [[[50, 100], [34, 116], [32, 138]], [[70, 100], [86, 116], [88, 138]]] },
+    // water reminder (1.6.0): holding up a glass, and drinking from it
+    glass: { arms: [IDLE_ARMS[0], [[87, 60], [102, 56], [106, 40]]], prop: 'glass', face: 'happy' },
+    drink: K => ({ body: 'rotate(-5 60 100)', front: true, face: 'closed', mouth: 'none', arms: [IDLE_ARMS[0], [[87, 62], [100, 80], [77, 66 + (K.faceDy || 0)]]], prop: 'sip' }),
+    // quiet during meetings: finger to lips
+    shh: K => ({ front: true, mouth: 'none', arms: [IDLE_ARMS[0], [[87, 62], [86, 84], [62, 62 + (K.faceDy || 0)]]], extra: '<path class="fx" d="M100 40 q6 -4 12 0"/><path class="fx" d="M102 30 q8 -6 16 0"/>' }),
     kick: { body: 'rotate(-6 60 100)', arms: [[[33, 60], [18, 46], [12, 30]], [[87, 60], [102, 48], [110, 32]]], legs: [[[50, 100], [48, 138]], [[70, 100], [88, 110], [104, 112]]], face: 'happy' }
   };
 
@@ -220,6 +225,59 @@
     }
   };
 
+  /* ---------- festive outfits (1.6.0) ----------
+     Worn only in the few days before a festival and on the day itself (see data.js).
+     Headwear sits on each kuih's top edge; clothing is clipped to the kuih's own outline. */
+  const TOPS = { lapis: [18, 1], onde: [29, 0], serimuka: [24, 1], karipap: [30, 0], bahulu: [26, 0], angku: [26, 0], kapit: [14, 1], huat: [16, 0], bulan: [32, 1], tart: [27, 0],
+    murukku: [27, 0], ladoo: [32, 0], putu: [30, 0], vadai: [27, 0], jalebi: [20, 1], keklapis: [20, 1], celorot: [18, 0], pinjaram: [46, 0], cincin: [27, 0], hinompuka: [32, 1] };
+  const crown = sid => { const t = TOPS[sid] || [20, 1]; return t[0] + (t[1] ? 3 : 7); };
+  const hem = K => Math.max(80, 70 + (K.faceDy || 0) + 6); // clothing starts below the mouth
+  const S2 = `stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"`;
+  const OUTFITS = {
+    raya: { // baju Melayu: black velvet songkok and a songket sampin, holding a ketupat
+      hat: y => `<path d="M43 ${y + 1} L45 ${y - 13} Q60 ${y - 16} 75 ${y - 13} L77 ${y + 1} Q60 ${y + 4} 43 ${y + 1} Z" fill="#1C1A1F" ${S2}/><path d="M47 ${y - 9} Q60 ${y - 11} 73 ${y - 9}" stroke="#4A4552" stroke-width="1.6" fill="none"/>`,
+      body: (y, id) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="#5B1F4A"/>` +
+        [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<path d="M${14 + i * 11} ${y + 9} l5.5 -5 l5.5 5 l-5.5 5 Z" fill="none" stroke="#E7B84A" stroke-width="1.6"/>`).join('') +
+        `<rect x="0" y="${y}" width="120" height="3" fill="#E7B84A"/><rect x="0" y="${y + 17}" width="120" height="2" fill="#E7B84A"/></g>`,
+      prop: (x, y) => `<g transform="translate(${x} ${y}) rotate(-12)"><path d="M0 -12 L11 0 L0 12 L-11 0 Z" fill="#9BC45A" ${S2}/><path d="M-5.5 -6 L5.5 6 M5.5 -6 L-5.5 6 M0 -12 L0 12" stroke="#5E8A2E" stroke-width="1.6"/><path d="M0 12 q3 8 -2 14" fill="none" stroke="#9BC45A" stroke-width="3" stroke-linecap="round"/></g>`
+    },
+    cny: { // samfu: black cap with a red knot, red top with gold frog buttons, holding a mandarin orange
+      hat: y => `<path d="M44 ${y + 1} Q44 ${y - 15} 60 ${y - 15} Q76 ${y - 15} 76 ${y + 1} Q60 ${y + 4} 44 ${y + 1} Z" fill="#1C1A1F" ${S2}/><path d="M60 ${y - 15} V${y + 2} M51 ${y - 13} Q50 ${y - 6} 50 ${y + 2} M69 ${y - 13} Q70 ${y - 6} 70 ${y + 2}" stroke="#3B3740" stroke-width="1.4" fill="none"/><circle cx="60" cy="${y - 18}" r="4" fill="#D7263D" ${S2}/>`,
+      body: (y, id, sid) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="${sid === 'angku' ? '#1F1A17' : '#D7263D'}"/><rect x="0" y="${y}" width="120" height="3" fill="#F4C542"/>` +
+        [0, 1, 2].map(i => `<path d="M53 ${y + 8 + i * 7} h14" stroke="#F4C542" stroke-width="2.2" stroke-linecap="round"/><circle cx="60" cy="${y + 8 + i * 7}" r="2" fill="#F4C542"/>`).join('') +
+        [[24, 14], [90, 20], [34, 28], [96, 6]].map(([x, d]) => `<circle cx="${x}" cy="${y + d}" r="3" fill="none" stroke="#F4C542" stroke-width="1.3"/>`).join('') + '</g>',
+      prop: (x, y) => `<g transform="translate(${x} ${y})"><circle r="9" fill="#F7931E" ${S2}/><path d="M0 -9 q5 -7 10 -4 q-4 4 -10 4" fill="#5FA046" stroke="${INK}" stroke-width="1.8"/><circle cx="-3" cy="-3" r="2" fill="#FFC56B"/></g>`
+    },
+    deepavali: { // saree drape with a gold border, jasmine in the hair and a pottu, holding a diya lamp
+      hat: y => `<path d="M40 ${y + 4} Q60 ${y - 10} 80 ${y + 4}" fill="none" stroke="#2F7D32" stroke-width="2"/>` +
+        [-4, -3, -2, -1, 0, 1, 2, 3, 4].map(i => { const x = 60 + i * 5, yy = y + 4 - 14 * (1 - (i / 4.4) ** 2); return `<circle cx="${x}" cy="${yy.toFixed(1)}" r="3.4" fill="${i === 0 ? '#F7931E' : '#FFFDF5'}" stroke="${INK}" stroke-width="1.5"/>`; }).join(''),
+      body: (y, id) => `<g clip-path="url(#c${id})"><path d="M0 ${y - 4} L120 ${y + 10} L120 140 L0 140 Z" fill="#C2185B"/><path d="M0 ${y - 4} L120 ${y + 10}" stroke="#F4C542" stroke-width="5"/><path d="M0 ${y + 3} L120 ${y + 17}" stroke="#F4C542" stroke-width="1.4" stroke-dasharray="2 4"/>` +
+        [[30, 16], [52, 24], [74, 22], [92, 30]].map(([x, d]) => `<circle cx="${x}" cy="${y + d}" r="1.8" fill="#F4C542"/>`).join('') + '</g>',
+      face: (fy) => `<circle cx="60" cy="${40 + fy}" r="2.6" fill="#D7263D"/>`,
+      prop: (x, y) => `<g transform="translate(${x} ${y + 4})"><path d="M-11 -2 Q0 12 11 -2 Q0 1 -11 -2 Z" fill="#B5652B" ${S2}/><path d="M0 -4 Q-4 -10 0 -18 Q4 -10 0 -4 Z" fill="#FFB020" stroke="#E2711D" stroke-width="1.4"/></g>`
+    },
+    kaamatan: { // KadazanDusun: black sinuangga with gold and red trim, and a woven siga on the head
+      hat: y => `<path d="M42 ${y + 2} L44 ${y - 9} L74 ${y - 9} L84 ${y - 20} L80 ${y - 6} L78 ${y + 2} Q60 ${y + 5} 42 ${y + 2} Z" fill="#1F1A17" ${S2}/><path d="M44 ${y - 4} H78 M46 ${y - 7} H76" stroke="#E2B43A" stroke-width="1.6"/><path d="M50 ${y - 1} l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3" fill="none" stroke="#D7263D" stroke-width="1.4"/>`,
+      body: (y, id) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="#1F1A17"/><rect x="0" y="${y}" width="120" height="4" fill="#E2B43A"/><rect x="0" y="${y + 6}" width="120" height="2" fill="#D7263D"/><rect x="0" y="${y + 10}" width="120" height="2" fill="#3FA34D"/>` +
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => `<circle cx="${12 + i * 11}" cy="${y + 18}" r="2.2" fill="#E2B43A"/>`).join('') + '</g>',
+      prop: null
+    },
+    gawai: { // Iban: hornbill-feather headdress on a beaded band, pua kumbu weave and a silver belt
+      hat: y => `<path d="M42 ${y + 2} Q60 ${y - 6} 78 ${y + 2} L78 ${y + 6} Q60 ${y - 2} 42 ${y + 6} Z" fill="#D7263D" ${S2}/>` +
+        [[-10, -24, -14], [0, -32, 0], [10, -24, 14]].map(([dx, h, r]) => `<g transform="translate(${60 + dx} ${y - 1}) rotate(${r})"><path d="M-3.5 0 Q-5 ${h / 2} 0 ${h} Q5 ${h / 2} 3.5 0 Z" fill="#FFFDF5" ${S2}/><path d="M-2.6 ${h * 0.62} Q0 ${h * 1.02} 2.6 ${h * 0.62} Q0 ${h * 0.86} -2.6 ${h * 0.62} Z" fill="#1F1A17"/></g>`).join('') +
+        [46, 52, 58, 64, 70, 76].map((x, i) => `<circle cx="${x}" cy="${y + 2}" r="1.6" fill="${['#F4C542', '#1F1A17', '#FFFDF5'][i % 3]}"/>`).join(''),
+      body: (y, id) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="#7A2318"/>` +
+        [0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${10 + i * 15} ${y + 13} l7 -6 l7 6 l-7 6 Z" fill="none" stroke="#F3E3C3" stroke-width="1.6"/><circle cx="${17 + i * 15}" cy="${y + 13}" r="1.4" fill="#1F1A17"/>`).join('') +
+        `<rect x="0" y="${y}" width="120" height="4" fill="#C9CED6"/>` + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => `<circle cx="${6 + i * 11}" cy="${y + 2}" r="2.4" fill="#E9EDF2" stroke="#8A919C" stroke-width=".8"/>`).join('') + '</g>',
+      prop: null
+    }
+  };
+  const PROPS = {
+    glass: (x, y) => `<g transform="translate(${x} ${y - 10})"><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="#EAF6FB" ${S2}/><path d="M-7 -3 L7 -3 L6 11 L-6 11 Z" fill="#5BC0EB"/><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="none" ${S2}/><path d="M-4 -7 V6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>`,
+    sip: (x, y) => `<g transform="translate(${x - 9} ${y - 7}) rotate(-55)"><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="#EAF6FB" ${S2}/><path d="M-6.8 -6 L1 -11 L8 -11 L6 11 L-6 11 Z" fill="#5BC0EB"/><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="none" ${S2}/><path d="M-4 -6 V6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>`
+  };
+  window.LAPIS_OUTFITS = Object.keys(OUTFITS);
+
   let uid = 0;
   const pts = a => a.map(p => p.join(',')).join(' ');
   function face(kind, mouth) {
@@ -230,16 +288,27 @@
     const m = mouth === 'none' ? '' : '<path class="line" d="M53 57 Q60 64 67 57"/>';
     return eyes + m + '<ellipse class="blush" cx="42" cy="60" rx="4.5" ry="2.6"/><ellipse class="blush" cx="78" cy="60" rx="4.5" ry="2.6"/>';
   }
-  function figure(p, sticker, id, K) {
+  function figure(p, sticker, id, K, sid, outfit) {
     const legs = p.legs || IDLE_LEGS, arms = p.arms || IDLE_ARMS, d = (K.half || 28) - 28;
+    const O2 = outfit && OUTFITS[outfit], fy = K.faceDy || 0;
+    // what the right hand holds: the pose's own prop (a glass) wins over a festive one
+    const ra = arms[1], rh = ra[ra.length - 1], rdx = d;
+    const held = p.prop ? PROPS[p.prop](rh[0] + rdx, rh[1]) : (O2 && O2.prop && !p.front ? O2.prop(rh[0] + rdx, rh[1] - 6) : '');
     let s = '';
     legs.forEach(l => { const e = l[l.length - 1], dx = l[0][0] < 60 ? -3 : 3; s += `<polyline class="limb" points="${pts(l)}"/><ellipse class="foot" cx="${e[0] + dx}" cy="${e[1] + 2}" rx="8" ry="4.5"/>`; });
     s += `<g transform="${p.body || ''}">`;
     let armsSVG = '';
     arms.forEach(a => { const e = a[a.length - 1], dx = a[0][0] < 60 ? -d : d; armsSVG += `<g transform="translate(${dx} 0)"><polyline class="limb" points="${pts(a)}"/><circle class="hand" cx="${e[0]}" cy="${e[1]}" r="4.6"/></g>`; });
-    if (!p.front) s += armsSVG;
-    s += sticker ? K.sil : K.art(id) + `<g transform="translate(0 ${K.faceDy || 0})">${face(p.face, K.mouth)}</g>`;
-    if (p.front) s += armsSVG;
+    if (!p.front) s += armsSVG + held;
+    if (sticker) s += K.sil;
+    else {
+      s += K.art(id);
+      if (O2) s += `<clipPath id="c${id}">${K.sil}</clipPath>` + O2.body(hem(K), id, sid);
+      s += `<g transform="translate(0 ${fy})">${face(p.face, p.mouth || K.mouth)}</g>`;
+      if (O2 && O2.face) s += O2.face(fy);
+    }
+    if (O2) s += O2.hat(crown(sid));
+    if (p.front) s += armsSVG + held;
     s += '</g>' + (p.extra || '');
     return s;
   }
@@ -254,8 +323,10 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 8 92 98" width="92" height="98">${K.art(id)}<g transform="translate(0 ${K.faceDy || 0})">${f}</g></svg>`;
   };
   window.LAPIS_KUIH = Object.entries(KUIH).map(([id, k]) => ({ id, name: k.name, origin: k.origin, note: k.note }));
-  window.lapisSVG = function (pose, label, bob, skin) {
-    const p = POSES[pose] || POSES.idle, K = KUIH[skin] || KUIH.lapis, id = ++uid;
-    return `<svg class="lapis" viewBox="-8 -14 136 166" role="img" aria-label="${label || K.name}"><g class="${bob ? 'bob' : ''}"><g class="stk">${figure(p, true, id, K)}</g><g>${figure(p, false, id, K)}</g></g></svg>`;
+  window.lapisSVG = function (pose, label, bob, skin, outfit) {
+    const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid], id = ++uid;
+    const p0 = POSES[pose] || POSES.idle, p = typeof p0 === 'function' ? p0(K) : p0;
+    const o = Object.prototype.hasOwnProperty.call(OUTFITS, outfit) ? outfit : null;
+    return `<svg class="lapis" viewBox="-8 -${o ? 30 : 14} 136 ${o ? 182 : 166}" role="img" aria-label="${label || K.name}"><g class="${bob ? 'bob' : ''}"><g class="stk">${figure(p, true, id, K, sid, o)}</g><g>${figure(p, false, id, K, sid, o)}</g></g></svg>`;
   };
 })();

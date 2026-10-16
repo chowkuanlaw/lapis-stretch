@@ -30,8 +30,15 @@ mv "$OUT/electron.exe" "$OUT/Lapis.exe"
 rm -f "$OUT/resources/default_app.asar"
 APP="$OUT/resources/app"
 mkdir -p "$APP"
-cp -r "$ROOT/main.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/LICENSE" "$ROOT/renderer" "$ROOT/assets" "$APP/"
+cp -r "$ROOT/main.js" "$ROOT/quiet.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/LICENSE" "$ROOT/renderer" "$ROOT/assets" "$APP/"
 cp "$ROOT/scripts/README.txt" "$OUT/README.txt"
+
+echo "Adding the Windows libraries Lapis uses (from package-lock.json)..."
+cp "$ROOT/package-lock.json" "$APP/"
+(cd "$APP" && npm ci --omit=dev --ignore-scripts --os=win32 --cpu=x64 --no-audit --no-fund --silent)
+rm -f "$APP/package-lock.json"
+find "$APP/node_modules" -type d -empty -delete
+test -f "$APP/node_modules/@koromix/koffi-win32-x64/win32_x64/koffi.node" || { echo "Missing koffi for Windows" >&2; exit 1; }
 
 echo "Setting the Lapis icon and file details on Lapis.exe..."
 if [ ! -d "$CACHE/node_modules/resedit" ] || [ ! -d "$CACHE/node_modules/@electron/fuses" ]; then

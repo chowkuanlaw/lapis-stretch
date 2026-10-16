@@ -5,13 +5,16 @@
  * even when every window is hidden. Windows only render what they are sent.
  *   main window : dashboard, settings, stretch library (closing hides it to the tray)
  *   widget      : small always-on-top countdown card on the desktop
- *   popup       : the reminder card that slides up in the bottom-right corner
+ *   popup       : the corner card: stretch reminders, water, new kuih and the Friday summary
  */
 const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeImage, nativeTheme, shell, powerMonitor, net, protocol, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { pathToFileURL } = require('url');
-const { CYCLE, BY, KUIH_BY } = require('./renderer/data.js');
+const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress } = require('./renderer/data.js');
+const I18N = require('./renderer/i18n.js');
+const QUIET = require('./quiet.js');
 
 const AUMID = 'app.lapis.stretch';
 const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
@@ -27,6 +30,9 @@ const UPDATE_EVERY = 24 * 3600e3;
 const SCHEME = 'lapis', ORIGIN = `${SCHEME}://app`, RENDERER_DIR = path.join(__dirname, 'renderer');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+// The secret code that unlocks every kuih, stored only as a salted SHA-256 hash.
+const CODE_HASH = '236baef63139445e4254071641f6555ecb509cfa7fe905a4e8955812e7b712ea';
+const MEETING_RECHECK = 60e3, AFTER_MEETING = 120e3, WATER_LATER = 15 * 60e3;
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true } }]);
 
 if (!app.requestSingleInstanceLock()) {
@@ -44,33 +50,66 @@ function run() {
     interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
     autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
     history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis', onboarded: false,
-    closedAt: 0, reopenHidden: false // for picking up where Lapis left off after a quick restart
+    closedAt: 0, reopenHidden: false, // for picking up where Lapis left off after a quick restart
+    // 1.6.0
+    lang: 'en', goal: 8,
+    workOn: true, workDays: [1, 2, 3, 4, 5], workStart: 540, workEnd: 1080, lunchOn: true, lunchStart: 780, lunchEnd: 840, // minutes after midnight
+    quietMeetings: true, waterOn: true, waterEvery: 60, waterGoal: 8, summaryOn: true, lastSummary: '',
+    collect: true, unlocked: {}, codeUnlocked: false, collectInit: false
   };
+  const WATER_EVERY = [30, 45, 60, 90, 120];
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
-  let S = Object.assign({}, DEFAULTS);
-  const R = { mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null, update: null, updateMsg: '', checking: false };
+  let S = JSON.parse(JSON.stringify(DEFAULTS));
+  const R = {
+    mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null,
+    update: null, updateMsg: null, checking: false,
+    resting: false, quiet: false, quietCheck: false, nextWater: 0, waterCheck: false, notices: [], noticeUntil: 0, codeMsg: null, codeMsgUntil: 0
+  };
 
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
   let popupH = 230, saveTimer = null, lastDay = dayKey(new Date()), resumeHidden = false;
+  const t = (key, vars) => I18N.t(S.lang, key, vars);
 
   // Only known settings with the right types are read back from disk; anything else falls back to the default.
   function cleanState(saved) {
     const out = JSON.parse(JSON.stringify(DEFAULTS));
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return out;
     const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : undefined);
+    const int = (v, lo, hi) => (Number.isInteger(v) ? num(v, lo, hi) : undefined);
     const pick = (k, v) => { if (v !== undefined) out[k] = v; };
     pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
     pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
-    for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded']) {
+    for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded',
+      'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit']) {
       if (typeof saved[k] === 'boolean') out[k] = saved[k];
     }
     pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
-    pick('idx', Number.isInteger(saved.idx) ? num(saved.idx, 0, 1e9) : undefined);
+    pick('idx', int(saved.idx, 0, 1e9));
     pick('lastUpdateCheck', num(saved.lastUpdateCheck, 0, 1e15));
     pick('nextDue', num(saved.nextDue, 0, 1e15));
     pick('closedAt', num(saved.closedAt, 0, 1e15));
     if (typeof saved.reopenHidden === 'boolean') out.reopenHidden = saved.reopenHidden;
     if (own(KUIH_BY, saved.kuih)) out.kuih = saved.kuih;
+    if (I18N.LANGS.includes(saved.lang)) out.lang = saved.lang;
+    pick('goal', int(saved.goal, 1, 30));
+    if (Array.isArray(saved.workDays)) {
+      const days = [...new Set(saved.workDays.filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort();
+      if (days.length) out.workDays = days;
+    }
+    const or = (v, d) => (v === undefined ? d : v);
+    const ws = or(int(saved.workStart, 0, 1410), out.workStart), we = or(int(saved.workEnd, 30, 1440), out.workEnd);
+    if (ws < we) { out.workStart = ws; out.workEnd = we; }
+    const ls = or(int(saved.lunchStart, 0, 1410), out.lunchStart), le = or(int(saved.lunchEnd, 30, 1440), out.lunchEnd);
+    if (ls < le) { out.lunchStart = ls; out.lunchEnd = le; }
+    pick('waterEvery', WATER_EVERY.includes(saved.waterEvery) ? saved.waterEvery : undefined);
+    pick('waterGoal', int(saved.waterGoal, 1, 20));
+    if (typeof saved.lastSummary === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.lastSummary)) out.lastSummary = saved.lastSummary;
+    if (saved.unlocked && typeof saved.unlocked === 'object' && !Array.isArray(saved.unlocked)) {
+      for (const id of Object.keys(saved.unlocked)) {
+        const d = saved.unlocked[id];
+        if (own(KUIH_BY, id) && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) out.unlocked[id] = d;
+      }
+    }
     const wp = saved.widgetPos;
     if (wp && typeof wp === 'object' && num(wp.x, -1e5, 1e5) !== undefined && num(wp.y, -1e5, 1e5) !== undefined) out.widgetPos = { x: Math.round(wp.x), y: Math.round(wp.y) };
     const h = saved.history;
@@ -79,7 +118,9 @@ function run() {
         const v = h[day]; if (!v || typeof v !== 'object') continue;
         const by = {};
         if (v.by && typeof v.by === 'object') for (const id of Object.keys(v.by)) if (own(BY, id) && Number.isInteger(v.by[id]) && v.by[id] > 0 && v.by[id] < 1e4) by[id] = v.by[id];
-        out.history[day] = { total: Number.isInteger(v.total) && v.total >= 0 && v.total < 1e5 ? v.total : 0, by };
+        const rec = { total: Number.isInteger(v.total) && v.total >= 0 && v.total < 1e5 ? v.total : 0, by };
+        if (Number.isInteger(v.water) && v.water > 0 && v.water < 100) rec.water = v.water;
+        out.history[day] = rec;
       }
     }
     // People upgrading from 1.2 or earlier already know Lapis: skip the first-launch setup.
@@ -90,6 +131,7 @@ function run() {
     let saved = null;
     try { saved = JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { saved = null; }
     S = cleanState(saved);
+    if (!saved || !I18N.LANGS.includes(saved.lang)) S.lang = /^ms/i.test(app.getLocale()) ? 'ms' : 'en';
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
     // Back within a few minutes (an update restart, or quit and reopen): carry on with the same countdown.
     // A launch after a longer break (e.g. first thing in the morning) starts a fresh countdown instead of firing at once.
@@ -98,6 +140,9 @@ function run() {
     S.nextDue = quickRestart ? Math.min(Math.max(S.nextDue, now + 5000), now + S.interval * 60e3) : now + S.interval * 60e3;
     resumeHidden = quickRestart && S.reopenHidden;
     S.closedAt = 0; S.reopenHidden = false;
+    R.resting = S.workOn && !isWorkTime(new Date(now));
+    R.nextWater = now + S.waterEvery * 60e3;
+    collectionUpdate(true);
   }
   function writeNow() { try { fs.writeFileSync(stateFile(), JSON.stringify(S)); } catch (e) { /* best effort */ } }
   function writeOnQuit() { clearTimeout(saveTimer); S.closedAt = Date.now(); writeNow(); }
@@ -105,15 +150,130 @@ function run() {
 
   function pad(n) { return String(n).padStart(2, '0'); }
   function dayKey(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
-  function mmss(ms) { const t = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(t / 60)}:${pad(t % 60)}`; }
+  function mmss(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${pad(s % 60)}`; }
   function today() { const k = dayKey(new Date()); return S.history[k] || (S.history[k] = { total: 0, by: {} }); }
   function upNext() { return BY[CYCLE[S.idx % CYCLE.length]]; }
+  const exName = ex => I18N.tx(S.lang, ex, 'name');
+
+  /* ---------- working hours ---------- */
+  const minsOf = d => d.getHours() * 60 + d.getMinutes();
+  function isWorkTime(d) {
+    if (!S.workOn) return true;
+    if (!S.workDays.includes(d.getDay())) return false;
+    const m = minsOf(d);
+    if (m < S.workStart || m >= S.workEnd) return false;
+    return !(S.lunchOn && m >= S.lunchStart && m < S.lunchEnd);
+  }
+  // When working time starts again (start of day, or end of lunch), or null if never.
+  function nextWorkStart(from) {
+    if (!S.workOn) return from;
+    for (let i = 0; i < 8; i++) {
+      const day = new Date(from); day.setHours(0, 0, 0, 0); day.setDate(day.getDate() + i);
+      if (!S.workDays.includes(day.getDay())) continue;
+      const starts = [S.workStart];
+      if (S.lunchOn && S.lunchEnd > S.workStart && S.lunchEnd < S.workEnd) starts.push(S.lunchEnd);
+      for (const m of starts) { const at = new Date(day); at.setMinutes(m); if (at.getTime() > from) return at.getTime(); }
+    }
+    return null;
+  }
+  function whenLabel(ts) {
+    if (!ts) return '';
+    const d = new Date(ts), loc = I18N.locale(S.lang);
+    const time = d.toLocaleTimeString(loc, { hour: 'numeric', minute: '2-digit', hour12: true });
+    return dayKey(d) === dayKey(new Date()) ? time : `${d.toLocaleDateString(loc, { weekday: 'short' })} ${time}`;
+  }
+
+  /* ---------- quiet during meetings (see quiet.js; no microphone check) ----------
+     Checked only when a reminder is about to show, then once a minute while it waits. */
+  async function isQuietTime() {
+    if (!app.isPackaged && process.env.LAPIS_TEST_QUIET) { try { return fs.readFileSync(process.env.LAPIS_TEST_QUIET, 'utf8').trim() === '1'; } catch (e) { return false; } }
+    return QUIET.fullScreenBusy() || (await QUIET.doNotDisturbOn());
+  }
+  async function dueOrHold() {
+    if (!S.quietMeetings) { if (R.quiet) R.quiet = false; becomeDue(); return; }
+    R.quietCheck = true;
+    const quiet = await isQuietTime();
+    R.quietCheck = false;
+    if (R.mode !== 'waiting' || S.paused || R.resting) return;
+    if (quiet) { S.nextDue = Date.now() + MEETING_RECHECK; if (!R.quiet) { R.quiet = true; broadcast(); } return; }
+    if (R.quiet) { R.quiet = false; S.nextDue = Date.now() + AFTER_MEETING; broadcast(); return; } // 2 minutes after the meeting
+    becomeDue();
+  }
+
+  /* ---------- kuih collection ---------- */
+  const workDaysForStreak = () => (S.workOn ? S.workDays : null);
+  function isAvailable(id) {
+    return !S.collect || S.codeUnlocked || STARTERS.includes(id) || own(S.unlocked, id) || id === S.kuih;
+  }
+  function collectionUpdate(silent) {
+    if (!S.collectInit) { // first run of 1.6: earn what the history already shows, and keep the kuih in use
+      S.collectInit = true; silent = true;
+      if (!STARTERS.includes(S.kuih)) S.unlocked[S.kuih] = '2000-01-01';
+    }
+    const stats = computeStats(S.history, S.goal, workDaysForStreak(), new Date());
+    for (const r of RULES) {
+      if (own(S.unlocked, r.id) || !ruleProgress(r, stats).done) continue;
+      S.unlocked[r.id] = silent ? '2000-01-01' : dayKey(new Date()); // earned from past history: not "new this week"
+      if (!silent && S.collect && !S.codeUnlocked) R.notices.push({ type: 'unlock', id: r.id });
+    }
+    save();
+  }
+  function redeem(code) {
+    if (typeof code !== 'string' || code.length > 64) return;
+    const norm = code.replace(/\s+/g, '').toUpperCase();
+    const ok = crypto.createHash('sha256').update('lapis:' + norm).digest('hex') === CODE_HASH;
+    if (ok) S.codeUnlocked = true;
+    R.codeMsg = ok ? 'ok' : 'bad'; R.codeMsgUntil = Date.now() + 8000;
+    save(); broadcast();
+    setTimeout(broadcast, 8100);
+  }
+
+  /* ---------- corner-card notices: water, new kuih, Friday summary ---------- */
+  function pushNotice(n) { R.notices.push(n); broadcast(); }
+  function closeNotice() { R.notices.shift(); R.noticeUntil = 0; broadcast(); }
+  function waterDue(now) {
+    if (R.waterCheck) return;
+    if ((today().water || 0) >= S.waterGoal) { R.nextWater = now + S.waterEvery * 60e3; return; } // goal reached for today
+    if (R.notices.some(n => n.type === 'water')) return;
+    R.waterCheck = true;
+    (S.quietMeetings ? isQuietTime() : Promise.resolve(false)).then(quiet => {
+      R.waterCheck = false;
+      if (quiet) { R.nextWater = Date.now() + 5 * 60e3; return; }
+      R.nextWater = Date.now() + S.waterEvery * 60e3;
+      pushNotice({ type: 'water', state: 'ask' });
+      chime('water');
+    });
+  }
+  function drankWater(fromCard) {
+    const rec = today(); rec.water = (rec.water || 0) + 1;
+    R.nextWater = Date.now() + S.waterEvery * 60e3;
+    const i = R.notices.findIndex(n => n.type === 'water');
+    if (fromCard && i === 0) { R.notices[0] = { type: 'water', state: 'done' }; R.noticeUntil = Date.now() + 4000; }
+    else if (i >= 0) R.notices.splice(i, 1);
+    save(); broadcast();
+  }
+  const mondayOf = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  function summaryDue(now) {
+    if (!S.summaryOn) return;
+    const d = new Date(now), order = day => (day + 6) % 7; // Monday first
+    const days = S.workOn ? S.workDays : [5];
+    const last = days.reduce((a, b) => (order(b) > order(a) ? b : a), days[0]);
+    const end = S.workOn ? S.workEnd : 18 * 60;
+    if (d.getDay() !== last || minsOf(d) < end - 30 || minsOf(d) > end + 180) return;
+    const week = dayKey(mondayOf(d));
+    if (S.lastSummary === week) return;
+    S.lastSummary = week; save();
+    pushNotice({ type: 'summary', week });
+  }
 
   function publicState() {
-    const { widgetPos, firstRun, lastUpdateCheck, closedAt, reopenHidden, ...rest } = S;
+    const { widgetPos, firstRun, lastUpdateCheck, closedAt, reopenHidden, collectInit, ...rest } = S;
     return Object.assign(rest, {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
       switched: R.switched, away: !!R.awaySince,
+      resting: R.resting, backAt: R.resting ? nextWorkStart(Date.now()) : 0, quiet: R.quiet,
+      nextWater: S.waterOn && !R.resting ? R.nextWater : 0, notice: R.notices[0] || null,
+      codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
       eggMsg: Date.now() < eggMsgUntil,
       version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
     });
@@ -131,13 +291,15 @@ function run() {
   }
   function toast(ex) {
     if (!S.toast || !Notification.isSupported()) return;
-    const n = new Notification({ title: "It's time to stretch!", body: `${ex.name} · ${ex.dose}`, icon: ICON, silent: true });
+    const n = new Notification({ title: t('toast.title'), body: `${exName(ex)} · ${I18N.tx(S.lang, ex, 'dose')}`, icon: ICON, silent: true });
     n.on('click', () => { positionPopup(); popupWin.showInactive(); });
     n.show();
   }
   function becomeDue(exId, quiet) {
     R.cur = own(BY, exId) ? exId : upNext().id;
-    R.mode = 'due'; R.dueAt = Date.now(); R.rechimes = 0;
+    R.mode = 'due'; R.dueAt = Date.now(); R.rechimes = 0; R.quiet = false;
+    const w = R.notices.findIndex(n => n.type === 'water'); // the stretch takes the corner; water asks again later
+    if (w >= 0) { R.notices.splice(w, 1); R.nextWater = Date.now() + WATER_LATER; }
     if (!quiet) { chime('due'); toast(BY[R.cur]); }
     broadcast();
   }
@@ -149,9 +311,10 @@ function run() {
   function schedule(ms) { S.nextDue = Date.now() + ms; if (S.paused) S.pausedLeft = ms; save(); }
   function advance() { if (R.cur === upNext().id) S.idx++; }
   function finish() {
-    const t = today(); t.total++; t.by[R.cur] = (t.by[R.cur] || 0) + 1;
+    const rec = today(); rec.total++; rec.by[R.cur] = (rec.by[R.cur] || 0) + 1;
     advance(); schedule(S.interval * 60e3); chime('done');
     R.mode = 'done'; R.msgUntil = Date.now() + 5000;
+    collectionUpdate(false);
     broadcast();
   }
   function skip() { advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; broadcast(); }
@@ -172,7 +335,7 @@ function run() {
     save(); broadcast();
   }
   function restartCountdown() {
-    if (R.mode === 'waiting' && !S.paused) { R.awaySince = null; schedule(S.interval * 60e3); broadcast(); }
+    if (R.mode === 'waiting' && !S.paused && !R.resting) { R.awaySince = null; R.quiet = false; schedule(S.interval * 60e3); broadcast(); }
   }
 
   /* ---------- updates ---------- */
@@ -180,6 +343,7 @@ function run() {
   // check, download in the background, then "Restart to update" (or install on quit).
   // The portable zip can't replace itself, so it only checks and offers a Download link.
   const INSTALLED = app.isPackaged && fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'));
+  const msg = (k, v) => ({ k, v: v || {} });
   let autoUpdater = null, readyNotified = false;
   if (INSTALLED) {
     try {
@@ -189,9 +353,9 @@ function run() {
       autoUpdater.autoInstallOnAppQuit = true;
       autoUpdater.on('update-available', info => {
         R.update = { version: info.version, state: 'downloading', percent: 0 };
-        R.updateMsg = `Downloading Lapis ${info.version}...`; broadcast();
+        R.updateMsg = msg('upd.downloading', { v: info.version }); broadcast();
       });
-      autoUpdater.on('update-not-available', () => { R.update = null; R.updateMsg = 'You have the latest version'; broadcast(); });
+      autoUpdater.on('update-not-available', () => { R.update = null; R.updateMsg = msg('upd.latest'); broadcast(); });
       autoUpdater.on('download-progress', p => {
         if (!R.update || R.update.state !== 'downloading') return;
         const pc = Math.floor(p.percent || 0);
@@ -199,12 +363,12 @@ function run() {
       });
       autoUpdater.on('update-downloaded', info => {
         R.update = { version: info.version, state: 'ready' };
-        R.updateMsg = `Lapis ${info.version} is ready to install`; broadcast();
+        R.updateMsg = msg('upd.ready', { v: info.version }); broadcast();
         notifyReady(info.version);
       });
       autoUpdater.on('error', () => {
         if (R.update && R.update.state === 'downloading') R.update = null;
-        R.updateMsg = "Couldn't update just now. Lapis will try again later."; R.checking = false; broadcast();
+        R.updateMsg = msg('upd.error'); R.checking = false; broadcast();
       });
     } catch (e) { autoUpdater = null; }
   }
@@ -216,11 +380,11 @@ function run() {
   async function checkForUpdate(manual) {
     if (R.checking) return;
     if (R.update && (R.update.state === 'downloading' || R.update.state === 'ready')) { if (manual) broadcast(); return; }
-    R.checking = true; if (manual) R.updateMsg = 'Checking...';
+    R.checking = true; if (manual) R.updateMsg = msg('upd.checking');
     S.lastUpdateCheck = Date.now(); save(); broadcast();
     if (autoUpdater) {
       try { await autoUpdater.checkForUpdates(); }
-      catch (e) { if (manual) R.updateMsg = "Couldn't reach GitHub. Check your connection and try again."; }
+      catch (e) { if (manual) R.updateMsg = msg('upd.offline'); }
       R.checking = false; broadcast();
       return;
     }
@@ -230,17 +394,17 @@ function run() {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const tag = String((await res.json()).tag_name || '');
       const m = /^v?(\d+\.\d+\.\d+)$/.exec(tag);
-      if (m && isNewer(m[1], app.getVersion())) { R.update = { version: m[1], state: 'available' }; R.updateMsg = `Lapis ${m[1]} is available`; }
-      else { R.update = null; R.updateMsg = 'You have the latest version'; }
+      if (m && isNewer(m[1], app.getVersion())) { R.update = { version: m[1], state: 'available' }; R.updateMsg = msg('upd.available', { v: m[1] }); }
+      else { R.update = null; R.updateMsg = msg('upd.latest'); }
     } catch (e) {
-      if (manual) R.updateMsg = "Couldn't reach GitHub. Check your connection and try again.";
+      if (manual) R.updateMsg = msg('upd.offline');
     }
     R.checking = false; broadcast();
   }
   function notifyReady(version) {
     if (readyNotified || !Notification.isSupported()) return;
     readyNotified = true;
-    const n = new Notification({ title: 'Lapis update ready', body: `Restart Lapis to update to ${version}. It will also install the next time you quit.`, icon: ICON, silent: true });
+    const n = new Notification({ title: t('toast.readyTitle'), body: t('toast.readyBody', { v: version }), icon: ICON, silent: true });
     n.on('click', showMain);
     n.show();
   }
@@ -254,39 +418,72 @@ function run() {
   function openReleases() { shell.openExternal(RELEASES_URL); }
 
   function setSetting(key, value) {
+    const half = v => Number.isInteger(+v) && +v % 30 === 0;
     switch (key) {
       case 'interval': S.interval = [15, 20, 30, 45, 60].includes(+value) ? +value : 20; if (R.mode === 'waiting') schedule(S.interval * 60e3); break;
       case 'snooze': S.snooze = [5, 10, 15].includes(+value) ? +value : 10; break;
-      case 'sound': case 'toast': case 'awayReset': S[key] = !!value; break;
+      case 'sound': case 'toast': case 'awayReset': case 'quietMeetings': case 'summaryOn': S[key] = !!value; break;
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
-      case 'kuih': if (!own(KUIH_BY, value)) return; S.kuih = value; break;
+      case 'kuih': if (!own(KUIH_BY, value) || !isAvailable(value)) return; S.kuih = value; break;
       case 'onboarded': S.onboarded = !!value; break;
       case 'autoUpdate':
         S.autoUpdate = !!value;
         if (S.autoUpdate) setTimeout(() => checkForUpdate(false), 0);
         break;
+      case 'lang': if (!I18N.LANGS.includes(value)) return; S.lang = value; break;
+      case 'goal': { const g = Math.round(+value); if (!(g >= 1 && g <= 30)) return; S.goal = g; collectionUpdate(false); break; }
+      case 'workOn': S.workOn = !!value; collectionUpdate(false); break;
+      case 'lunchOn': S.lunchOn = !!value; break;
+      case 'workDay': { // toggle one weekday, keeping at least one
+        const d = +value; if (!(Number.isInteger(d) && d >= 0 && d <= 6)) return;
+        const has = S.workDays.includes(d);
+        if (has && S.workDays.length === 1) return;
+        S.workDays = has ? S.workDays.filter(x => x !== d) : [...S.workDays, d].sort();
+        break;
+      }
+      case 'workStart': if (!half(value) || +value >= S.workEnd || +value < 0) return; S.workStart = +value; break;
+      case 'workEnd': if (!half(value) || +value <= S.workStart || +value > 1440) return; S.workEnd = +value; break;
+      case 'lunchStart': if (!half(value) || +value >= S.lunchEnd || +value < 0) return; S.lunchStart = +value; break;
+      case 'lunchEnd': if (!half(value) || +value <= S.lunchStart || +value > 1440) return; S.lunchEnd = +value; break;
+      case 'waterOn': S.waterOn = !!value; R.nextWater = Date.now() + S.waterEvery * 60e3; if (!S.waterOn) R.notices = R.notices.filter(n => n.type !== 'water'); break;
+      case 'waterEvery': if (!WATER_EVERY.includes(+value)) return; S.waterEvery = +value; R.nextWater = Date.now() + S.waterEvery * 60e3; break;
+      case 'waterGoal': { const g = Math.round(+value); if (!(g >= 1 && g <= 20)) return; S.waterGoal = g; break; }
+      case 'collect': S.collect = !!value; if (!S.collect) R.notices = R.notices.filter(n => n.type !== 'unlock'); break;
       default: return;
     }
+    if (['workOn', 'workDay', 'workStart', 'workEnd', 'lunchOn', 'lunchStart', 'lunchEnd'].includes(key)) tick();
     save(); broadcast();
   }
 
   function tick() {
     const now = Date.now();
-    if (S.awayReset && R.mode === 'waiting' && !S.paused) {
+    // working hours: rest outside them, and start a fresh countdown when work starts again
+    const resting = S.workOn && !isWorkTime(new Date(now));
+    if (resting !== R.resting) {
+      R.resting = resting;
+      if (resting) { if (R.mode === 'due') { R.mode = 'waiting'; R.cur = null; } R.quiet = false; R.notices = R.notices.filter(n => n.type !== 'water'); }
+      else { if (R.mode === 'waiting' && !S.paused) schedule(S.interval * 60e3); R.nextWater = now + S.waterEvery * 60e3; }
+      broadcast();
+    }
+    if (S.awayReset && R.mode === 'waiting' && !S.paused && !R.resting) {
       let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
       if (idle >= AWAY_SECS) { if (!R.awaySince) { R.awaySince = now - idle * 1000; broadcast(); } }
       else if (R.awaySince) { R.awaySince = null; schedule(S.interval * 60e3); broadcast(); }
     } else if (R.awaySince) { R.awaySince = null; broadcast(); }
 
-    if (R.mode === 'waiting' && !S.paused && !R.awaySince && now >= S.nextDue) becomeDue();
+    if (R.mode === 'waiting' && !S.paused && !R.awaySince && !R.resting && !R.quietCheck && now >= S.nextDue) dueOrHold();
     else if (R.mode === 'due' && now - R.dueAt > (R.rechimes + 1) * 5 * 60e3) { R.rechimes++; chime('due'); }
     else if (R.mode === 'active') {
       const left = R.activeEnd - now, ex = BY[R.cur];
       if (ex.sides && !R.switched && left <= R.activeSecs * 500) { R.switched = true; chime('switch'); broadcast(); }
       if (left <= 0) finish();
     } else if ((R.mode === 'done' || R.mode === 'snoozed') && now >= R.msgUntil) { R.mode = 'waiting'; R.cur = null; broadcast(); }
+
+    if (S.waterOn && !R.resting && !S.paused && R.mode === 'waiting' && now >= R.nextWater) waterDue(now);
+    if (R.noticeUntil && now >= R.noticeUntil) closeNotice();
+    summaryDue(now);
 
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
@@ -382,7 +579,7 @@ function run() {
   }
   function syncPopup() {
     if (!popupWin || popupWin.isDestroyed()) return;
-    const want = R.mode !== 'waiting';
+    const want = R.mode !== 'waiting' || R.notices.length > 0;
     if (want && !popupWin.isVisible()) { positionPopup(); popupWin.showInactive(); popupWin.setAlwaysOnTop(true, 'pop-up-menu'); }
     else if (!want && popupWin.isVisible()) popupWin.hide();
   }
@@ -421,33 +618,35 @@ function run() {
   /* ---------- tray ---------- */
   function statusLabel() {
     const ex = BY[R.cur || upNext().id];
-    if (R.mode === 'due') return 'Time to stretch!';
-    if (R.mode === 'active') return `Stretching: ${ex.name}`;
-    if (R.mode === 'done') return 'Nice, stretch done';
-    if (S.paused) return 'Paused';
-    if (R.awaySince) return 'Away from desk';
-    return `Next stretch in ${mmss(S.nextDue - Date.now())}`;
+    if (R.mode === 'due') return t('tray.due');
+    if (R.mode === 'active') return t('tray.active', { ex: exName(ex) });
+    if (R.mode === 'done') return t('tray.done');
+    if (S.paused) return t('tray.paused');
+    if (R.resting) return t('tray.resting', { when: whenLabel(nextWorkStart(Date.now())) });
+    if (R.quiet) return t('tray.quiet');
+    if (R.awaySince) return t('tray.away');
+    return t('tray.next', { t: mmss(S.nextDue - Date.now()) });
   }
   function buildMenu() {
     const u = R.update, updateItems = !u ? [] : [
-      u.state === 'ready' ? { label: `Restart to update to Lapis ${u.version}`, click: installUpdate }
-        : u.state === 'downloading' ? { label: `Downloading Lapis ${u.version}... ${u.percent || 0}%`, enabled: false }
-        : { label: `Download Lapis ${u.version}`, click: openReleases },
+      u.state === 'ready' ? { label: t('tray.restart', { v: u.version }), click: installUpdate }
+        : u.state === 'downloading' ? { label: t('tray.downloading', { v: u.version, p: u.percent || 0 }), enabled: false }
+        : { label: t('tray.download', { v: u.version }), click: openReleases },
       { type: 'separator' }
     ];
     return Menu.buildFromTemplate([
       ...updateItems,
       { label: statusLabel(), enabled: false },
-      { label: `${today().total} stretches today`, enabled: false },
+      { label: t('tray.today', { n: today().total }), enabled: false },
       { type: 'separator' },
-      { label: 'Stretch now', click: () => becomeDue(null, true) },
-      { label: S.paused ? 'Resume reminders' : 'Pause reminders', click: togglePause },
+      { label: t('tray.now'), click: () => becomeDue(null, true) },
+      { label: S.paused ? t('resume') : t('pause'), click: togglePause },
       { type: 'separator' },
-      { label: 'Open Lapis', click: showMain },
-      { label: 'Show desktop widget', type: 'checkbox', checked: S.widget, click: m => setSetting('widget', m.checked) },
-      { label: 'Start with Windows', type: 'checkbox', checked: S.autostart, click: m => setSetting('autostart', m.checked) },
+      { label: t('tray.open'), click: showMain },
+      { label: t('tray.widget'), type: 'checkbox', checked: S.widget, click: m => setSetting('widget', m.checked) },
+      { label: t('tray.autostart'), type: 'checkbox', checked: S.autostart, click: m => setSetting('autostart', m.checked) },
       { type: 'separator' },
-      { label: 'Quit Lapis', click: () => { quitting = true; app.quit(); } }
+      { label: t('tray.quit'), click: () => { quitting = true; app.quit(); } }
     ]);
   }
   function createTray() {
@@ -492,6 +691,7 @@ function run() {
   ipcMain.handle('get-state', evt => (trusted(evt) ? publicState() : null));
   ipcMain.on('action', (evt, a) => {
     if (!trusted(evt) || !a || typeof a !== 'object' || typeof a.type !== 'string') return;
+    const top = R.notices[0];
     switch (a.type) {
       case 'now': becomeDue(a.ex, true); break;
       case 'start': if (R.mode === 'due' || R.mode === 'waiting') start(); break;
@@ -503,7 +703,7 @@ function run() {
       case 'set': setSetting(a.key, a.value); break;
       case 'open-main': showMain(); break;
       case 'popup-size': {
-        const h = Math.max(120, Math.min(560, Math.round(+a.h || 0)));
+        const h = Math.max(120, Math.min(640, Math.round(+a.h || 0)));
         if (h !== popupH) { popupH = h; if (popupWin && popupWin.isVisible()) positionPopup(); else if (popupWin) popupWin.setSize(POPUP_W, popupH); }
         break;
       }
@@ -514,6 +714,13 @@ function run() {
       case 'egg': startEgg(a, BrowserWindow.fromWebContents(evt.sender)); break;
       case 'egg-done': endEgg(); break;
       case 'tray-icon': setTrayIcon(a.images); break;
+      case 'water-drank': drankWater(true); break;
+      case 'water-add': drankWater(false); break;
+      case 'water-later': if (top && top.type === 'water') { R.nextWater = Date.now() + WATER_LATER; closeNotice(); } break;
+      case 'notice-close': if (top) closeNotice(); break;
+      case 'unlock-use': if (top && top.type === 'unlock') { setSetting('kuih', top.id); closeNotice(); } break;
+      case 'summary-open': if (top && top.type === 'summary') { closeNotice(); showMain(); } break;
+      case 'redeem': redeem(a.code); break;
       default: break;
     }
   });
@@ -538,7 +745,18 @@ function run() {
     ses.setPermissionCheckHandler(() => false);
     ses.setDevicePermissionHandler(() => false);
     ses.on('will-download', e => e.preventDefault());
+    // `Lapis.exe --self-test`: run the meeting checks once, note the result in Lapis's own folder, and exit.
+    // The release workflow uses this to prove the packaged app can run them on Windows.
+    if (process.argv.includes('--self-test')) {
+      QUIET.notificationMode().then(mode => {
+        try { fs.writeFileSync(path.join(app.getPath('userData'), 'self-test.json'), JSON.stringify({ state: QUIET.queryState(), mode, version: app.getVersion() })); } catch (e) { /* ignore */ }
+        app.exit(0);
+      });
+      return;
+    }
     loadState();
+    // Development only (never in the installed app): show a corner notice on start, for testing.
+    if (!app.isPackaged && process.env.LAPIS_TEST_NOTICE) { try { R.notices.push(JSON.parse(process.env.LAPIS_TEST_NOTICE)); } catch (e) { /* ignore */ } }
     const startHidden = (process.argv.includes('--hidden') || resumeHidden) && !S.firstRun && S.onboarded; // the first-launch setup always shows
     createPopup();
     createWidget();
