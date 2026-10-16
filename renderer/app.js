@@ -10,7 +10,8 @@
 
   let st = null, howOpen = false, cardKey = '';
   const L = () => (st && st.lang) || 'en';
-  const T = (k, v) => I.t(L(), k, v);
+  // {all} in any text is the number of kuih in the collection.
+  const T = (k, v) => I.t(L(), k, Object.assign({ all: (window.LapisData ? window.LapisData.KUIH.length : 28) }, v));
   const tx = (item, f) => I.tx(L(), item, f);
   const exName = e => tx(e, 'name');
   const loc = () => I.locale(L());
@@ -41,7 +42,7 @@
 
   const todayRec = () => (st.history || {})[dayKey(new Date())] || { total: 0, by: {} };
   const curEx = () => BY[st.cur || st.upNext];
-  const stats = () => computeStats(st.history, st.goal, st.workOn ? st.workDays : null, new Date(), { saver: st.streakSaver });
+  const stats = () => computeStats(st.history, st.goal, st.workOn ? st.workDays : null, new Date(), { saver: st.streakSaver, waterGoal: st.waterGoal });
   // Kuih moods (1.9.0): the resting pose while waiting for the next stretch
   const moodPose = () => ({ sad: 'sad', drowsy: 'drowsy', proud: 'proud' }[st.mood] || 'idle');
   const isAvailable = id => !st.collect || st.codeUnlocked || STARTERS.includes(id) || own(st.unlocked || {}, id) || id === st.kuih;
@@ -846,6 +847,7 @@
   }
   // "What's new" items for each version (newest first); the card shows those after the version you last saw.
   const NEWS = [
+    { v: '1.10.0', keys: ['news.1.10.0.a', 'news.1.10.0.b'] },
     { v: '1.9.0', keys: ['news.1.9.0.a', 'news.1.9.0.b', 'news.1.9.0.c'] },
     { v: '1.8.0', keys: ['news.1.8.0.a', 'news.1.8.0.b', 'news.1.8.0.c', 'news.1.8.0.d'] },
     { v: '1.7.1', keys: ['news.1.7.1.a'] },

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0 (2026-10-16)
+
+- **8 new kuih, 28 in all.** Malay: Kuih Koci, Putu Piring, Tepung Pelita and Kuih Ketayap. Chinese & Nyonya: Apam Balik and Kuih Talam. Indian: Mysore Pak. Sabah & Sarawak: Kuih Jala. Each has its own unlock rule, and any your history already earns are unlocked straight away.
+- **New unlock rules:** reach your water goal on 5 days (Apam Balik), reach your daily goal on 10 days (Kuih Koci), up to 1,000 stretches in total (Kuih Jala).
+- Every new kuih works with all the poses, festive outfits, moods, dances and the golden easter egg.
+
 ## 1.9.0 (2026-10-16)
 
 - **Streak saver** (on by default). One missed working day a week no longer breaks your streak; the streak just doesn't grow that day. Progress shows whether this week's saver is still ready.

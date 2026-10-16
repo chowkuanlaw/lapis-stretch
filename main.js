@@ -170,7 +170,7 @@ function run() {
       S.collectInit = true; silent = true;
       if (!STARTERS.includes(S.kuih)) S.unlocked[S.kuih] = '2000-01-01';
     }
-    const stats = computeStats(S.history, S.goal, workDaysForStreak(), new Date(), { saver: S.streakSaver });
+    const stats = computeStats(S.history, S.goal, workDaysForStreak(), new Date(), { saver: S.streakSaver, waterGoal: S.waterGoal });
     for (const r of RULES) {
       if (own(S.unlocked, r.id) || !ruleProgress(r, stats).done) continue;
       S.unlocked[r.id] = silent ? '2000-01-01' : dayKey(new Date()); // earned from past history: not "new this week"

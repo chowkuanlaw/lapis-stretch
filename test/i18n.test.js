@@ -36,6 +36,10 @@ test('each festival has a name and a greeting in both languages', () => {
   }
 });
 
+test('every unlock rule has text in both languages', () => {
+  for (const r of D.RULES) for (const lang of I.LANGS) assert.ok(I.STR[lang]['rule.' + r.type], lang + ' rule.' + r.type);
+});
+
 test('t() fills placeholders and falls back to English', () => {
   assert.equal(I.t('en', 'water.count', { n: 3, g: 8 }), '3 of 8 glasses');
   assert.equal(I.t('xx', 'water.title'), 'Water');

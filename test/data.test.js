@@ -78,6 +78,15 @@ test('streak saver: one missed working day a week keeps the streak, a second one
   assert.equal(D.computeStats(h, 8, wk, at('2026-10-12'), { saver: true }).saverUsed, false, 'a new week has its saver back');
 });
 
+test('water and goal-day rules count the right days', () => {
+  const h = { '2026-10-05': rec(8, 8), '2026-10-06': rec(9, 9), '2026-10-07': rec(2, 3), '2026-10-08': rec(8, 8) };
+  const s = D.computeStats(h, 8, [1, 2, 3, 4, 5], at('2026-10-08'), { waterGoal: 8 });
+  assert.equal(s.waterDays, 3);
+  assert.equal(s.goalDays, 3);
+  assert.deepEqual(D.ruleProgress({ type: 'waterDays', n: 5 }, s), { have: 3, need: 5, done: false });
+  assert.deepEqual(D.ruleProgress({ type: 'goalDaysN', n: 3 }, s), { have: 3, need: 3, done: true });
+});
+
 test('no history means nothing collected and no streak', () => {
   const s = D.computeStats({}, 8, [1, 2, 3, 4, 5], at('2026-10-13'));
   assert.equal(s.total, 0);
@@ -85,10 +94,12 @@ test('no history means nothing collected and no streak', () => {
   for (const r of D.RULES) assert.equal(D.ruleProgress(r, s).done, false, r.id);
 });
 
-test('the collection has 20 kuih: 4 starters and a rule for each of the other 16', () => {
-  assert.equal(D.KUIH.length, 20);
+test('the collection has 28 kuih: 4 starters and a rule for each of the other 24', () => {
+  assert.equal(D.KUIH.length, 28);
   assert.equal(D.STARTERS.length, 4);
-  assert.equal(D.RULES.length, 16);
+  assert.equal(D.RULES.length, 24);
+  assert.equal(new Set(D.RULES.map(r => r.id)).size, 24, 'one rule per kuih');
+  for (const g of D.KUIH_GROUPS) assert.ok(D.KUIH.filter(k => k.group === g.id).length >= 6, g.id + ' has at least 6 kuih');
   for (const r of D.RULES) {
     assert.ok(D.KUIH_BY[r.id], r.id + ' is a kuih');
     assert.ok(!D.STARTERS.includes(r.id), r.id + ' is not a starter');

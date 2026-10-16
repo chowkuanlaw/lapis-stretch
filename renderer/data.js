@@ -55,21 +55,29 @@
     { id: 'serimuka', group: 'malay', name: 'Seri Muka', origin: 'Malay', note: 'Green pandan custard on a layer of glutinous rice.', ms: { origin: 'Melayu', note: 'Kastard pandan hijau di atas lapisan pulut.' } },
     { id: 'karipap', group: 'malay', name: 'Karipap', origin: 'Malay', note: 'Curry puff with a crimped edge, the tea-time classic.', ms: { origin: 'Melayu', note: 'Karipap berkelim cantik, juadah minum petang.' } },
     { id: 'bahulu', group: 'malay', name: 'Kuih Bahulu', origin: 'Malay', note: 'Little golden sponge cakes, a Hari Raya favourite.', ms: { origin: 'Melayu', note: 'Kek span kecil keemasan, kegemaran Hari Raya.' } },
+    { id: 'koci', group: 'malay', name: 'Kuih Koci', origin: 'Malay', note: 'Glutinous rice pyramid with a sweet coconut filling, wrapped in banana leaf.', ms: { origin: 'Melayu', note: 'Piramid pulut berinti kelapa manis, dibalut daun pisang.' } },
+    { id: 'putupiring', group: 'malay', name: 'Putu Piring', origin: 'Malay', note: 'Steamed rice-flour cake with melted gula melaka inside, served on a pandan leaf.', ms: { origin: 'Melayu', note: 'Kuih tepung beras kukus berinti gula melaka cair, dihidang di atas daun pandan.' } },
+    { id: 'pelita', group: 'malay', name: 'Tepung Pelita', origin: 'Malay', note: 'Coconut cream over pandan custard, set in a little banana-leaf cup.', ms: { origin: 'Melayu', note: 'Santan di atas kastard pandan, di dalam bekas kecil daun pisang.' } },
+    { id: 'ketayap', group: 'malay', name: 'Kuih Ketayap', origin: 'Malay', note: 'Green pandan crepe rolled around sweet coconut and gula melaka.', ms: { origin: 'Melayu', note: 'Lempeng pandan hijau digulung dengan inti kelapa dan gula melaka.' } },
     { id: 'angku', group: 'chinese', name: 'Ang Ku Kueh', origin: 'Chinese', note: 'Red tortoise cake, for luck and a long life.', ms: { origin: 'Cina', note: 'Kuih kura-kura merah, untuk tuah dan panjang umur.' } },
     { id: 'kapit', group: 'chinese', name: 'Kuih Kapit', origin: 'Chinese', note: 'Crispy rolled "love letters" for Chinese New Year.', ms: { origin: 'Cina', note: 'Kuih "surat cinta" rangup yang digulung, untuk Tahun Baru Cina.' } },
     { id: 'huat', group: 'chinese', name: 'Huat Kueh', origin: 'Chinese', note: 'Steamed "prosperity" cake that splits into a smile.', ms: { origin: 'Cina', note: 'Kuih kukus "kemakmuran" yang merekah seperti senyuman.' } },
     { id: 'bulan', group: 'chinese', name: 'Kuih Bulan', origin: 'Chinese', note: 'Mooncake for the Mid-Autumn Festival.', ms: { origin: 'Cina', note: 'Kuih bulan untuk Pesta Tanglung.' } },
     { id: 'tart', group: 'chinese', name: 'Tart Nenas', origin: 'Nyonya', note: 'Pineapple tart with buttery pastry, a festive must.', ms: { origin: 'Nyonya', note: 'Tart nenas berpastri mentega, wajib setiap perayaan.' } },
+    { id: 'apambalik', group: 'chinese', name: 'Apam Balik', origin: 'Chinese & Malay', note: 'Folded griddle pancake with crushed peanuts, sugar and sweetcorn.', ms: { origin: 'Cina & Melayu', note: 'Lempeng lipat berinti kacang tumbuk, gula dan jagung.' } },
+    { id: 'talam', group: 'chinese', name: 'Kuih Talam', origin: 'Nyonya & Malay', note: 'Green pandan layer under a thin layer of salty coconut cream.', ms: { origin: 'Nyonya & Melayu', note: 'Lapisan pandan hijau di bawah lapisan nipis santan masin.' } },
     { id: 'murukku', group: 'indian', name: 'Murukku', origin: 'Indian', note: 'Crunchy spiral of rice and lentil flour, made for Deepavali.', ms: { origin: 'India', note: 'Pilin rangup tepung beras dan kacang dal, dibuat untuk Deepavali.' } },
     { id: 'ladoo', group: 'indian', name: 'Ladoo', origin: 'Indian', note: 'Sweet round treat for festivals and celebrations.', ms: { origin: 'India', note: 'Manisan bulat untuk perayaan dan keraian.' } },
     { id: 'putu', group: 'indian', name: 'Putu Mayam', origin: 'Indian', note: 'String hoppers with grated coconut and gula melaka.', ms: { origin: 'India', note: 'Putu mayam dengan kelapa parut dan gula melaka.' } },
     { id: 'vadai', group: 'indian', name: 'Vadai', origin: 'Indian', note: 'Savoury lentil doughnut, best with teh tarik.', ms: { origin: 'India', note: 'Kuih kacang dal berbentuk donat, paling sedap dengan teh tarik.' } },
     { id: 'jalebi', group: 'indian', name: 'Jalebi', origin: 'Indian', note: 'Syrupy orange swirls, crisp and sticky.', ms: { origin: 'India', note: 'Lingkaran oren bersirap, rangup dan melekit.' } },
+    { id: 'mysorepak', group: 'indian', name: 'Mysore Pak', origin: 'Indian', note: 'Rich, porous sweet of ghee, sugar and gram flour, a Deepavali favourite.', ms: { origin: 'India', note: 'Manisan berliang daripada minyak sapi, gula dan tepung kacang kuda, kegemaran Deepavali.' } },
     { id: 'keklapis', group: 'borneo', name: 'Kek Lapis Sarawak', origin: 'Sarawak', note: 'The patterned layer cake Sarawak is famous for, sliced to show its colours.', ms: { origin: 'Sarawak', note: 'Kek lapis bercorak yang terkenal dari Sarawak, dipotong untuk menunjukkan warnanya.' } },
     { id: 'celorot', group: 'borneo', name: 'Kuih Celorot', origin: 'Sarawak', note: 'Gula apong kuih steamed in a cone of rolled palm leaf.', ms: { origin: 'Sarawak', note: 'Kuih gula apong yang dikukus dalam gulungan daun nipah.' } },
     { id: 'pinjaram', group: 'borneo', name: 'Pinjaram', origin: 'Sabah & Sarawak', note: 'Fried "UFO" kuih with a domed middle and crispy rim, also called penyaram.', ms: { origin: 'Sabah & Sarawak', note: 'Kuih "UFO" goreng dengan tengah membonjol dan tepi rangup, juga dipanggil penyaram.' } },
     { id: 'cincin', group: 'borneo', name: 'Kuih Cincin', origin: 'Sabah', note: 'Crunchy ring-shaped kuih made with palm sugar, a Raya favourite.', ms: { origin: 'Sabah', note: 'Kuih rangup berbentuk cincin daripada gula kabung, kegemaran Hari Raya.' } },
-    { id: 'hinompuka', group: 'borneo', name: 'Hinompuka', origin: 'Sabah', note: 'KadazanDusun rice cake steamed in leaves, served at Kaamatan.', ms: { origin: 'Sabah', note: 'Kuih pulut KadazanDusun yang dikukus dalam daun, dihidang ketika Kaamatan.' } }
+    { id: 'hinompuka', group: 'borneo', name: 'Hinompuka', origin: 'Sabah', note: 'KadazanDusun rice cake steamed in leaves, served at Kaamatan.', ms: { origin: 'Sabah', note: 'Kuih pulut KadazanDusun yang dikukus dalam daun, dihidang ketika Kaamatan.' } },
+    { id: 'kuihjala', group: 'borneo', name: 'Kuih Jala', origin: 'Sarawak', note: 'Crispy net of rice flour and gula apong, swirled into hot oil like a fishing net.', ms: { origin: 'Sarawak', note: 'Jaring rangup tepung beras dan gula apong, dililit ke dalam minyak panas seperti jala.' } }
   ];
   const KUIH_BY = Object.fromEntries(KUIH.map(k => [k.id, k]));
   const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
@@ -80,20 +88,28 @@
   const RULES = [
     { id: 'onde', type: 'total', n: 5 },
     { id: 'karipap', type: 'goalDays', n: 1 },
+    { id: 'apambalik', type: 'waterDays', n: 5 }, // 1.10.0
     { id: 'kapit', type: 'variety', n: 9 },
     { id: 'serimuka', type: 'streak', n: 3 },
     { id: 'ladoo', type: 'dayMax', n: 10 },
     { id: 'putu', type: 'weekMax', n: 25 },
     { id: 'tart', type: 'streak', n: 5 },
     { id: 'cincin', type: 'eyes', n: 5 },
+    { id: 'koci', type: 'goalDaysN', n: 10 }, // 1.10.0
     { id: 'huat', type: 'total', n: 50 },
     { id: 'vadai', type: 'allInDay', n: 9 },
     { id: 'celorot', type: 'streak', n: 10 },
+    { id: 'ketayap', type: 'eyes', n: 25 }, // 1.10.0
+    { id: 'talam', type: 'weekMax', n: 40 }, // 1.10.0
     { id: 'bahulu', type: 'total', n: 100 },
+    { id: 'pelita', type: 'streak', n: 15 }, // 1.10.0
     { id: 'jalebi', type: 'streak', n: 20 },
     { id: 'bulan', type: 'total', n: 200 },
     { id: 'pinjaram', type: 'days', n: 30 },
-    { id: 'hinompuka', type: 'total', n: 500 }
+    { id: 'putupiring', type: 'total', n: 300 }, // 1.10.0
+    { id: 'hinompuka', type: 'total', n: 500 },
+    { id: 'mysorepak', type: 'days', n: 60 }, // 1.10.0
+    { id: 'kuihjala', type: 'total', n: 1000 } // 1.10.0
   ];
   const RULE_BY = Object.fromEntries(RULES.map(r => [r.id, r]));
 
@@ -107,16 +123,17 @@
      workDays: weekday numbers (0 = Sunday) that count for streaks, or null for every day. */
   // opts.saver (1.9.0): one missed working day a week doesn't break the streak.
   function computeStats(history, goal, workDays, now, opts) {
-    const saver = !!(opts && opts.saver);
+    const saver = !!(opts && opts.saver), waterGoal = (opts && opts.waterGoal) || 8;
     const h = history || {}, today = dayKey(now || new Date());
     const keys = Object.keys(h).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && k <= today).sort();
-    const s = { total: 0, days: 0, dayMax: 0, eyes: 0, variety: 0, allInDay: 0, goalDays: 0, weekMax: 0, streak: 0, bestStreak: 0, saverUsed: false };
+    const s = { total: 0, days: 0, dayMax: 0, eyes: 0, variety: 0, allInDay: 0, goalDays: 0, waterDays: 0, weekMax: 0, streak: 0, bestStreak: 0, saverUsed: false };
     const seen = new Set(), weeks = {};
     for (const k of keys) {
       const v = h[k] || {}, t = v.total || 0, by = v.by || {};
       s.total += t; if (t > 0) s.days++;
       s.dayMax = Math.max(s.dayMax, t);
       if (t >= goal) s.goalDays++;
+      if ((v.water || 0) >= waterGoal) s.waterDays++;
       s.eyes += by.eyes || 0;
       const ids = Object.keys(by).filter(id => own(BY, id) && by[id] > 0);
       ids.forEach(id => seen.add(id));
@@ -146,7 +163,8 @@
   }
   // How far along a rule is: { have, need, done } (streaks unlock on the best streak, show the current one)
   function ruleProgress(rule, s) {
-    const have = rule.type === 'streak' ? s.streak : s[rule.type] || 0;
+    const key = rule.type === 'goalDaysN' ? 'goalDays' : rule.type; // goalDaysN: "reach your goal on n days"
+    const have = key === 'streak' ? s.streak : s[key] || 0;
     const best = rule.type === 'streak' ? s.bestStreak : have;
     return { have: Math.min(have, rule.n), need: rule.n, done: best >= rule.n };
   }

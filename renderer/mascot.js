@@ -295,21 +295,24 @@
         `</g><rect x="34" y="20" width="52" height="82" rx="20" fill="none" ${O}/><ellipse cx="60" cy="27" rx="19" ry="6.5" fill="#7A4220" stroke="${INK}" stroke-width="2"/>` +
         [[52, 26], [58, 24], [64, 27], [69, 25], [56, 29]].map(([x, y]) => `<path d="M${x} ${y} l3 1" stroke="#E9C890" stroke-width="1.4" stroke-linecap="round"/>`).join('')
     },
-    dodol: {
-      name: 'Dodol', origin: 'Malay', note: 'Rich, sticky toffee of coconut milk and gula melaka, stirred for hours for Hari Raya',
-      half: 31, faceDy: 6,
-      sil: '<rect x="29" y="30" width="62" height="72" rx="18"/>',
-      art: id => `<rect x="29" y="30" width="62" height="72" rx="18" fill="#4E2C1A" ${O}/><path d="M38 44 Q44 36 56 35" stroke="#8C5A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M80 52 Q82 60 81 68" stroke="#6E432A" stroke-width="3" fill="none" stroke-linecap="round"/>` +
-        `<clipPath id="k${id}"><rect x="29" y="30" width="62" height="72" rx="18"/></clipPath><g clip-path="url(#k${id})"><path d="M25 104 L25 86 L33 82 L41 87 L49 81 L57 86 L65 80 L73 86 L81 81 L89 86 L95 83 L95 104 Z" fill="#E8D7A2" stroke="${INK}" stroke-width="2"/>` +
-        [36, 48, 60, 72, 84].map(x => `<path d="M${x} 90 L${x + 2} 102" stroke="#CDB77C" stroke-width="1.4"/>`).join('') + `</g><rect x="29" y="30" width="62" height="72" rx="18" fill="none" ${O}/>`
+    mysorepak: {
+      name: 'Mysore Pak', origin: 'Indian', note: 'Rich, porous sweet of ghee, sugar and gram flour, a Deepavali favourite',
+      half: 32, faceDy: 6,
+      sil: '<rect x="28" y="30" width="64" height="72" rx="9"/>',
+      art: id => `<clipPath id="k${id}"><rect x="28" y="30" width="64" height="72" rx="9"/></clipPath><rect x="28" y="30" width="64" height="72" rx="9" fill="#F2B533"/><g clip-path="url(#k${id})"><rect x="24" y="26" width="72" height="12" fill="#D98A1E"/><path d="M24 38 Q36 41 48 38 T72 38 T96 38" stroke="#C67A16" stroke-width="2" fill="#F2B533"/>` +
+        dotsIn(46, 40, (x, y) => x > 31 && x < 89 && y > 42 && y < 99, (x, y, r) => `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(1.2 + r() * 1.8).toFixed(1)}" ry="${(1 + r() * 1.2).toFixed(1)}" fill="#C98516" opacity=".75"/>`) +
+        `</g><rect x="28" y="30" width="64" height="72" rx="9" fill="none" ${O}/><path d="M35 48 Q37 44 44 43" stroke="#FFD878" stroke-width="3" fill="none" stroke-linecap="round"/>`
     },
-    kuihbakar: {
-      name: 'Kuih Bakar', origin: 'Malay', note: 'Pandan cake baked in a flower mould until the top turns golden, sprinkled with sesame',
-      half: 36, faceDy: 12,
-      sil: scallop(60, 66, 27, 8, 11).map(c => `<circle cx="${c.x}" cy="${c.y}" r="${c.r}"/>`).join('') + '<circle cx="60" cy="66" r="29"/>',
-      art: () => bumpsShape(60, 66, 29, scallop(60, 66, 27, 8, 11), '#A3692B', INK) +
-        `<circle cx="60" cy="66" r="25" fill="#6FAF4A"/><circle cx="60" cy="66" r="22" fill="#C18A3F"/><circle cx="54" cy="58" r="7" fill="#9A5F25" opacity=".55"/><circle cx="70" cy="76" r="5" fill="#9A5F25" opacity=".45"/>` +
-        dotsIn(45, 12, inCircle(60, 66, 19), (x, y, r) => `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="1.9" ry="1" fill="#FFF4D6" transform="rotate(${(r() * 180).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`)
+    kuihjala: {
+      name: 'Kuih Jala', origin: 'Sarawak', note: 'Crispy net of rice flour and gula apong, swirled into hot oil like a fishing net',
+      half: 36, faceDy: 10,
+      sil: '<circle cx="60" cy="65" r="37"/>',
+      art: id => {
+        const r = rng(47); let loops = '';
+        for (let i = 0; i < 22; i++) { const x = 30 + r() * 60, y = 34 + r() * 62, rr = 6 + r() * 9; loops += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(1)}" fill="none" stroke="#A8652A" stroke-width="3.2"/>`; }
+        return `<clipPath id="k${id}"><circle cx="60" cy="65" r="37"/></clipPath><circle cx="60" cy="65" r="37" fill="#F6E7C8"/><g clip-path="url(#k${id})">${loops}<circle cx="60" cy="65" r="34" fill="none" stroke="#A8652A" stroke-width="3"/></g>` +
+          `<circle cx="60" cy="65" r="37" fill="none" ${O}/><ellipse cx="60" cy="64" rx="22" ry="14" fill="#F6E7C8" opacity=".9"/>`;
+      }
     }
   };
 
@@ -318,7 +321,7 @@
      Headwear sits on each kuih's top edge; clothing is clipped to the kuih's own outline. */
   const TOPS = { lapis: [18, 1], onde: [29, 0], serimuka: [24, 1], karipap: [30, 0], bahulu: [26, 0], angku: [26, 0], kapit: [14, 1], huat: [16, 0], bulan: [32, 1], tart: [27, 0],
     murukku: [27, 0], ladoo: [32, 0], putu: [30, 0], vadai: [27, 0], jalebi: [20, 1], keklapis: [20, 1], celorot: [18, 0], pinjaram: [46, 0], cincin: [27, 0], hinompuka: [32, 1],
-    apambalik: [34, 0], koci: [14, 0], putupiring: [42, 0], talam: [30, 1], pelita: [30, 1], ketayap: [20, 1], dodol: [30, 1], kuihbakar: [28, 0] };
+    apambalik: [34, 0], koci: [14, 0], putupiring: [42, 0], talam: [30, 1], pelita: [30, 1], ketayap: [20, 1], mysorepak: [30, 1], kuihjala: [28, 0] };
   const crown = sid => { const t = TOPS[sid] || [20, 1]; return t[0] + (t[1] ? 3 : 7); };
   const hem = K => Math.max(80, 70 + (K.faceDy || 0) + 6); // clothing starts below the mouth
   const S2 = `stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"`;

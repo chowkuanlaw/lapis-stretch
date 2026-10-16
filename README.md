@@ -23,20 +23,20 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Balik kerja wrap-up.** When your working hours end, your kuih waves goodbye with your stretches, glasses and streak for the day.
 - **Month calendar.** Progress shows each month as a calendar, shaded by how close each day got to your stretch or water goal.
 - **Ramadan mode.** During the fasting month, water reminders pause and the walkaround (which ends with a drink) is left out until Raya.
-- **Collect the kuih.** Start with four kuih and meet the other 16 as you stretch, from your first 5 stretches to a 500-stretch milestone.
+- **Collect the kuih.** Start with four kuih and meet the other 24 as you stretch, from your first 5 stretches to a 1,000-stretch milestone.
 - **Festive outfits.** For Hari Raya, Chinese New Year, Deepavali, Kaamatan, Gawai, Merdeka, Malaysia Day and Christmas, your kuih dresses up for the few days before and on the day itself.
 - **English or Bahasa Melayu.** Every screen, reminder and the tray menu.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Time away counts as a break.** After 5 minutes of no keyboard or mouse activity, or when you lock your PC for a minute or more or sleep it, the timer restarts and any reminder that was waiting is cleared, so you're not nagged the moment you sit back down.
 - **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime sound and volume, text size, Light or Dark mode, widget on or off, optional Windows notification, start with Windows, language, and **Reset my data**.
-- **Pick your kuih.** 20 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
+- **Pick your kuih.** 28 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
 - **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.
 
 ![The Lapis main window: the Today page](docs/main-window.png)
 
 ![First-launch setup: pick your kuih](docs/welcome.png)
 
-![The 20 kuih you can choose from](docs/kuih-friends.png)
+![The 28 kuih you can choose from](docs/kuih-friends.png)
 
 ## Install
 
