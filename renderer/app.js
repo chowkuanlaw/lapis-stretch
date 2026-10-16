@@ -114,12 +114,9 @@
     const kt = e.target.closest('.kuih-tap');
     if (kt) { onKuihTap(kt); return; }
     const pg = e.target.closest('[data-page]');
-    if (pg) {
-      setPage(pg.dataset.page);
-      const target = pg.dataset.anchor && document.getElementById(pg.dataset.anchor);
-      if (target) target.scrollIntoView({ block: 'start' });
-      return;
-    }
+    if (pg) { if (pg.dataset.ptab) ptab = pg.dataset.ptab; setPage(pg.dataset.page); return; }
+    const pt = e.target.closest('[data-ptab]');
+    if (pt) { ptab = pt.dataset.ptab; if (st) renderMain(); return; }
     const ob = e.target.closest('[data-ob]');
     if (ob) { obAction(ob.dataset.ob); return; }
     const a = e.target.closest('[data-act]');
@@ -171,7 +168,7 @@
   }).join('');
   const obKuih = () => (st.collect && !st.codeUnlocked ? `<div class="ob-kuih ob-starters"><div class="kgrid small four">${STARTERS.map(id => { const k = KUIH_BY[id]; return `<button type="button" class="ktile" data-set="kuih" data-sval="${k.id}" data-kid="${k.id}" aria-pressed="false" title="${esc(tx(k, 'note'))}"><span class="kimg">${lapis('idle', k.name, false, k.id)}</span><b>${k.name}</b></button>`; }).join('')}</div></div>` : `<div class="ob-kuih">${kuihTiles('small')}</div>`);
 
-  let page = 'today', obForce = false, obStep = 0;
+  let page = 'today', ptab = 'stretches', obForce = false, obStep = 0;
   function setPage(p) {
     if (!PAGES.some(x => x.id === p)) return;
     page = p;
@@ -217,13 +214,13 @@
           <article class="card" id="card" hidden></article>
           <div class="today-cards">
             <section class="panel tpanel" aria-labelledby="h-goal">
-              <div class="tp-head"><h2 id="h-goal">${T('goal.title')}</h2><button class="linkbtn" data-page="progress" type="button">${T('btn.seeProgress')}</button></div>
+              <div class="tp-head"><h2 id="h-goal">${T('goal.title')}</h2><button class="linkbtn" data-page="progress" data-ptab="stretches" type="button">${T('btn.seeProgress')}</button></div>
               <div class="big"><b id="todayCount">0</b><span id="goalOf"></span></div>
               <div class="gbar" id="goalBar" aria-hidden="true"></div>
               <p class="tp-note" id="goalNote"></p>
             </section>
             <section class="panel tpanel" aria-labelledby="h-water" id="waterPanel">
-              <div class="tp-head"><h2 id="h-water">${T('water.title')}</h2><button class="linkbtn" data-page="progress" data-anchor="progWater" type="button">${T('btn.seeProgress')}</button></div>
+              <div class="tp-head"><h2 id="h-water">${T('water.title')}</h2><button class="linkbtn" data-page="progress" data-ptab="water" type="button">${T('btn.seeProgress')}</button></div>
               <div class="glasses" id="glasses"></div>
               <p class="tp-note" id="waterNote"></p>
               <button class="btn soft small" data-w="water-add" type="button" id="waterBtn">${T('water.drank')}</button>
@@ -264,24 +261,31 @@
         </section>
 
         <section class="page" id="page-progress" aria-labelledby="h-prog" hidden>
-          <header class="page-head"><h1 id="h-prog">${T('prog.title')}</h1><p>${T('prog.sub')}</p></header>
-          <div class="stats">
-            <div class="panel stat"><b id="stToday">0</b><span>${T('prog.today')}</span></div>
-            <div class="panel stat"><b id="stWeek">0</b><span>${T('prog.week')}</span></div>
-            <div class="panel stat"><b id="stBest">0</b><span>${T('prog.best')}</span></div>
-            <div class="panel stat" title="${esc(T('prog.streakHint'))}"><b id="stStreak">0</b><span>${T('prog.streak')}</span></div>
-          </div>
-          <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall" id="weekBig"></div></section>
-          <section class="panel" id="progWater" aria-labelledby="h-pwater">
-            <h2 id="h-pwater">${T('prog.water')}</h2>
-            <div class="wstats">
-              <div><b id="pwToday">0</b><span>${T('prog.waterToday')}</span></div>
-              <div><b id="pwAvg">0</b><span>${T('prog.waterAvg')}</span></div>
-              <div><b id="pwGoal">0</b><span id="pwGoalLbl"></span></div>
+          <header class="page-head prog-head"><div><h1 id="h-prog">${T('prog.title')}</h1><p id="progSub"></p></div>
+            <div class="seg ptabs" role="tablist" aria-label="${esc(T('prog.title'))}">
+              <button type="button" role="tab" id="tab-stretches" data-ptab="stretches" aria-controls="ptab-stretches">${T('prog.tabStretches')}</button>
+              <button type="button" role="tab" id="tab-water" data-ptab="water" aria-controls="ptab-water">${T('prog.tabWater')}</button>
             </div>
-            <div class="week tall water" id="waterBig"></div>
-          </section>
-          <section class="panel"><h2>${T('prog.byStretch')}</h2><div class="bylist" id="byList"></div></section>
+          </header>
+          <div class="ptab" id="ptab-stretches" role="tabpanel" aria-labelledby="tab-stretches">
+            <div class="stats">
+              <div class="panel stat"><b id="stToday">0</b><span>${T('prog.today')}</span></div>
+              <div class="panel stat"><b id="stWeek">0</b><span>${T('prog.week')}</span></div>
+              <div class="panel stat"><b id="stBest">0</b><span>${T('prog.best')}</span></div>
+              <div class="panel stat" title="${esc(T('prog.streakHint'))}"><b id="stStreak">0</b><span>${T('prog.streak')}</span></div>
+            </div>
+            <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall" id="weekBig"></div></section>
+            <section class="panel"><h2>${T('prog.byStretch')}</h2><div class="bylist" id="byList"></div></section>
+          </div>
+          <div class="ptab" id="ptab-water" role="tabpanel" aria-labelledby="tab-water" hidden>
+            <div class="stats water">
+              <div class="panel stat"><b id="pwToday">0</b><span>${T('prog.waterToday')}</span></div>
+              <div class="panel stat"><b id="pwWeek">0</b><span>${T('prog.waterWeek')}</span></div>
+              <div class="panel stat"><b id="pwAvg">0</b><span>${T('prog.waterAvg')}</span></div>
+              <div class="panel stat"><b id="pwGoal">0</b><span id="pwGoalLbl"></span></div>
+            </div>
+            <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall water" id="waterBig"></div></section>
+          </div>
         </section>
 
         <section class="page" id="page-settings" aria-labelledby="h-set" hidden>
@@ -479,6 +483,8 @@
   }
   function renderProgress(s) {
     const days = lastDays(7), sum = days.reduce((a, d) => a + d.n, 0), tr = todayRec();
+    $('#progSub').textContent = ptab === 'water' ? T('prog.subWater') : T('prog.sub');
+    ['stretches', 'water'].forEach(id => { $('#ptab-' + id).hidden = ptab !== id; $('#tab-' + id).setAttribute('aria-selected', String(ptab === id)); $('#tab-' + id).setAttribute('aria-pressed', String(ptab === id)); });
     $('#stToday').textContent = tr.total;
     $('#stWeek').textContent = sum;
     $('#stBest').textContent = Math.max(0, ...days.map(d => d.n));
@@ -486,6 +492,7 @@
     $('#weekBig').innerHTML = weekBars(days, 150);
     const wd = lastDays(7, 'water'), wsum = wd.reduce((x, d) => x + d.n, 0), g = st.waterGoal;
     $('#pwToday').textContent = todayRec().water || 0;
+    $('#pwWeek').textContent = wsum;
     $('#pwAvg').textContent = (Math.round(wsum / 7 * 10) / 10).toLocaleString(loc());
     $('#pwGoal').textContent = wd.filter(d => d.n >= g).length;
     $('#pwGoalLbl').textContent = T('prog.waterGoalDays', { g });

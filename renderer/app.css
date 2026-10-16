@@ -485,3 +485,9 @@ input[data-code]:focus-visible{outline:3px solid var(--pink);outline-offset:1px}
 @media (max-width:900px){
   .settings-cols,.about-grid{grid-template-columns:minmax(0,1fr)}
 }
+.prog-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.ptabs{padding:4px}
+.ptabs button{padding:8px 20px;font-size:14px}
+.ptab{display:flex;flex-direction:column;gap:18px}
+.ptab[hidden]{display:none!important}
+.stats.water .stat b{color:var(--water)}

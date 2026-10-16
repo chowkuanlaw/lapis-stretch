@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.2 (2026-10-16)
+
+- Progress is split into two tabs, **Stretches** and **Water**, so each shows only its own numbers and 7-day chart. "See progress" on Today's Daily goal tile opens Stretches; on the Water tile it opens Water.
+
 ## 1.6.1 (2026-10-16)
 
 - Sidebar order is now Today, Progress, Stretches, Your kuih, Settings.
