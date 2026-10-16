@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0 (2026-10-16)
+
+- A little surprise is hidden in your kuih. Be quick with it.
+- Clicking your kuih on the Today timer or the desktop widget now gives it a small squish.
+
 ## 1.3.0 (2026-10-16)
 
 - **New main window:** a sidebar with five pages instead of one long scrolling screen.

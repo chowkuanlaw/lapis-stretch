@@ -43,7 +43,7 @@ function run() {
   let S = Object.assign({}, DEFAULTS);
   const R = { mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null, update: null, updateMsg: '', checking: false };
 
-  let mainWin = null, widgetWin = null, popupWin = null, tray = null, quitting = false;
+  let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
   let popupH = 230, saveTimer = null, lastDay = dayKey(new Date());
 
   function loadState() {
@@ -72,6 +72,7 @@ function run() {
     return Object.assign(rest, {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
       switched: R.switched, away: !!R.awaySince,
+      eggMsg: Date.now() < eggMsgUntil,
       version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
     });
   }
@@ -333,6 +334,38 @@ function run() {
     else if (!want && popupWin.isVisible()) popupWin.hide();
   }
 
+  /* ---------- easter egg: a full-screen dance over the desktop ---------- */
+  function startEgg(a, from) {
+    if (eggWin && !eggWin.isDestroyed()) return;
+    // Where the tapped kuih is on screen: its spot inside the window plus the window's position.
+    let pt = screen.getCursorScreenPoint();
+    if (from && !from.isDestroyed() && Number.isFinite(+a.rx) && Number.isFinite(+a.ry)) {
+      const b = from.getContentBounds();
+      pt = { x: Math.round(b.x + +a.rx), y: Math.round(b.y + +a.ry) };
+    }
+    const d = screen.getDisplayNearestPoint(pt).bounds;
+    eggWin = new BrowserWindow({
+      x: d.x, y: d.y, width: d.width, height: d.height, frame: false, transparent: true, resizable: false, movable: false,
+      minimizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true, hasShadow: false, alwaysOnTop: true,
+      show: false, title: 'Lapis', icon: ICON, webPreferences: webPrefs({ backgroundThrottling: false })
+    });
+    eggWin.setAlwaysOnTop(true, 'screen-saver');
+    lockDown(eggWin);
+    eggWin.loadFile(path.join(__dirname, 'renderer', 'index.html'), { query: { view: 'egg', fx: String(pt.x - d.x), fy: String(pt.y - d.y) } });
+    eggWin.once('ready-to-show', () => { if (eggWin && !eggWin.isDestroyed()) { eggWin.show(); eggWin.focus(); } });
+    eggWin.on('closed', () => { eggWin = null; });
+    clearTimeout(eggSafety);
+    eggSafety = setTimeout(endEgg, 15000); // never leave the overlay stuck on screen
+  }
+  function endEgg() {
+    clearTimeout(eggSafety);
+    if (eggWin && !eggWin.isDestroyed()) eggWin.destroy();
+    eggWin = null;
+    eggMsgUntil = Date.now() + 2500;
+    broadcast();
+    setTimeout(broadcast, 2600);
+  }
+
   /* ---------- tray ---------- */
   function statusLabel() {
     const ex = BY[R.cur || upNext().id];
@@ -405,7 +438,7 @@ function run() {
 
   /* ---------- IPC ---------- */
   ipcMain.handle('get-state', () => publicState());
-  ipcMain.on('action', (_e, a) => {
+  ipcMain.on('action', (evt, a) => {
     if (!a || typeof a.type !== 'string') return;
     switch (a.type) {
       case 'now': becomeDue(a.ex, true); break;
@@ -426,6 +459,8 @@ function run() {
       case 'check-update': checkForUpdate(true); break;
       case 'open-release': openReleases(); break;
       case 'install-update': installUpdate(); break;
+      case 'egg': startEgg(a, BrowserWindow.fromWebContents(evt.sender)); break;
+      case 'egg-done': endEgg(); break;
       case 'tray-icon': setTrayIcon(a.images); break;
       default: break;
     }

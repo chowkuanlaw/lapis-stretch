@@ -306,3 +306,37 @@ body.view-main{height:100vh;overflow:hidden}
 .kuih-groups .kgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
 .today-panel .big{display:flex;align-items:baseline;gap:8px}
 .today-panel .big span{color:var(--muted)}
+
+/* ===== easter egg (1.4.0) ===== */
+.kuih-tap{border:0;padding:0;background:none;cursor:pointer;font:inherit;color:inherit;-webkit-app-region:no-drag}
+.w-mascot.kuih-tap{background:var(--pandan-soft)}
+.kuih-tap.squish{animation:squish .26s ease-out}
+.kuih-tap.wobble .lapis{animation:wobble .3s ease-in-out infinite}
+@keyframes squish{0%{transform:scale(1)}35%{transform:scale(.86,1.12)}70%{transform:scale(1.08,.94)}100%{transform:scale(1)}}
+@keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.ring.tapping .arc{stroke:var(--pink)}
+.widget.tapping .w-bar i{background:var(--pink)}
+body.view-egg{background:transparent;overflow:hidden;user-select:none;cursor:pointer}
+.egg{position:fixed;inset:0;overflow:hidden}
+.egg-dim{position:absolute;inset:0;background:rgba(15,22,18,.82);opacity:0;transition:opacity .4s}
+.egg.on .egg-dim{opacity:1}
+.egg.leaving .egg-dim{opacity:0;transition-duration:.7s}
+.egg-glow{position:absolute;left:50%;top:52%;width:min(90vh,90vw);height:min(90vh,90vw);transform:translate(-50%,-50%);border-radius:50%;background:#2A7F4F;opacity:0}
+.egg.dancing .egg-glow{animation:eggGlow 1s ease-in-out infinite}
+@keyframes eggGlow{0%,100%{opacity:.25}50%{opacity:.55}}
+.egg-confetti{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s}
+.egg.dancing .egg-confetti{opacity:1}
+.egg-drop{position:absolute;top:0;animation:eggFall var(--d) linear var(--w) infinite both}
+.egg-drop svg{height:var(--s);width:auto}
+@keyframes eggFall{0%{transform:translateY(-20vh) rotate(0)}100%{transform:translateY(120vh) rotate(var(--r))}}
+.egg-title{position:absolute;left:0;right:0;top:5vh;margin:0;text-align:center;font-family:var(--f-display);font-weight:800;font-size:min(11vh,110px);color:#F2729C;opacity:0;transition:opacity .3s}
+.egg.dancing .egg-title{opacity:1;animation:eggPulse .5s ease-in-out infinite}
+@keyframes eggPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.egg-stage{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%)}
+.egg-flip.flip{transform:scaleX(-1)}
+.egg-kuih svg{height:var(--k);width:auto;display:block}
+.egg.dancing .egg-kuih{animation:eggGroove .5s ease-in-out infinite}
+.egg.calm .egg-kuih,.egg.calm .egg-title{animation:none}
+@keyframes eggGroove{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-5vh) rotate(6deg)}}
+.egg-foot{position:absolute;left:0;right:0;bottom:3vh;margin:0;text-align:center;font-size:15px;color:#C9D6CC;opacity:0;transition:opacity .3s}
+.egg.dancing .egg-foot{opacity:1}

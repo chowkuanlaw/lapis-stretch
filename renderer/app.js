@@ -85,6 +85,8 @@
   }
 
   document.addEventListener('click', e => {
+    const kt = e.target.closest('.kuih-tap');
+    if (kt) { onKuihTap(kt); return; }
     const pg = e.target.closest('[data-page]');
     if (pg) { setPage(pg.dataset.page); return; }
     const ob = e.target.closest('[data-ob]');
@@ -155,7 +157,7 @@
           <section class="hero" aria-label="Next stretch">
             <div class="ring" id="ring">
               <svg class="r" viewBox="0 0 132 132" aria-hidden="true"><circle class="track" cx="66" cy="66" r="58"/><circle class="arc" id="arc" cx="66" cy="66" r="58"/></svg>
-              <div class="ring-mascot" id="heroMascot"></div>
+              <button type="button" class="ring-mascot kuih-tap" id="heroMascot" aria-label="Your kuih"></button>
             </div>
             <div class="hero-text"><p class="eyebrow" id="clockLabel">Next stretch in</p><p class="time" id="clockTime">--:--</p><p class="sub" id="clockSub"></p></div>
             <div class="hero-actions" id="heroActions">
@@ -404,6 +406,8 @@
     else if (st.paused) { label = 'Paused'; time = mmss(st.pausedLeft); sub = 'Resume when you are back at your desk'; frac = 1 - Math.min(1, st.pausedLeft / (st.interval * 60e3)); }
     else if (st.away) { label = 'Away from desk'; time = `${st.interval}:00`; sub = 'The timer restarts when you are back'; frac = 0; }
     else { const left = st.nextDue - now; label = 'Next stretch in'; time = mmss(left); sub = `${BY[st.upNext].name} is next · ${secsLabel(BY[st.upNext].secs)}`; frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
+    if (taps > 0) frac = taps / EGG_TAPS;
+    if (st.eggMsg) sub = 'Okay, back to work!';
     $('#clockLabel').textContent = label; $('#clockTime').textContent = time; $('#clockSub').textContent = sub;
     const C = 2 * Math.PI * 58, arc = $('#arc');
     arc.style.strokeDasharray = C; arc.style.strokeDashoffset = C * (1 - Math.max(0, Math.min(1, frac)));
@@ -420,7 +424,7 @@
   };
   function buildWidget() {
     root.innerHTML = `<div class="widget" id="widget">
-      <div class="w-mascot" id="wMascot"></div>
+      <button type="button" class="w-mascot kuih-tap" id="wMascot" aria-label="Your kuih"></button>
       <div class="w-text"><p class="w-label" id="wLabel">Next stretch</p><p class="w-time" id="wTime">--:--</p><p class="w-sub" id="wSub"></p></div>
       <div class="w-btns">
         <button type="button" data-w="now" id="wNow" title="Stretch now" aria-label="Stretch now">${ICONS.now}</button>
@@ -471,6 +475,8 @@
     else if (st.paused) { label = 'Paused'; time = mmss(st.pausedLeft); frac = 0; }
     else if (st.away) { label = 'Away from desk'; time = `${st.interval}:00`; frac = 0; }
     else { const left = st.nextDue - now; label = 'Next stretch'; time = mmss(left); frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
+    if (taps > 0) frac = taps / EGG_TAPS;
+    if (st.eggMsg) label = 'Back to work!';
     $('#wLabel').textContent = label; $('#wTime').textContent = time;
     $('#wBar').style.width = Math.max(0, Math.min(100, frac * 100)) + '%';
   }
@@ -486,8 +492,161 @@
     renderCard($('#card'), true);
   }
 
+  /* ---------- easter egg: tap the kuih 10 times quickly ---------- */
+  const EGG_TAPS = 10, EGG_GAP = 500;
+  let taps = 0, lastTap = 0, tapReset = null;
+  function onKuihTap(btn) {
+    const now = Date.now();
+    taps = now - lastTap < EGG_GAP ? taps + 1 : 1;
+    lastTap = now;
+    clearTimeout(tapReset);
+    tapReset = setTimeout(() => { taps = 0; showTaps(btn); }, EGG_GAP + 150);
+    btn.classList.remove('squish'); void btn.offsetWidth; btn.classList.add('squish');
+    showTaps(btn);
+    if (taps >= EGG_TAPS) {
+      taps = 0; clearTimeout(tapReset); showTaps(btn);
+      const r = btn.getBoundingClientRect();
+      api.act('egg', { rx: r.left + r.width / 2, ry: r.top + r.height / 2 }); // main adds the window's position
+    }
+  }
+  function showTaps(btn) {
+    btn.classList.toggle('wobble', taps >= 5);
+    if (view === 'main') { $('#ring').classList.toggle('tapping', taps > 0); if (st) tickMain(); }
+    if (view === 'widget') { $('#widget').classList.toggle('tapping', taps > 0); if (st) tickWidget(); }
+  }
+
+  /* The dance itself runs in its own full-screen window (view=egg). */
+  const DANCE = ['wave', 'cheer', 'twist', 'reach', 'shoulders', 'walk', 'thoracic', 'cheer'];
+  let eggStarted = false, eggEnding = false, eggTimer = null, eggMaster = null;
+  function buildEgg() {
+    root.innerHTML = `<div class="egg" id="egg" role="img" aria-label="Your kuih is dancing. Click or press Escape to stop.">
+      <div class="egg-dim"></div>
+      <div class="egg-glow"></div>
+      <div class="egg-confetti" id="eggConfetti"></div>
+      <p class="egg-title" id="eggTitle">Jom joget!</p>
+      <div class="egg-stage"><div class="egg-spin" id="eggSpin"><div class="egg-flip" id="eggFlip"><div class="egg-kuih" id="eggKuih"></div></div></div></div>
+      <p class="egg-foot" id="eggFoot">Click anywhere or press Esc to stop</p>
+    </div>`;
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') finishEgg(); });
+    document.addEventListener('mousedown', () => finishEgg());
+  }
+  function renderEgg() {
+    if (eggStarted) return;
+    eggStarted = true;
+    const q = new URLSearchParams(location.search);
+    const fx = Number(q.get('fx')), fy = Number(q.get('fy'));
+    const ox = Number.isFinite(fx) ? fx - innerWidth / 2 : 0, oy = Number.isFinite(fy) ? fy - innerHeight / 2 : 0;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const skin = st.kuih || 'lapis';
+    const k = $('#eggKuih');
+    k.style.setProperty('--k', Math.round(Math.min(innerHeight * 0.62, 640)) + 'px');
+    k.innerHTML = lapis('wave', '', false, skin);
+    // other kuih rain down while it dances
+    const others = KUIH.filter(x => x.id !== skin).sort(() => Math.random() - 0.5).slice(0, 14);
+    $('#eggConfetti').innerHTML = reduce ? '' : others.map((o, i) => {
+      const left = (i / others.length) * 100 + Math.random() * 5, size = 56 + Math.round(Math.random() * 46);
+      const dur = (3.2 + Math.random() * 2.2).toFixed(2), delay = (Math.random() * 2.5).toFixed(2), turn = Math.random() < 0.5 ? -1 : 1;
+      return `<div class="egg-drop" style="left:${left.toFixed(1)}%;--s:${size}px;--d:${dur}s;--w:${delay}s;--r:${turn * 540}deg">${lapis('idle', '', false, o.id)}</div>`;
+    }).join('');
+    $('#egg').classList.add('on');
+    eggSpinTo(ox, oy, reduce, false);
+    if (st.sound) chime('due');
+    eggTimer = setTimeout(() => startDance(skin, reduce), reduce ? 400 : 1000);
+    eggSafety = setTimeout(finishEgg, 12000);
+  }
+  let eggSafety = null, eggOrigin = [0, 0];
+  function eggSpinTo(ox, oy, reduce, back) {
+    eggOrigin = back ? eggOrigin : [ox, oy];
+    const far = `translate(${eggOrigin[0]}px, ${eggOrigin[1]}px) scale(.1) rotate(${back ? -1080 : 0}deg)`;
+    const near = `translate(0, 0) scale(1) rotate(${back ? 0 : 1080}deg)`;
+    const frames = reduce ? [{ opacity: back ? 1 : 0 }, { opacity: back ? 0 : 1 }]
+      : back ? [{ transform: near, opacity: 1 }, { transform: far, opacity: 0.3 }] : [{ transform: far, opacity: 0.6 }, { transform: near, opacity: 1 }];
+    $('#eggSpin').animate(frames, { duration: reduce ? 300 : back ? 750 : 1000, easing: back ? 'cubic-bezier(.6,0,.8,.4)' : 'cubic-bezier(.2,.8,.3,1)', fill: 'both' });
+  }
+  function startDance(skin, reduce) {
+    if (eggEnding) return;
+    const egg = $('#egg'), k = $('#eggKuih'), flip = $('#eggFlip');
+    egg.classList.add('dancing');
+    if (reduce) egg.classList.add('calm');
+    if (st.sound) playJoget();
+    let beat = 0;
+    const show = () => {
+      k.innerHTML = lapis(DANCE[beat % DANCE.length], '', false, skin);
+      flip.classList.toggle('flip', beat % 2 === 1 && !reduce);
+      $('#eggFoot').textContent = `Dancing for ${Math.max(1, 8 - Math.floor(beat / 2))} more seconds · click anywhere or press Esc to stop`;
+    };
+    show();
+    eggTimer = setInterval(() => { beat++; if (beat >= 16) { finishEgg(); return; } show(); }, 500);
+  }
+  function finishEgg() {
+    if (!eggStarted || eggEnding) return;
+    eggEnding = true;
+    clearInterval(eggTimer); clearTimeout(eggTimer); clearTimeout(eggSafety);
+    if (eggMaster && ac) { try { eggMaster.gain.setTargetAtTime(0, ac.currentTime, 0.08); } catch (e) { /* ignore */ } }
+    const egg = $('#egg');
+    egg.classList.remove('dancing');
+    egg.classList.add('leaving');
+    eggSpinTo(0, 0, matchMedia('(prefers-reduced-motion: reduce)').matches, true);
+    setTimeout(() => api.act('egg-done'), 800);
+  }
+
+  /* An original joget-style tune: violin-like melody, accordion off-beats,
+     bass and gendang (dum/tak) at 120 bpm, four bars = 8 seconds. */
+  function playJoget() {
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      const t0 = ac.currentTime + 0.05, E = 0.25; // one eighth note
+      const out = ac.createGain(); out.gain.value = 0.55; out.connect(ac.destination); eggMaster = out;
+      const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+      const env = (g, t, peak, a, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); };
+      // melody: 0 = hold the previous note, -1 = rest
+      const mel = [69, 69, 74, 76, 77, 76, 74, 73, 74, 0, 69, 0, 70, 69, 67, 69, 65, 67, 69, 70, 72, 70, 69, 67, 69, 73, 76, 74, -1, 74, 74, 0];
+      for (let i = 0; i < mel.length; i++) {
+        const m = mel[i]; if (m <= 0) continue;
+        let len = 1; while (i + len < mel.length && mel[i + len] === 0) len++;
+        const t = t0 + i * E, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+        const lfo = ac.createOscillator(), lg = ac.createGain();
+        o.type = 'sawtooth'; o.frequency.value = hz(m); f.type = 'lowpass'; f.frequency.value = 2400;
+        lfo.frequency.value = 5.5; lg.gain.value = 5; lfo.connect(lg); lg.connect(o.frequency);
+        o.connect(f); f.connect(g); g.connect(out);
+        env(g, t, 0.11, 0.03, len * E * 0.95);
+        o.start(t); o.stop(t + len * E + 0.1); lfo.start(t); lfo.stop(t + len * E + 0.1);
+      }
+      const chords = [[62, 65, 69], [62, 65, 69], [67, 70, 74], [69, 73, 76]];
+      const bass = [[38, 45], [38, 45], [43, 50], [45, 52]];
+      for (let bar = 0; bar < 4; bar++) {
+        for (let e = 0; e < 8; e++) {
+          const t = t0 + (bar * 8 + e) * E;
+          if (e % 2 === 1) chords[bar].forEach(m => { // accordion stabs on the off-beats
+            const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+            o.type = 'square'; o.frequency.value = hz(m); f.type = 'lowpass'; f.frequency.value = 1700;
+            o.connect(f); f.connect(g); g.connect(out); env(g, t, 0.035, 0.01, 0.16); o.start(t); o.stop(t + 0.2);
+          });
+          if (e % 2 === 0) { // bass on the beat, root then fifth
+            const o = ac.createOscillator(), g = ac.createGain();
+            o.type = 'triangle'; o.frequency.value = hz(bass[bar][(e / 2) % 2]);
+            o.connect(g); g.connect(out); env(g, t, 0.22, 0.01, 0.4); o.start(t); o.stop(t + 0.45);
+          }
+          const hit = ['dum', '', 'tak', 'dum', '', 'tak', 'tak', ''][e];
+          if (hit === 'dum') { // gendang: deep thump
+            const o = ac.createOscillator(), g = ac.createGain();
+            o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.18);
+            o.connect(g); g.connect(out); env(g, t, 0.6, 0.005, 0.24); o.start(t); o.stop(t + 0.3);
+          } else if (hit === 'tak') { // gendang: bright slap
+            const n = ac.createBufferSource(), buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.1), ac.sampleRate), d = buf.getChannelData(0);
+            for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / d.length);
+            const f = ac.createBiquadFilter(), g = ac.createGain();
+            n.buffer = buf; f.type = 'bandpass'; f.frequency.value = 2600; f.Q.value = 1.2;
+            n.connect(f); f.connect(g); g.connect(out); env(g, t, 0.35, 0.003, 0.08); n.start(t); n.stop(t + 0.1);
+          }
+        }
+      }
+    } catch (e) { /* no audio device */ }
+  }
+
   /* ---------- boot ---------- */
-  const B = { main: [buildMain, renderMain, tickMain], widget: [buildWidget, renderWidget, tickWidget], popup: [buildPopup, renderPopup, () => tickCard($('#card'))] }[view] || [buildMain, renderMain, tickMain];
+  const B = { main: [buildMain, renderMain, tickMain], widget: [buildWidget, renderWidget, tickWidget], popup: [buildPopup, renderPopup, () => tickCard($('#card'))], egg: [buildEgg, renderEgg, () => {}] }[view] || [buildMain, renderMain, tickMain];
   B[0]();
   function onState(s) { st = s; B[1](); }
   api.onState(onState);
