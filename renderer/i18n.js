@@ -104,7 +104,15 @@
     'wrap.tag': '{time} · Balik kerja!', 'wrap.title': 'Time to go home!', 'wrap.met': 'You reached your goal today. Rest well!', 'wrap.notMet': 'Tomorrow is another day. Rest well!',
     'wrap.stretches': 'stretches', 'wrap.glasses': 'glasses', 'wrap.streak': 'day streak', 'wrap.bye': 'See you!',
     'prog.prevMonth': 'Previous month', 'prog.nextMonth': 'Next month', 'prog.monthGoal': '{n} days at your goal', 'prog.monthWater': '{n} days at {g} glasses',
-    'prog.less': 'Less', 'prog.more': 'More', 'prog.atGoal': 'At goal'
+    'prog.less': 'Less', 'prog.more': 'More', 'prog.atGoal': 'At goal',
+    // 1.7.1 easter eggs
+    'gold.tag': '✦ A golden kuih appeared!', 'gold.title': 'Golden kuih', 'gold.sub': '{n} of 20 found. They turn up by luck, about once in 200 reminders.', 'gold.found': 'Found {date}',
+    'teh.tag': 'Friday · {time}', 'teh.title': 'Teh tarik time!', 'teh.sub': 'Almost the weekend. Stand up, pull a long stretch, then go pull a teh.', 'teh.btn': 'Jom!',
+    'night.title': 'Dah lewat, tidur lah.', 'night.sub': "It's late. Save your work and get some rest.", 'night.see': 'See you {when}.', 'night.seeTomorrow': 'See you tomorrow.',
+    'night.ok': 'Okay, goodnight', 'night.more': '5 more minutes',
+    'code.flag': 'Merdeka! Every kuih waves the Jalur Gemilang for the rest of today.',
+    'code.remixOn': 'Remix on! The dance songs get a faster beat, tabla drums and clinking teh cups. Enter the same code again to turn it off.',
+    'code.remixOff': 'Remix off. Back to the usual songs.'
   };
   const ms = {
     'nav.today': 'Hari ini', 'nav.stretches': 'Regangan', 'nav.kuih': 'Kuih anda', 'nav.progress': 'Kemajuan', 'nav.settings': 'Tetapan',
@@ -207,7 +215,15 @@
     'wrap.tag': '{time} · Balik kerja!', 'wrap.title': 'Jom balik!', 'wrap.met': 'Anda capai sasaran hari ini. Rehat secukupnya!', 'wrap.notMet': 'Esok masih ada. Rehat secukupnya!',
     'wrap.stretches': 'regangan', 'wrap.glasses': 'gelas', 'wrap.streak': 'hari berturut-turut', 'wrap.bye': 'Jumpa lagi!',
     'prog.prevMonth': 'Bulan sebelumnya', 'prog.nextMonth': 'Bulan berikutnya', 'prog.monthGoal': '{n} hari capai sasaran', 'prog.monthWater': '{n} hari capai {g} gelas',
-    'prog.less': 'Kurang', 'prog.more': 'Lebih', 'prog.atGoal': 'Capai sasaran'
+    'prog.less': 'Kurang', 'prog.more': 'Lebih', 'prog.atGoal': 'Capai sasaran',
+    // 1.7.1 easter eggs
+    'gold.tag': '✦ Kuih emas muncul!', 'gold.title': 'Kuih emas', 'gold.sub': '{n} daripada 20 ditemui. Ia muncul secara tuah, kira-kira sekali dalam 200 peringatan.', 'gold.found': 'Ditemui {date}',
+    'teh.tag': 'Jumaat · {time}', 'teh.title': 'Masa teh tarik!', 'teh.sub': 'Hujung minggu dah dekat. Bangun, regang panjang-panjang, kemudian pergi tarik teh.', 'teh.btn': 'Jom!',
+    'night.title': 'Dah lewat, tidur lah.', 'night.sub': 'Dah lewat malam. Simpan kerja anda dan berehat.', 'night.see': 'Jumpa {when}.', 'night.seeTomorrow': 'Jumpa esok.',
+    'night.ok': 'Okey, selamat malam', 'night.more': '5 minit lagi',
+    'code.flag': 'Merdeka! Semua kuih mengibarkan Jalur Gemilang sepanjang hari ini.',
+    'code.remixOn': 'Remix dihidupkan! Lagu tarian kini lebih rancak, dengan tabla dan bunyi cawan teh. Masukkan kod yang sama sekali lagi untuk matikan.',
+    'code.remixOff': 'Remix dimatikan. Kembali ke lagu biasa.'
   };
   const STR = { en, ms };
   const LANGS = ['en', 'ms'];

@@ -17,9 +17,12 @@
   // During a festival (the 4 days before it and the day itself) every kuih wears that festival's outfit.
   let festCache = { day: '', f: null };
   const festival = () => { const k = dayKey(new Date()); if (festCache.day !== k) festCache = { day: k, f: festivalOn(new Date()) }; return festCache.f; };
-  const outfit = () => { const f = festival(); return f ? f.id : undefined; };
+  // Easter eggs (1.7.1): pyjamas from 11 pm to 5 am, and the flag-day outfit on the day you enter its code.
+  const night = () => { const h = new Date().getHours(); return h >= 23 || h < 5; };
+  const flagCode = () => !!st && st.flagDay === dayKey(new Date());
+  const outfit = () => { if (night()) return 'pyjama'; if (flagCode()) return 'merdeka'; const f = festival(); return f ? f.id : undefined; };
   // Draw with the kuih the user picked (Kuih Lapis until the first state arrives).
-  const lapis = (pose, label, bob, skin) => window.lapisSVG(pose, label, bob, skin || (st && st.kuih) || 'lapis', outfit());
+  const lapis = (pose, label, bob, skin, golden) => window.lapisSVG(pose, label, bob, skin || (st && st.kuih) || 'lapis', outfit(), golden);
   const kuihName = () => (KUIH_BY[(st && st.kuih) || 'lapis'] || KUIH_BY.lapis).name;
   const doing = e => T('doing', { k: kuihName(), ex: exName(e).toLowerCase() });
 
@@ -83,18 +86,19 @@
       actions = `<p class="cue">${T('card.seeYou', { n: st.snooze })}</p>`;
     }
     const showHow = m !== 'done' && m !== 'snoozed';
-    return `<div class="tile">${lapis(pose, doing(ex), m !== 'active')}</div>
+    if (st.golden && m !== 'waiting') top = `<p class="tag gold">${T('gold.tag')}</p>` + (compact === true ? '' : top);
+    return `<div class="tile${st.golden ? ' gold' : ''}">${lapis(pose, doing(ex), m !== 'active', null, st.golden)}</div>
       <div class="body">${top}<div class="head"><h3>${exName(ex)}</h3><span class="count">${T('card.count', { n })}</span></div>
       <p class="cue">${tx(ex, 'cue')}</p><p class="dose">${tx(ex, 'dose')}</p>${extra}${showHow ? howto : ''}
       <div class="row">${actions}</div>${links}</div>
       ${m === 'active' ? '<div class="bar"><i data-bar></i></div>' : ''}`;
   }
   function renderCard(el, compact) {
-    const key = [st.mode, st.cur, st.upNext, st.paused, st.switched, todayRec().total, st.snooze, st.kuih, L(), outfit()].join('|');
+    const key = [st.mode, st.cur, st.upNext, st.paused, st.switched, todayRec().total, st.snooze, st.kuih, L(), outfit(), st.golden].join('|');
     if (key === cardKey) return;
     if (st.mode === 'due' && !cardKey.startsWith('due')) howOpen = false;
     cardKey = key;
-    el.className = 'card pop' + (st.mode === 'due' ? ' due' : '');
+    el.className = 'card pop' + (st.mode === 'due' ? ' due' : '') + (st.golden && st.mode !== 'waiting' ? ' gold' : '');
     el.innerHTML = cardHTML(compact);
     const d = el.querySelector('#howto');
     if (d) d.addEventListener('toggle', () => { howOpen = d.open; });
@@ -258,6 +262,7 @@
                 <button class="btn" data-redeem="codeIn" type="button">${T('code.btn')}</button>
                 <p class="code-msg" id="codeMsg" aria-live="polite"></p>
               </section>
+              <section class="panel gold-card" id="goldCard" hidden aria-labelledby="h-gold"><h2 id="h-gold">${T('gold.title')}</h2><p class="gold-sub" id="goldSub"></p><div class="gold-list" id="goldList"></div></section>
             </aside>
           </div>
         </section>
@@ -420,10 +425,22 @@
         b.setAttribute('aria-label', T('kuih.lockedAria', { k: KUIH_BY[id].name, rule: ruleText(r) }));
       } else { hint.textContent = ''; b.removeAttribute('aria-label'); }
     });
-    $('#codeCard').hidden = !collecting;
-    const cm = st.codeMsg ? T(st.codeMsg === 'ok' ? 'code.ok' : 'code.bad') : '';
-    ['#codeMsg', '#codeMsg2'].forEach(id => { const el = $(id); el.textContent = cm; el.className = 'code-msg' + (st.codeMsg ? ' ' + st.codeMsg : ''); });
-    if (st.codeMsg === 'ok') ['#codeIn', '#codeIn2'].forEach(id => { $(id).value = ''; });
+    $('#codeCard').hidden = false;
+    const cm = st.codeMsg ? T('code.' + st.codeMsg) : '';
+    ['#codeMsg', '#codeMsg2'].forEach(id => { const el = $(id); el.textContent = cm; el.className = 'code-msg' + (st.codeMsg ? (st.codeMsg === 'bad' ? ' bad' : ' ok') : ''); });
+    if (st.codeMsg && st.codeMsg !== 'bad') ['#codeIn', '#codeIn2'].forEach(id => { $(id).value = ''; });
+    renderGold();
+  }
+  // Golden kuih found so far: a hidden section that appears after the first one turns up.
+  let goldKey = '';
+  function renderGold() {
+    const found = Object.entries(st.goldFound || {}).filter(([id]) => KUIH_BY[id]).sort((a, b) => (a[1] < b[1] ? -1 : 1));
+    $('#goldCard').hidden = !found.length;
+    const key = found.map(f => f.join(':')).join(',') + L();
+    if (!found.length || key === goldKey) return;
+    goldKey = key;
+    $('#goldSub').textContent = T('gold.sub', { n: found.length });
+    $('#goldList').innerHTML = found.map(([id, d]) => { const [y, m, dd] = d.split('-').map(Number); return `<div class="gold-k">${lapis('cheer', KUIH_BY[id].name, false, id, true)}<b>${esc(KUIH_BY[id].name)}</b><span>${T('gold.found', { date: new Date(y, m - 1, dd, 12).toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: 'numeric' }) })}</span></div>`; }).join('');
   }
   function renderNextKuih(s) {
     const collecting = st.collect && !st.codeUnlocked;
@@ -583,13 +600,13 @@
     $('#banner').hidden = st.mode !== 'due';
     $('#heroActions').hidden = st.mode !== 'waiting';
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : st.quiet ? 'shh' : (st.paused || st.away || st.resting) ? 'sleep' : 'idle';
-    if (pose + outfit() !== heroKey) { heroKey = pose + outfit(); $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active'); }
+    if (pose + outfit() + st.golden !== heroKey) { heroKey = pose + outfit() + st.golden; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#ring').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     renderToday(s);
     renderComing();
     // other pages
     if (page === 'progress') renderProgress(s);
-    if (page === 'kuih' || !$('#onboard').hidden) renderCollection(s);
+    if (page === 'kuih' || page === 'settings' || !$('#onboard').hidden) renderCollection(s); // the code box is on both pages
     document.querySelectorAll('.seg [data-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sval !== undefined ? st[b.dataset.set] === b.dataset.sval : st[b.dataset.set] === +b.dataset.val)));
     document.querySelectorAll('.switch[data-set]').forEach(b => b.setAttribute('aria-checked', String(!!st[b.dataset.set])));
     document.querySelectorAll('.day[data-set]').forEach(b => b.setAttribute('aria-pressed', String((st.workDays || []).includes(+b.dataset.val))));
@@ -679,7 +696,7 @@
   function renderWidget() {
     if (trayKuih !== st.kuih) { trayKuih = st.kuih; wPoseKey = ''; sendTrayIcon(st.kuih || 'lapis'); }
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : waterAsk() ? 'glass' : st.quiet ? 'shh' : st.mode === 'snoozed' || st.paused || st.away || st.resting ? 'sleep' : 'idle';
-    if (pose + outfit() !== wPoseKey) { wPoseKey = pose + outfit(); $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active'); }
+    if (pose + outfit() + st.golden !== wPoseKey) { wPoseKey = pose + outfit() + st.golden; $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#widget').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     $('#widget').classList.toggle('water', waterAsk());
     const p = $('#wPause');
@@ -733,6 +750,8 @@
         <div class="row center"><button class="btn" data-w="unlock-use" type="button">${T('un.use', { k: esc(k.name) })}</button><button class="btn ghost" data-w="notice-close" type="button">${T('un.keep', { k: esc(kuihName()) })}</button></div></div>`;
     }
     if (n.type === 'summary') return summaryHTML(n.week);
+    if (n.type === 'teh') return `<div class="nc-row"><div class="nc-img teh">${lapis('tarik', kuihName())}</div><div class="nc-body"><p class="nc-tag teh">${T('teh.tag', { time: fmtMin(930) })}</p><h3>${T('teh.title')}</h3><p class="nc-sub">${T('teh.sub')}</p><div class="row"><button class="btn" data-w="notice-close" type="button">${T('teh.btn')}</button></div></div></div>`;
+    if (n.type === 'night') return `<div class="nc-row"><div class="nc-img night">${lapis('yawn', kuihName())}</div><div class="nc-body"><p class="nc-tag night">${fmtTime(Date.now())}</p><h3>${T('night.title')}</h3><p class="nc-sub">${T('night.sub')} ${n.back ? T('night.see', { when: whenLabel(n.back) }) : T('night.seeTomorrow')}</p><div class="row"><button class="btn" data-w="notice-close" type="button">${T('night.ok')}</button><button class="btn ghost" data-w="night-more" type="button">${T('night.more')}</button></div></div></div>`;
     if (n.type === 'wrap') {
       const rec = (st.history || {})[n.day] || { total: 0 }, met = rec.total >= st.goal, s = stats();
       return `<div class="nc-row"><div class="nc-img">${lapis('wave', kuihName())}</div><div class="nc-body"><p class="nc-tag">${T('wrap.tag', { time: fmtMin(st.workEnd) })}</p><h3>${T('wrap.title')}</h3>
@@ -811,9 +830,13 @@
     malay: { title: 'Jom joget!', moves: ['wave', 'cheer', 'twist', 'reach', 'shoulders', 'walk', 'thoracic', 'cheer'], flipEvery: 1 },
     chinese: { title: 'Huat ah!', moves: ['salute', 'salute', 'horse', 'cheer', 'kick', 'horse', 'reach', 'salute'], flipEvery: 2 },
     indian: { title: 'Vaanga aadalaam!', moves: ['mudraL', 'mudraR', 'mudraL', 'mudraR', 'cheer', 'kick', 'mudraL', 'reach'], flipEvery: 4 },
-    borneo: { title: 'Jom sumazau!', moves: ['wingsUp', 'wingsDown', 'wingsUp', 'wingsDown', 'wingsUp', 'walk', 'wingsUp', 'cheer'], flipEvery: 2 }
+    borneo: { title: 'Jom sumazau!', moves: ['wingsUp', 'wingsDown', 'wingsUp', 'wingsDown', 'wingsUp', 'walk', 'wingsUp', 'cheer'], flipEvery: 2 },
+    // the flag-day code, and the Merdeka and Malaysia Day festivals: a march with the Jalur Gemilang
+    merdeka: { title: 'Merdeka!', moves: ['flag', 'salute', 'flag', 'walk', 'flag', 'salute', 'cheer', 'flag'], flipEvery: 2 }
   };
   const eggStyle = skin => {
+    const f = festival();
+    if (flagCode() || (f && (f.id === 'merdeka' || f.id === 'malaysiaday'))) return 'merdeka';
     const g = (KUIH_BY[skin] || KUIH_BY.lapis).group;
     return Object.prototype.hasOwnProperty.call(DANCES, g) ? g : 'malay';
   };
@@ -881,7 +904,7 @@
       $('#eggFoot').textContent = T('egg.left', { n: Math.max(1, 8 - Math.floor(beat / 2)) });
     };
     show();
-    eggTimer = setInterval(() => { beat++; if (beat >= 16) { finishEgg(); return; } show(); }, 500);
+    eggTimer = setInterval(() => { beat++; if (beat >= 16) { finishEgg(); return; } show(); }, st.remix ? 420 : 500);
   }
   function finishEgg() {
     if (!eggStarted || eggEnding) return;
@@ -901,8 +924,8 @@
     try {
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
-      const t0 = ac.currentTime + 0.05, E = 0.25, END = 32 * E;
-      const out = ac.createGain(); out.gain.value = { chinese: 0.45, indian: 0.6, borneo: 0.42 }[style] || 0.55; out.connect(ac.destination); eggMaster = out;
+      const remix = !!st.remix, t0 = ac.currentTime + 0.05, E = remix ? 0.21 : 0.25, END = 32 * E; // the remix code: a faster beat
+      const out = ac.createGain(); out.gain.value = { chinese: 0.45, indian: 0.6, borneo: 0.42, merdeka: 0.5 }[style] || 0.55; out.connect(ac.destination); eggMaster = out;
       const hz = m => 440 * Math.pow(2, (m - 69) / 12);
       const env = (g, t, peak, a, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); };
       const at = i => t0 + i * E;
@@ -955,7 +978,21 @@
       const drone = (ms, peak, type, cut) => ms.forEach(m => voice(m, t0, END, { type: type || 'sawtooth', cut: cut || 700, peak, attack: 0.4 }));
       const each = fn => { for (let i = 0; i < 32; i++) fn(i % 8, at(i), Math.floor(i / 8)); };
 
-      if (style === 'chinese') {
+      if (style === 'merdeka') {
+        // an original march (not any existing song): brass-like fanfare in B-flat, oom-pah bass, snare and bass drum
+        const brass = { type: 'sawtooth', cut: 1900, peak: 0.13, attack: 0.02 };
+        melody([65, 0, 70, 0, 74, 0, 77, 0, 75, 74, 72, 70, 72, 0, 74, 0, 70, 0, 74, 0, 77, 0, 79, 77, 75, 72, 74, 0, 70, 0, 0, 0], brass);
+        melody([62, 0, 65, 0, 70, 0, 74, 0, 72, 70, 69, 67, 69, 0, 70, 0, 67, 0, 70, 0, 74, 0, 75, 74, 72, 69, 70, 0, 65, 0, 0, 0], Object.assign({}, brass, { peak: 0.07, cut: 1500 }));
+        const chords = [[58, 62, 65], [63, 67, 70], [58, 62, 65], [60, 65, 69]], bass = [[46, 41], [51, 46], [46, 41], [41, 48]];
+        each((e, t, bar) => {
+          if (e % 2 === 0) voice(bass[bar][(e / 2) % 2], t, 0.2, { type: 'triangle', cut: 3000, peak: 0.26, attack: 0.01 });
+          else chords[bar].forEach(m => voice(m, t, 0.14, { type: 'square', cut: 1400, peak: 0.03, attack: 0.01 }));
+          if (e === 0 || e === 4) thump(t, 110, 50, 0.65, 0.25);
+          if (e === 2 || e === 6) noise(t, 0.32, 0.12, 'bandpass', 1800, 0.8);
+          if (bar === 3 && e >= 4) { noise(t, 0.18, 0.06, 'bandpass', 2000, 0.8); noise(t + E / 2, 0.18, 0.06, 'bandpass', 2000, 0.8); } // snare roll into the end
+          if (e === 0 && bar === 0) noise(t, 0.2, 0.9, 'highpass', 6000, 0.7); // cymbal
+        });
+      } else if (style === 'chinese') {
         // erhu-like lead in D major pentatonic, guzheng off-beats, lion-dance drum, cymbals and gong
         melody([74, 0, 71, 69, 71, 74, 76, 0, 78, 76, 74, 71, 69, 0, 71, 0, 69, 71, 74, 0, 71, 69, 66, 64, 66, 69, 64, 0, 62, 0, 0, 0],
           { type: 'sawtooth', filter: 'bandpass', cut: 1300, q: 0.8, peak: 0.2, vib: 7, vibRate: 6, slide: 1 });
@@ -1005,6 +1042,16 @@
           else if (hit === 'tak') noise(t, 0.35, 0.08, 'bandpass', 2600, 1.2);
         });
       }
+      if (remix) {
+        // remix on top of any song: tabla (dha, tin, na) and teh cups clinking
+        each((e, t) => {
+          const b = ['dha', 'na', 'tin', 'na', 'dha', 'dha', 'tin', 'na'][e];
+          if (b === 'dha') { thump(t, 130, 75, 0.4, 0.2); thump(t, 520, 480, 0.08, 0.12); }
+          else if (b === 'tin') thump(t, 620, 560, 0.1, 0.18);
+          else noise(t, 0.12, 0.05, 'bandpass', 4200, 2.5);
+          if (e === 3 || e === 7) gong(100, t, 0.06, 0.3, [1, 2.76, 5.4]);
+        });
+      }
     } catch (e) { /* no audio device */ }
   }
 
@@ -1026,5 +1073,11 @@
   }
   api.onState(onState);
   api.getState().then(onState);
-  setInterval(() => { if (st && built) B[2](); }, 500);
+  let lastOutfit = '';
+  setInterval(() => {
+    if (!st || !built) return;
+    const o = String(outfit());
+    if (o !== lastOutfit) { const first = !lastOutfit; lastOutfit = o; if (!first && view !== 'egg') B[1](); }
+    B[2]();
+  }, 500);
 })();

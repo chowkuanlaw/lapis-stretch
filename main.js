@@ -32,6 +32,10 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 // The secret code that unlocks every kuih, stored only as a salted SHA-256 hash.
 const CODE_HASH = '236baef63139445e4254071641f6555ecb509cfa7fe905a4e8955812e7b712ea';
+// Two more easter-egg codes (1.7.1), also stored only as hashes.
+const CODE2_HASH = '79003147ddebca62535fbb1a7ad83d015c54f5f1d3b6a5a78d8a473d111ca984';
+const CODE3_HASH = 'b2b506c1bc85f6c8b9c9137ce42e7cdf29f1f7f09a74c93b907eae9925184d52';
+const GOLD_CHANCE = 1 / 200;
 const MEETING_RECHECK = 60e3, AFTER_MEETING = 120e3, WATER_LATER = 15 * 60e3;
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true } }]);
 
@@ -57,7 +61,9 @@ function run() {
     quietMeetings: true, waterOn: true, waterEvery: 60, waterGoal: 8, summaryOn: true, lastSummary: '',
     collect: true, unlocked: {}, codeUnlocked: false, collectInit: false,
     // 1.7.0
-    ramadanOn: true, wrapOn: true, lastWrap: ''
+    ramadanOn: true, wrapOn: true, lastWrap: '',
+    // 1.7.1 easter eggs
+    goldFound: {}, flagDay: '', remix: false, lastTeh: '', lastNight: ''
   };
   const WATER_EVERY = [30, 45, 60, 90, 120];
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
@@ -66,7 +72,8 @@ function run() {
     mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null,
     update: null, updateMsg: null, checking: false,
     resting: false, quiet: false, quietCheck: false, nextWater: 0, waterCheck: false, notices: [], noticeUntil: 0, codeMsg: null, codeMsgUntil: 0,
-    locked: 0, backMins: 0, backUntil: 0, wrapCheck: false, nextWrapCheck: 0
+    locked: 0, backMins: 0, backUntil: 0, wrapCheck: false, nextWrapCheck: 0,
+    golden: false, eggCheck: false, nextEggCheck: 0, nightAgain: 0
   };
 
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
@@ -83,7 +90,7 @@ function run() {
     pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
     pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
     for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded',
-      'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn']) {
+      'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn', 'remix']) {
       if (typeof saved[k] === 'boolean') out[k] = saved[k];
     }
     pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
@@ -106,11 +113,17 @@ function run() {
     if (ls < le) { out.lunchStart = ls; out.lunchEnd = le; }
     pick('waterEvery', WATER_EVERY.includes(saved.waterEvery) ? saved.waterEvery : undefined);
     pick('waterGoal', int(saved.waterGoal, 1, 20));
-    for (const k of ['lastSummary', 'lastWrap']) if (typeof saved[k] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved[k])) out[k] = saved[k];
+    for (const k of ['lastSummary', 'lastWrap', 'flagDay', 'lastTeh', 'lastNight']) if (typeof saved[k] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved[k])) out[k] = saved[k];
     if (saved.unlocked && typeof saved.unlocked === 'object' && !Array.isArray(saved.unlocked)) {
       for (const id of Object.keys(saved.unlocked)) {
         const d = saved.unlocked[id];
         if (own(KUIH_BY, id) && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) out.unlocked[id] = d;
+      }
+    }
+    if (saved.goldFound && typeof saved.goldFound === 'object' && !Array.isArray(saved.goldFound)) {
+      for (const id of Object.keys(saved.goldFound)) {
+        const d = saved.goldFound[id];
+        if (own(KUIH_BY, id) && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) out.goldFound[id] = d;
       }
     }
     const wp = saved.widgetPos;
@@ -227,11 +240,14 @@ function run() {
   function redeem(code) {
     if (typeof code !== 'string' || code.length > 64) return;
     const norm = code.replace(/\s+/g, '').toUpperCase();
-    const ok = crypto.createHash('sha256').update('lapis:' + norm).digest('hex') === CODE_HASH;
-    if (ok) S.codeUnlocked = true;
-    R.codeMsg = ok ? 'ok' : 'bad'; R.codeMsgUntil = Date.now() + 8000;
+    const h = crypto.createHash('sha256').update('lapis:' + norm).digest('hex');
+    if (h === CODE_HASH) { S.codeUnlocked = true; R.codeMsg = 'ok'; }
+    else if (h === CODE2_HASH) { S.flagDay = dayKey(new Date()); R.codeMsg = 'flag'; }
+    else if (h === CODE3_HASH) { S.remix = !S.remix; R.codeMsg = S.remix ? 'remixOn' : 'remixOff'; }
+    else R.codeMsg = 'bad';
+    R.codeMsgUntil = Date.now() + 9000;
     save(); broadcast();
-    setTimeout(broadcast, 8100);
+    setTimeout(broadcast, 9100);
   }
 
   /* ---------- corner-card notices: water, new kuih, Friday summary ---------- */
@@ -271,6 +287,30 @@ function run() {
     S.lastSummary = week; save();
     pushNotice({ type: 'summary', week });
   }
+  /* Easter eggs (1.7.1): teh tarik on Friday at 3:30 pm, and "go to sleep" late at night.
+     Each shows once (a week, a night), only while you're at the PC and not in a meeting. */
+  const isNight = d => d.getHours() >= 23 || d.getHours() < 5;
+  const nightKey = d => dayKey(new Date(d.getTime() - 5 * 3600e3)); // 1 am still belongs to the evening before
+  function eggNotices(now) {
+    if (R.eggCheck || now < R.nextEggCheck) return;
+    const d = new Date(now), m = minsOf(d);
+    let want = null;
+    if (d.getDay() === 5 && m >= 930 && m < 960 && !R.resting && !S.paused && S.lastTeh !== dayKey(mondayOf(d))) want = 'teh';
+    else if (isNight(d) && (S.lastNight !== nightKey(d) || (R.nightAgain && now >= R.nightAgain))) want = 'night';
+    if (!want || R.notices.some(n => n.type === want)) return;
+    let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
+    if (idle >= 60 || R.locked) { R.nextEggCheck = now + 30e3; return; } // only while you're using the PC
+    R.eggCheck = true;
+    (S.quietMeetings ? isQuietTime() : Promise.resolve(false)).then(quiet => {
+      R.eggCheck = false;
+      if (quiet) { R.nextEggCheck = Date.now() + MEETING_RECHECK; return; }
+      if (want === 'teh') S.lastTeh = dayKey(mondayOf(d)); else { S.lastNight = nightKey(d); R.nightAgain = 0; }
+      save();
+      pushNotice(want === 'teh' ? { type: 'teh' } : { type: 'night', back: S.workOn ? nextWorkStart(Date.now()) : 0 });
+      chime(want === 'teh' ? 'done' : 'water');
+    });
+  }
+
   /* End-of-day wrap-up (1.7.0): once a working day, when your working hours end and you're still at the PC.
      On the day the Friday summary shows, the summary says goodbye instead. */
   function wrapDue(now) {
@@ -299,6 +339,7 @@ function run() {
       resting: R.resting, backAt: R.resting ? nextWorkStart(Date.now()) : 0, quiet: R.quiet,
       nextWater: S.waterOn && !R.resting && !puasa() ? R.nextWater : 0, notice: R.notices[0] || null,
       ramadan: puasa(), backMins: Date.now() < R.backUntil ? R.backMins : 0,
+      golden: R.golden && (R.mode === 'due' || R.mode === 'active' || R.mode === 'done'),
       codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
       eggMsg: Date.now() < eggMsgUntil,
       version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
@@ -324,6 +365,9 @@ function run() {
   function becomeDue(exId, quiet) {
     R.cur = own(BY, exId) ? exId : upNext().id;
     R.mode = 'due'; R.dueAt = Date.now(); R.rechimes = 0; R.quiet = false;
+    // Easter egg: now and then a scheduled reminder brings a golden kuih (a hidden badge, found by luck only).
+    R.golden = !quiet && (Math.random() < GOLD_CHANCE || (!app.isPackaged && !!process.env.LAPIS_TEST_GOLD));
+    if (R.golden && !own(S.goldFound, S.kuih)) { S.goldFound[S.kuih] = dayKey(new Date()); save(); }
     const w = R.notices.findIndex(n => n.type === 'water'); // the stretch takes the corner; water asks again later
     if (w >= 0) { R.notices.splice(w, 1); R.nextWater = Date.now() + WATER_LATER; }
     if (!quiet) { chime('due'); toast(BY[R.cur]); }
@@ -341,9 +385,10 @@ function run() {
     advance(); schedule(S.interval * 60e3); chime('done');
     R.mode = 'done'; R.msgUntil = Date.now() + 5000;
     collectionUpdate(false);
+    setTimeout(() => { R.golden = false; }, 5200);
     broadcast();
   }
-  function skip() { advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; broadcast(); }
+  function skip() { advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; R.golden = false; broadcast(); }
   function snooze() { schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 3500; broadcast(); }
   function different() {
     const base = R.cur || upNext().id; let i = S.idx;
@@ -531,6 +576,7 @@ function run() {
     if (R.noticeUntil && now >= R.noticeUntil) closeNotice();
     summaryDue(now);
     wrapDue(now);
+    eggNotices(now);
 
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
@@ -765,6 +811,7 @@ function run() {
       case 'water-add': drankWater(false); break;
       case 'water-later': if (top && top.type === 'water') { R.nextWater = Date.now() + WATER_LATER; closeNotice(); } break;
       case 'notice-close': if (top) closeNotice(); break;
+      case 'night-more': if (top && top.type === 'night') { R.nightAgain = Date.now() + 5 * 60e3; closeNotice(); } break;
       case 'unlock-use': if (top && top.type === 'unlock') { setSetting('kuih', top.id); closeNotice(); } break;
       case 'summary-open': if (top && top.type === 'summary') { closeNotice(); showMain(); } break;
       case 'redeem': redeem(a.code); break;

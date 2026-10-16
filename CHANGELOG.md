@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.1 (2026-10-16)
+
+- A few new surprises for the curious: something rare and shiny, a Friday afternoon tradition, and a kuih that thinks you should be in bed. The secret code box has more to give, too.
+- The secret code box on Your kuih now stays visible even after you've collected every kuih.
+
 ## 1.7.0 (2026-10-16)
 
 - **Time away counts as a break.** Stepping away for 5 minutes, or locking your PC for a minute or more, now also clears a reminder that was waiting for you, and Lapis says "Welcome back" with how long you were away. The reminder no longer chimes again while you're away.

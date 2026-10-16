@@ -522,3 +522,24 @@ input[data-code]:focus-visible{outline:3px solid var(--pink);outline-offset:1px}
 #monthWater .month-legend .mc.l4{background:var(--water)}
 .wrap-stats{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .wrap-stats b{font-family:var(--f-display);font-size:19px;color:var(--ink);font-weight:800}
+/* ===== 1.7.1: easter eggs ===== */
+.card.gold{box-shadow:0 0 0 2.5px #E0B021,var(--shadow)}
+.view-popup .card.gold{box-shadow:0 0 0 2.5px #E0B021,0 4px 16px rgba(0,0,0,.18)}
+.card .tile.gold{background:#FFF4CF}
+.card .tag.gold{color:#B07A00}
+@media (prefers-color-scheme:dark){.card .tile.gold{background:#3A3215}.card .tag.gold{color:#F2C94C}}
+.nc-img.teh{background:#F7EBDD}
+.nc-img.night{background:#1F2547}
+.nc-tag.teh{color:#9A5B1E}
+.nc-tag.night{color:#5C6BC0}
+@media (prefers-color-scheme:dark){.nc-img.teh{background:#3A2C1E}.nc-tag.teh{color:#E0A766}.nc-tag.night{color:#9FA8DA}}
+.gold-card{display:flex;flex-direction:column;gap:8px;border:1px dashed #D9B44A}
+.gold-sub{font-size:13px;color:var(--muted)}
+.gold-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.gold-k{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;font-size:12px}
+.gold-k svg{height:72px;width:auto}
+.gold-k b{font-size:12.5px;line-height:1.2}
+.gold-k span{color:var(--muted);font-size:11px}
+.egg[data-style=merdeka] .egg-glow{background:#010066}
+.egg[data-style=merdeka] .egg-title{color:#FFCC00}
+.egg[data-style=merdeka].dancing .egg-kuih{animation:eggHop .5s cubic-bezier(.3,0,.5,1) infinite}

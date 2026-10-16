@@ -44,7 +44,7 @@
     },
     yawn: K => ({ face: 'closed', mouth: 'yawn', arms: [IDLE_ARMS[0], [[87, 58], [98, 34], [92, 10]]],
       extra: `<path d="M77 ${51 + (K.faceDy || 0)} q3 5 0 7 q-3 -2 0 -7 Z" fill="#7CC7EA" stroke="#2A1F1A" stroke-width="1"/><text class="zz" x="102" y="${K.faceDy > 8 ? 30 : 18}">z</text><text class="zz" x="113" y="${K.faceDy > 8 ? 18 : 6}" style="font-size:13px">z</text>` }),
-    // MERDEKA code: wave the Jalur Gemilang
+    // flag-day code: wave the Jalur Gemilang
     flag: { arms: [IDLE_ARMS[0], [[87, 60], [100, 48], [104, 34]]], prop: 'flag', face: 'happy' }
   };
 
