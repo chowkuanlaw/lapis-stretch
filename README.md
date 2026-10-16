@@ -13,56 +13,72 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. Closing the window keeps reminders running.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Knows when you're away.** After 5 minutes of no keyboard or mouse activity, or when you lock or sleep your PC, the timer restarts so you're not nagged the moment you sit back down.
-- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, chime on or off, widget on or off, optional Windows notification, start with Windows, and an optional daily update check.
+- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, chime on or off, widget on or off, optional Windows notification and start with Windows.
+- **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.
 
 ![The Lapis main window](docs/main-window.png)
 
 ## Install
 
-1. Download `Lapis-win-x64.zip` from the [latest release](../../releases/latest).
-2. Unzip it anywhere you like, for example `C:\Users\<you>\tools\Lapis`.
-3. Run `Lapis.exe`.
+1. Download **`Lapis-Setup-<version>.exe`** from the [latest release](../../releases/latest).
+2. Run it. Lapis installs just for you (no admin rights needed), adds itself to the Start menu and opens.
 
 The app isn't code-signed, so Windows may show "Windows protected your PC" the first time. Click **More info**, then **Run anyway**.
 
-To uninstall, quit Lapis from the tray menu, turn off **Start with Windows** first if you want, then delete the folder. You can also delete `%APPDATA%\Lapis` and the Lapis entry in the Start menu.
+**Updates are automatic.** Lapis checks for a new version when it starts and once a day, downloads it in the background, and shows **Restart to update** in the Lapis window (and a Windows notification). If you don't restart, the update installs the next time you quit Lapis. Your settings and stretch history are kept. You can turn this off in Settings, and **Check now** checks on demand.
+
+**Portable copy:** if you'd rather not install anything, download `Lapis-win-x64.zip`, unzip it anywhere and run `Lapis.exe`. The portable copy tells you when a new version is out, but you replace the folder yourself.
+
+To uninstall, go to Windows **Settings → Apps → Installed apps → Lapis → Uninstall**. Your stretch history in `%APPDATA%\Lapis` is left in place; delete that folder too if you want it gone.
 
 ## Privacy
 
 Lapis has no analytics, no accounts and no tracking. Fonts and images are bundled, and every window runs under a content security policy that only allows the app's own files. The only thing it saves is your settings and stretch counts per day, in `%APPDATA%\Lapis\state.json` on your own PC.
 
-The one network request Lapis can make is the update check, and it's **off by default**. If you turn on **Check for updates** in Settings (or click **Check now**), Lapis asks GitHub's public API for the latest release of this repository, at most once a day. It sends nothing about you or your stretches; if a newer version exists, Lapis shows a **Download** button that opens the releases page. It never downloads or installs anything by itself.
+The only network traffic is the update check against this repository's GitHub releases: when Lapis starts, once a day, and when you click **Check now**. It sends nothing about you or your stretches, just the standard request any download makes. Turn off **Update automatically** in Settings and Lapis only goes online when you click **Check now**.
 
 ## Build from source
 
-Lapis is plain Electron with no build step or npm dependencies for the app itself.
-
-Run it in development (any OS):
+Run it in development (any OS, Node 22):
 
 ```bash
-npm install --no-save electron@44.5.1
-npx electron .
+npm ci
+npm start
 ```
 
-Build the Windows app and zip (on Linux, macOS or WSL; needs `curl`, `unzip`, `zip`, `node` and `npm`):
+Build the installer (on Windows):
+
+```bash
+npm ci
+npm run dist:installer
+# -> dist/installer/Lapis-Setup-<version>.exe and latest.yml
+```
+
+Build the portable zip (on Linux, macOS or WSL; needs `curl`, `unzip`, `zip`, `node` and `npm`):
 
 ```bash
 ./scripts/build-win.sh
 # -> dist/Lapis/Lapis.exe and dist/Lapis-win-x64.zip
 ```
 
-The script downloads the official Electron Windows build, checks it against Electron's published SHA-256 checksums, copies the app in, and sets the Lapis icon on `Lapis.exe`.
+### Releasing
 
-Releases are built the same way by GitHub Actions (`.github/workflows/release.yml`): push a tag such as `v1.0.1`, or open the Actions tab, pick **Release** and click **Run workflow** with the new version. It builds the zip from the source and attaches it to a new release.
+Releases are built by GitHub Actions (`.github/workflows/release.yml`) from the source, never on someone's PC:
+
+1. Bump `version` in `package.json` and add a line to `CHANGELOG.md`.
+2. Push a matching tag (`v1.1.1`), or open the Actions tab, pick **Release**, click **Run workflow** and enter the tag.
+
+The workflow refuses to run if the tag doesn't match `package.json`. It builds the installer on Windows and the portable zip on Linux, then publishes both. Installed copies of Lapis pick up the new release on their next check.
 
 ## Project layout
 
 ```
-main.js            timer, state, tray, and the three windows (runs in the main process)
+main.js            timer, state, tray, updates, and the three windows (runs in the main process)
 preload.js         the small bridge the windows use to talk to main.js
 renderer/          the UI: index.html, app.css, app.js, the mascot drawing, the stretch list, fonts
 assets/            app and tray icons
-scripts/           Windows build script
+scripts/           portable build script
+package.json       app details, plus the installer settings under "build"
 ```
 
 ## Feedback

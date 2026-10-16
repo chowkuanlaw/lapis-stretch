@@ -183,3 +183,4 @@ body.view-widget,body.view-popup{background:transparent;overflow:hidden;user-sel
 /* update notice (main window) */
 .update-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--pandan-soft);color:var(--ink);border-radius:16px;padding:10px 10px 10px 18px;font-weight:600}
 .btn:disabled{opacity:.5;cursor:default}
+.w-sub.w-update{color:var(--pink);font-weight:600}

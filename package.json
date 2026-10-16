@@ -1,7 +1,7 @@
 {
   "name": "lapis",
   "productName": "Lapis",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Lapis stretch reminder: desk stretch nudges with a desktop widget and pop-up reminders",
   "main": "main.js",
   "license": "MIT",
@@ -10,5 +10,64 @@
     "url": "https://github.com/chowkuanlaw/lapis-stretch.git"
   },
   "homepage": "https://github.com/chowkuanlaw/lapis-stretch#readme",
-  "private": true
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:installer": "electron-builder --win nsis --x64 --publish never",
+    "dist:portable": "bash scripts/build-win.sh"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.10"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "app.lapis.stretch",
+    "productName": "Lapis",
+    "copyright": "Copyright (c) 2026 chowkuanlaw",
+    "directories": {
+      "output": "dist/installer"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "assets/**",
+      "LICENSE",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "executableName": "Lapis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lapis",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Lapis-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "chowkuanlaw",
+        "repo": "lapis-stretch",
+        "releaseType": "release"
+      }
+    ]
+  }
 }

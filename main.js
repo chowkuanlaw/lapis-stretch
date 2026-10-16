@@ -17,7 +17,7 @@ const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
 const POPUP_W = 440, WIDGET_W = 300, WIDGET_H = 100;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
 const TRAY_ICON = path.join(__dirname, 'assets', process.platform === 'win32' ? 'tray.ico' : 'tray.png');
-// Update check (off unless the user turns it on): the only network request Lapis can make.
+// Updates come from this repository's GitHub releases; this is the only network traffic Lapis makes.
 const REPO = 'chowkuanlaw/lapis-stretch';
 const RELEASES_URL = `https://github.com/${REPO}/releases/latest`;
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -37,7 +37,7 @@ function run() {
   const DEFAULTS = {
     interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
     autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
-    history: {}, widgetPos: null, firstRun: true, updateCheck: false, lastUpdateCheck: 0
+    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0
   };
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = Object.assign({}, DEFAULTS);
@@ -48,6 +48,7 @@ function run() {
 
   function loadState() {
     try { S = Object.assign({}, DEFAULTS, JSON.parse(fs.readFileSync(stateFile(), 'utf8'))); } catch (e) { S = Object.assign({}, DEFAULTS); }
+    delete S.updateCheck; // replaced by autoUpdate in 1.1.0
     // A fresh launch (e.g. first thing in the morning) starts a new countdown instead of firing at once.
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
     S.nextDue = Date.now() + S.interval * 60e3;
@@ -66,7 +67,7 @@ function run() {
     return Object.assign(rest, {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
       switched: R.switched, away: !!R.awaySince,
-      version: app.getVersion(), update: R.update, updateMsg: R.updateMsg, checking: R.checking
+      version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
     });
   }
   function broadcast() {
@@ -126,7 +127,39 @@ function run() {
     if (R.mode === 'waiting' && !S.paused) { R.awaySince = null; schedule(S.interval * 60e3); broadcast(); }
   }
 
-  /* ---------- update check ---------- */
+  /* ---------- updates ---------- */
+  // Installed copies (from Lapis-Setup.exe) update themselves with electron-updater:
+  // check, download in the background, then "Restart to update" (or install on quit).
+  // The portable zip can't replace itself, so it only checks and offers a Download link.
+  const INSTALLED = app.isPackaged && fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'));
+  let autoUpdater = null, readyNotified = false;
+  if (INSTALLED) {
+    try {
+      ({ autoUpdater } = require('electron-updater'));
+      autoUpdater.logger = null;
+      autoUpdater.autoDownload = true;
+      autoUpdater.autoInstallOnAppQuit = true;
+      autoUpdater.on('update-available', info => {
+        R.update = { version: info.version, state: 'downloading', percent: 0 };
+        R.updateMsg = `Downloading Lapis ${info.version}...`; broadcast();
+      });
+      autoUpdater.on('update-not-available', () => { R.update = null; R.updateMsg = 'You have the latest version'; broadcast(); });
+      autoUpdater.on('download-progress', p => {
+        if (!R.update || R.update.state !== 'downloading') return;
+        const pc = Math.floor(p.percent || 0);
+        if (pc !== R.update.percent) { R.update.percent = pc; broadcast(); }
+      });
+      autoUpdater.on('update-downloaded', info => {
+        R.update = { version: info.version, state: 'ready' };
+        R.updateMsg = `Lapis ${info.version} is ready to install`; broadcast();
+        notifyReady(info.version);
+      });
+      autoUpdater.on('error', () => {
+        if (R.update && R.update.state === 'downloading') R.update = null;
+        R.updateMsg = "Couldn't update just now. Lapis will try again later."; R.checking = false; broadcast();
+      });
+    } catch (e) { autoUpdater = null; }
+  }
   function isNewer(a, b) {
     const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
     for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
@@ -134,20 +167,39 @@ function run() {
   }
   async function checkForUpdate(manual) {
     if (R.checking) return;
+    if (R.update && (R.update.state === 'downloading' || R.update.state === 'ready')) { if (manual) broadcast(); return; }
     R.checking = true; if (manual) R.updateMsg = 'Checking...';
-    broadcast();
+    S.lastUpdateCheck = Date.now(); save(); broadcast();
+    if (autoUpdater) {
+      try { await autoUpdater.checkForUpdates(); }
+      catch (e) { if (manual) R.updateMsg = "Couldn't reach GitHub. Check your connection and try again."; }
+      R.checking = false; broadcast();
+      return;
+    }
     try {
-      // Plain public request: no account, no identifiers, nothing about your stretches.
+      // Portable copy: a plain public request for the latest release tag. Nothing about you is sent.
       const res = await net.fetch(LATEST_API, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Lapis' } });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const tag = String((await res.json()).tag_name || '');
       const m = /^v?(\d+\.\d+\.\d+)$/.exec(tag);
-      if (m && isNewer(m[1], app.getVersion())) { R.update = { version: m[1] }; R.updateMsg = `Lapis ${m[1]} is available`; }
-      else { R.update = null; R.updateMsg = `You have the latest version`; }
+      if (m && isNewer(m[1], app.getVersion())) { R.update = { version: m[1], state: 'available' }; R.updateMsg = `Lapis ${m[1]} is available`; }
+      else { R.update = null; R.updateMsg = 'You have the latest version'; }
     } catch (e) {
       if (manual) R.updateMsg = "Couldn't reach GitHub. Check your connection and try again.";
     }
-    R.checking = false; S.lastUpdateCheck = Date.now(); save(); broadcast();
+    R.checking = false; broadcast();
+  }
+  function notifyReady(version) {
+    if (readyNotified || !Notification.isSupported()) return;
+    readyNotified = true;
+    const n = new Notification({ title: 'Lapis update ready', body: `Restart Lapis to update to ${version}. It will also install the next time you quit.`, icon: ICON, silent: true });
+    n.on('click', showMain);
+    n.show();
+  }
+  function installUpdate() {
+    if (!autoUpdater || !R.update || R.update.state !== 'ready') return;
+    quitting = true; clearTimeout(saveTimer); writeNow();
+    setImmediate(() => autoUpdater.quitAndInstall(true, true)); // silent install, then reopen Lapis
   }
   function openReleases() { shell.openExternal(RELEASES_URL); }
 
@@ -159,10 +211,9 @@ function run() {
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
-      case 'updateCheck':
-        S.updateCheck = !!value;
-        if (S.updateCheck) setTimeout(() => checkForUpdate(false), 0);
-        else { R.update = null; R.updateMsg = ''; }
+      case 'autoUpdate':
+        S.autoUpdate = !!value;
+        if (S.autoUpdate) setTimeout(() => checkForUpdate(false), 0);
         break;
       default: return;
     }
@@ -187,7 +238,7 @@ function run() {
 
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
-    if (S.updateCheck && !R.checking && now - (S.lastUpdateCheck || 0) > UPDATE_EVERY) checkForUpdate(false);
+    if (S.autoUpdate && !R.checking && now - (S.lastUpdateCheck || 0) > UPDATE_EVERY) checkForUpdate(false);
     if (tray) tray.setToolTip(`Lapis · ${statusLabel()}`);
   }
 
@@ -286,7 +337,12 @@ function run() {
     return `Next stretch in ${mmss(S.nextDue - Date.now())}`;
   }
   function buildMenu() {
-    const updateItems = R.update ? [{ label: `Download Lapis ${R.update.version}`, click: openReleases }, { type: 'separator' }] : [];
+    const u = R.update, updateItems = !u ? [] : [
+      u.state === 'ready' ? { label: `Restart to update to Lapis ${u.version}`, click: installUpdate }
+        : u.state === 'downloading' ? { label: `Downloading Lapis ${u.version}... ${u.percent || 0}%`, enabled: false }
+        : { label: `Download Lapis ${u.version}`, click: openReleases },
+      { type: 'separator' }
+    ];
     return Menu.buildFromTemplate([
       ...updateItems,
       { label: statusLabel(), enabled: false },
@@ -319,7 +375,7 @@ function run() {
   }
   function ensureStartMenuShortcut() {
     // A Start Menu shortcut carrying the AppUserModelID is what lets Windows show toast notifications.
-    if (process.platform !== 'win32' || !app.isPackaged) return;
+    if (process.platform !== 'win32' || !app.isPackaged || INSTALLED) return; // the installer makes its own
     try {
       const lnk = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Lapis.lnk');
       shell.writeShortcutLink(lnk, fs.existsSync(lnk) ? 'replace' : 'create', {
@@ -350,6 +406,7 @@ function run() {
       case 'test-chime': chime('due'); break;
       case 'check-update': checkForUpdate(true); break;
       case 'open-release': openReleases(); break;
+      case 'install-update': installUpdate(); break;
       default: break;
     }
   });
@@ -374,5 +431,6 @@ function run() {
     screen.on('display-removed', () => { if (widgetWin && !onSomeDisplay(S.widgetPos)) { S.widgetPos = null; const wa = screen.getPrimaryDisplay().workArea; widgetWin.setPosition(wa.x + wa.width - WIDGET_W - 12, wa.y + 12); } });
     setInterval(tick, 1000);
     broadcast();
+    if (S.autoUpdate) setTimeout(() => checkForUpdate(false), 8000); // check shortly after launch
   });
 }

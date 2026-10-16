@@ -105,7 +105,7 @@
     ['toast', 'Windows notification too', 'Also shows in the Windows notification centre'],
     ['awayReset', 'Restart timer when I am away', 'After 5 min idle, or when you lock or sleep your PC'],
     ['autostart', 'Start with Windows', 'Lapis starts quietly in the tray when you sign in'],
-    ['updateCheck', 'Check for updates', 'Asks GitHub once a day if a newer Lapis is out. Off by default']
+    ['autoUpdate', 'Update automatically', 'Checks GitHub when Lapis starts and once a day']
   ];
   function buildMain() {
     root.innerHTML = `
@@ -115,7 +115,7 @@
           <div><h1>Lapis</h1><p>Stretch nudges from a kuih lapis while you work</p></div></div>
         <button class="btn ghost" data-w="pause" id="pauseBtn" type="button">Pause reminders</button>
       </header>
-      <div class="update-bar" id="updateBar" hidden><span id="updateText"></span><button class="btn" data-w="open-release" type="button">Download</button></div>
+      <div class="update-bar" id="updateBar" hidden><span id="updateText"></span><button class="btn" id="updateBtn" type="button" hidden></button></div>
       <main class="grid">
         <section class="stage">
           <div class="clock">
@@ -174,11 +174,25 @@
     $('#week').innerHTML = days.map(d => `<div class="d${d.today ? ' today' : ''}${d.n ? ' has' : ''}"><span class="n">${d.n || ''}</span><div class="b" style="height:${Math.max(6, (d.n / max) * 78)}px"></div><span class="l">${d.l}</span></div>`).join('');
     $('#weekFoot').textContent = sum ? `${sum} stretches in the last 7 days.` : 'Your week fills in as you stretch.';
     $('#version').textContent = st.version || '';
-    $('#updateMsg').textContent = st.updateMsg || (st.updateCheck ? 'Checks once a day' : 'Lapis only checks when you click Check now');
-    $('#checkBtn').disabled = !!st.checking;
-    $('#updateBar').hidden = !st.update;
-    if (st.update) $('#updateText').textContent = `Lapis ${st.update.version} is available. You have ${st.version}.`;
+    $('#updateMsg').textContent = st.updateMsg || (st.autoUpdate ? 'Lapis checks for updates automatically' : 'Lapis only checks when you click Check now');
+    $('#checkBtn').disabled = !!st.checking || !!(st.update && st.update.state !== 'available');
+    renderUpdateBar();
     tickMain();
+  }
+  function renderUpdateBar() {
+    const u = st.update, bar = $('#updateBar'), btn = $('#updateBtn');
+    bar.hidden = !u;
+    if (!u) return;
+    if (u.state === 'ready') {
+      $('#updateText').textContent = `Lapis ${u.version} is ready. Restart to update; your stretch history stays.`;
+      btn.hidden = false; btn.textContent = 'Restart to update'; btn.dataset.w = 'install-update';
+    } else if (u.state === 'downloading') {
+      $('#updateText').textContent = `Downloading Lapis ${u.version}... ${u.percent || 0}%`;
+      btn.hidden = true;
+    } else {
+      $('#updateText').textContent = `Lapis ${u.version} is available. You have ${st.version}.`;
+      btn.hidden = false; btn.textContent = 'Download'; btn.dataset.w = 'open-release';
+    }
   }
   function tickMain() {
     const now = Date.now(); let label, time, sub, frac;
@@ -224,7 +238,9 @@
     p.title = st.paused ? 'Resume reminders' : 'Pause reminders';
     p.setAttribute('aria-label', p.title);
     const t = todayRec().total;
-    $('#wSub').textContent = `${t} ${t === 1 ? 'stretch' : 'stretches'} today`;
+    const ready = st.update && st.update.state === 'ready';
+    $('#wSub').textContent = ready ? `Update ready · open Lapis` : `${t} ${t === 1 ? 'stretch' : 'stretches'} today`;
+    $('#wSub').classList.toggle('w-update', !!ready);
     tickWidget();
   }
   function tickWidget() {
