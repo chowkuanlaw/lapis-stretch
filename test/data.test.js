@@ -64,6 +64,20 @@ test('streaks count working days at the goal; weekends never break them', () => 
   assert.equal(D.computeStats(h3, 8, [1, 2, 3, 4, 5], at('2026-10-14')).streak, 4);
 });
 
+test('streak saver: one missed working day a week keeps the streak, a second one breaks it', () => {
+  const h = {
+    '2026-10-05': rec(8), '2026-10-06': rec(8), '2026-10-07': rec(2), '2026-10-08': rec(8), '2026-10-09': rec(8), // Wed missed
+    '2026-10-12': rec(8), '2026-10-13': rec(1), '2026-10-14': rec(1), '2026-10-15': rec(9) // Tue and Wed missed
+  };
+  const wk = [1, 2, 3, 4, 5];
+  assert.equal(D.computeStats(h, 8, wk, at('2026-10-12'), { saver: true }).streak, 5);
+  assert.equal(D.computeStats(h, 8, wk, at('2026-10-12'), { saver: false }).streak, 3);
+  const s = D.computeStats(h, 8, wk, at('2026-10-15'), { saver: true });
+  assert.equal(s.streak, 1);
+  assert.equal(s.bestStreak, 5);
+  assert.equal(D.computeStats(h, 8, wk, at('2026-10-12'), { saver: true }).saverUsed, false, 'a new week has its saver back');
+});
+
 test('no history means nothing collected and no streak', () => {
   const s = D.computeStats({}, 8, [1, 2, 3, 4, 5], at('2026-10-13'));
   assert.equal(s.total, 0);

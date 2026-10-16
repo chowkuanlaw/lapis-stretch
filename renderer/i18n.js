@@ -133,7 +133,15 @@
     'news.1.7.0.b': 'Ramadan mode pauses water reminders during the fasting month.',
     'news.1.7.0.c': 'A "balik kerja" goodbye when your working hours end, and outfits for Merdeka, Malaysia Day and Christmas.',
     'prog.mTotal': 'stretches this month', 'prog.mTotalW': 'glasses this month', 'prog.mGoal': 'days at your goal', 'prog.monthWaterShort': 'days at {g} glasses',
-    'prog.mAvg': 'a working day on average', 'prog.mBest': 'best day', 'prog.mBestOn': 'best day, {date}'
+    'prog.mAvg': 'a working day on average', 'prog.mBest': 'best day', 'prog.mBestOn': 'best day, {date}',
+    // 1.9.0
+    'set.saver': 'Streak saver', 'set.saverSub': 'One missed working day a week doesn\'t break your streak',
+    'prog.saverLeft': 'Saver ready this week', 'prog.saverUsed': 'Saver used this week',
+    'mood.sad': '{k} misses stretching with you. Just one?',
+    'set.textSize': 'Text size', 'text.normal': 'Normal', 'text.large': 'Large', 'text.larger': 'Larger',
+    'news.1.9.0.a': 'Streak saver: one missed working day a week no longer breaks your streak.',
+    'news.1.9.0.b': 'Your kuih has moods: proud at your goal, sleepy after a snooze, a little sad after a few skips.',
+    'news.1.9.0.c': 'Bigger text: choose Large or Larger in Settings.'
   };
   const ms = {
     'nav.today': 'Hari ini', 'nav.stretches': 'Regangan', 'nav.kuih': 'Kuih anda', 'nav.progress': 'Kemajuan', 'nav.settings': 'Tetapan',
@@ -265,7 +273,15 @@
     'news.1.7.0.b': 'Mod Ramadan menghentikan peringatan air sepanjang bulan puasa.',
     'news.1.7.0.c': 'Ucapan "balik kerja" bila waktu kerja tamat, dan pakaian untuk Hari Merdeka, Hari Malaysia dan Krismas.',
     'prog.mTotal': 'regangan bulan ini', 'prog.mTotalW': 'gelas bulan ini', 'prog.mGoal': 'hari capai sasaran', 'prog.monthWaterShort': 'hari capai {g} gelas',
-    'prog.mAvg': 'purata setiap hari kerja', 'prog.mBest': 'hari terbaik', 'prog.mBestOn': 'hari terbaik, {date}'
+    'prog.mAvg': 'purata setiap hari kerja', 'prog.mBest': 'hari terbaik', 'prog.mBestOn': 'hari terbaik, {date}',
+    // 1.9.0
+    'set.saver': 'Penyelamat rentetan', 'set.saverSub': 'Satu hari kerja terlepas setiap minggu tidak memutuskan rentetan anda',
+    'prog.saverLeft': 'Penyelamat sedia minggu ini', 'prog.saverUsed': 'Penyelamat digunakan minggu ini',
+    'mood.sad': '{k} rindu meregang bersama anda. Satu sahaja?',
+    'set.textSize': 'Saiz teks', 'text.normal': 'Biasa', 'text.large': 'Besar', 'text.larger': 'Lebih besar',
+    'news.1.9.0.a': 'Penyelamat rentetan: satu hari kerja terlepas setiap minggu tidak lagi memutuskan rentetan anda.',
+    'news.1.9.0.b': 'Kuih anda ada perasaan: bangga bila capai sasaran, mengantuk selepas tunda, sedikit sedih selepas beberapa kali langkau.',
+    'news.1.9.0.c': 'Teks lebih besar: pilih Besar atau Lebih besar dalam Tetapan.'
   };
   const STR = { en, ms };
   const LANGS = ['en', 'ms'];

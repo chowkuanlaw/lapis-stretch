@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.0 (2026-10-16)
+
+- **Streak saver** (on by default). One missed working day a week no longer breaks your streak; the streak just doesn't grow that day. Progress shows whether this week's saver is still ready.
+- **Kuih moods.** While you wait for the next stretch, your kuih stands proud with hands on hips once you reach your daily goal, looks sleepy after you snooze, and looks a little sad after three skipped reminders in a row, with a gentle "Just one?" on Today.
+- **Bigger text.** Choose Normal, Large or Larger in Settings. The main window, the reminder card and the desktop widget all grow to fit.
+
 ## 1.8.0 (2026-10-16)
 
 - **Pause for a while.** Pause for 30 minutes, 1 hour, 2 hours, until tomorrow, or until you resume, from the tray menu, the widget or the sidebar. Lapis shows when reminders come back on and resumes by itself.

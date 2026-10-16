@@ -18,6 +18,8 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Quiet in meetings.** While an app is full screen or presenting, or Windows Do not disturb is on, reminders wait and come 2 minutes after you're done.
 - **Water reminders.** Every hour your kuih holds up a glass of water. Tap **Done, I drank** to count it toward your 8 glasses a day.
 - **Daily goal and Friday summary.** Aim for 8 stretches a day, and get a look back at your week before you head home on Friday.
+- **Streak saver.** One missed working day a week doesn't break your streak.
+- **Kuih moods.** Your kuih looks proud at your goal, sleepy after a snooze, and a little sad after a few skips.
 - **Balik kerja wrap-up.** When your working hours end, your kuih waves goodbye with your stretches, glasses and streak for the day.
 - **Month calendar.** Progress shows each month as a calendar, shaded by how close each day got to your stretch or water goal.
 - **Ramadan mode.** During the fasting month, water reminders pause and the walkaround (which ends with a drink) is left out until Raya.
@@ -26,7 +28,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **English or Bahasa Melayu.** Every screen, reminder and the tray menu.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Time away counts as a break.** After 5 minutes of no keyboard or mouse activity, or when you lock your PC for a minute or more or sleep it, the timer restarts and any reminder that was waiting is cleared, so you're not nagged the moment you sit back down.
-- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime sound and volume, Light or Dark mode, widget on or off, optional Windows notification, start with Windows, language, and **Reset my data**.
+- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime sound and volume, text size, Light or Dark mode, widget on or off, optional Windows notification, start with Windows, language, and **Reset my data**.
 - **Pick your kuih.** 20 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
 - **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.
 

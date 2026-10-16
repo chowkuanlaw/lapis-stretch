@@ -105,10 +105,12 @@
 
   /* Everything the unlock rules and Progress need, from the saved history.
      workDays: weekday numbers (0 = Sunday) that count for streaks, or null for every day. */
-  function computeStats(history, goal, workDays, now) {
+  // opts.saver (1.9.0): one missed working day a week doesn't break the streak.
+  function computeStats(history, goal, workDays, now, opts) {
+    const saver = !!(opts && opts.saver);
     const h = history || {}, today = dayKey(now || new Date());
     const keys = Object.keys(h).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && k <= today).sort();
-    const s = { total: 0, days: 0, dayMax: 0, eyes: 0, variety: 0, allInDay: 0, goalDays: 0, weekMax: 0, streak: 0, bestStreak: 0 };
+    const s = { total: 0, days: 0, dayMax: 0, eyes: 0, variety: 0, allInDay: 0, goalDays: 0, weekMax: 0, streak: 0, bestStreak: 0, saverUsed: false };
     const seen = new Set(), weeks = {};
     for (const k of keys) {
       const v = h[k] || {}, t = v.total || 0, by = v.by || {};
@@ -126,13 +128,19 @@
     // streaks: working days at the daily goal; days off never break it, today only counts once reached
     if (keys.length) {
       let run = 0;
+      const saved = new Set(); // weeks whose streak saver has been used
       for (let d = keyDate(keys[0]); dayKey(d) <= today; d = addDays(d, 1)) {
         const k = dayKey(d), t = (h[k] && h[k].total) || 0;
         if (workDays && !workDays.includes(d.getDay())) continue;
         if (t >= goal) { run++; s.bestStreak = Math.max(s.bestStreak, run); }
-        else if (k !== today) run = 0;
+        else if (k !== today) {
+          const wk = mondayKey(d);
+          if (saver && run > 0 && !saved.has(wk)) saved.add(wk); // saved: the streak carries on (without growing)
+          else run = 0;
+        }
       }
       s.streak = run;
+      s.saverUsed = run > 0 && saved.has(mondayKey(keyDate(today)));
     }
     return s;
   }

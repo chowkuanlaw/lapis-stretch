@@ -15,7 +15,7 @@ const { pathToFileURL } = require('url');
 const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
 const QUIET = require('./quiet.js');
-const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, cleanState } = require('./state.js');
+const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState } = require('./state.js');
 
 const AUMID = 'app.lapis.stretch';
 const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
@@ -59,7 +59,8 @@ function run() {
     resting: false, quiet: false, quietCheck: false, nextWater: 0, waterCheck: false, notices: [], noticeUntil: 0, codeMsg: null, codeMsgUntil: 0,
     locked: 0, backMins: 0, backUntil: 0, wrapCheck: false, nextWrapCheck: 0,
     golden: false, eggCheck: false, nextEggCheck: 0, nightAgain: 0,
-    widgetHidden: false, nextFullCheck: 0, resetUntil: 0
+    widgetHidden: false, nextFullCheck: 0, resetUntil: 0,
+    skips: 0, snoozed: false // kuih moods (1.9.0)
   };
 
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
@@ -89,6 +90,17 @@ function run() {
     applyTheme();
   }
   function applyTheme() { nativeTheme.themeSource = S.theme === 'auto' ? 'system' : S.theme; }
+  // Bigger text (1.9.0): zoom every window; the pop-up and widget grow to fit.
+  const zoom = () => TEXT_SIZES[S.textSize] || 1;
+  const popupW = () => Math.round(POPUP_W * zoom());
+  function applyTextSize() {
+    for (const w of [mainWin, widgetWin, popupWin]) if (w && !w.isDestroyed()) w.webContents.setZoomFactor(zoom());
+    if (widgetWin && !widgetWin.isDestroyed()) {
+      widgetWin.setContentSize(Math.round(WIDGET_W * zoom()), Math.round(WIDGET_H * zoom()));
+      keepWidgetOnScreen();
+    }
+    if (popupWin && !popupWin.isDestroyed()) { if (popupWin.isVisible()) positionPopup(); else popupWin.setSize(popupW(), popupH); }
+  }
   function writeNow() { try { fs.writeFileSync(stateFile(), JSON.stringify(S)); } catch (e) { /* best effort */ } }
   function writeOnQuit() { clearTimeout(saveTimer); S.closedAt = Date.now(); writeNow(); }
   function save() { clearTimeout(saveTimer); saveTimer = setTimeout(writeNow, 300); }
@@ -158,7 +170,7 @@ function run() {
       S.collectInit = true; silent = true;
       if (!STARTERS.includes(S.kuih)) S.unlocked[S.kuih] = '2000-01-01';
     }
-    const stats = computeStats(S.history, S.goal, workDaysForStreak(), new Date());
+    const stats = computeStats(S.history, S.goal, workDaysForStreak(), new Date(), { saver: S.streakSaver });
     for (const r of RULES) {
       if (own(S.unlocked, r.id) || !ruleProgress(r, stats).done) continue;
       S.unlocked[r.id] = silent ? '2000-01-01' : dayKey(new Date()); // earned from past history: not "new this week"
@@ -270,6 +282,8 @@ function run() {
       ramadan: puasa(), backMins: Date.now() < R.backUntil ? R.backMins : 0,
       golden: R.golden && (R.mode === 'due' || R.mode === 'active' || R.mode === 'done'),
       resetDone: Date.now() < R.resetUntil,
+      // Kuih moods (1.9.0): a little sad after 3 skipped reminders in a row, sleepy after a snooze, proud at the goal.
+      mood: R.skips >= 3 ? 'sad' : R.snoozed ? 'drowsy' : today().total >= S.goal ? 'proud' : '',
       codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
       eggMsg: Date.now() < eggMsgUntil,
       version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
@@ -311,6 +325,7 @@ function run() {
   function schedule(ms) { S.nextDue = Date.now() + ms; if (S.paused) S.pausedLeft = ms; save(); }
   function advance() { if (R.cur === upNext().id) S.idx++; skipWalk(); }
   function finish() {
+    R.skips = 0; R.snoozed = false;
     const rec = today(); rec.total++; rec.by[R.cur] = (rec.by[R.cur] || 0) + 1;
     advance(); schedule(S.interval * 60e3); chime('done');
     R.mode = 'done'; R.msgUntil = Date.now() + 5000;
@@ -318,8 +333,8 @@ function run() {
     setTimeout(() => { R.golden = false; }, 5200);
     broadcast();
   }
-  function skip() { advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; R.golden = false; broadcast(); }
-  function snooze() { schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 3500; broadcast(); }
+  function skip() { if (R.mode === 'due') R.skips++; R.snoozed = false; advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; R.golden = false; broadcast(); }
+  function snooze() { R.snoozed = true; schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 3500; broadcast(); }
   function different() {
     const base = R.cur || upNext().id; let i = S.idx;
     do { i++; } while (CYCLE[i % CYCLE.length] === base || (puasa() && CYCLE[i % CYCLE.length] === 'walk'));
@@ -471,6 +486,8 @@ function run() {
       case 'sound': case 'toast': case 'awayReset': case 'quietMeetings': case 'summaryOn': case 'wrapOn': S[key] = !!value; break;
       case 'ramadanOn': S.ramadanOn = !!value; skipWalk(); break;
       case 'trayRing': S.trayRing = !!value; break;
+      case 'streakSaver': S.streakSaver = !!value; collectionUpdate(false); break;
+      case 'textSize': if (!own(TEXT_SIZES, value)) return; S.textSize = value; applyTextSize(); break;
       case 'widgetHideFull': S.widgetHideFull = !!value; R.nextFullCheck = 0; break;
       case 'theme': if (!THEMES.includes(value)) return; S.theme = value; applyTheme(); break;
       case 'chimeStyle': if (!CHIMES.includes(value)) return; S.chimeStyle = value; break;
@@ -568,7 +585,10 @@ function run() {
     }, extra || {});
   }
   function viewURL(view, extra) { return `${ORIGIN}/index.html?` + new URLSearchParams(Object.assign({ view }, extra || {})); }
-  function loadView(win, view, extra) { win.loadURL(viewURL(view, extra)); }
+  function loadView(win, view, extra) {
+    win.webContents.on('did-finish-load', () => { if (!win.isDestroyed()) win.webContents.setZoomFactor(view === 'egg' ? 1 : zoom()); });
+    win.loadURL(viewURL(view, extra));
+  }
   // Serves only files inside the renderer folder, read-only.
   function serveApp(req) {
     let u; try { u = new URL(req.url); } catch (e) { return new Response('', { status: 400 }); }
@@ -608,21 +628,27 @@ function run() {
   }
   function createWidget() {
     const wa = screen.getPrimaryDisplay().workArea;
-    const pos = onSomeDisplay(S.widgetPos) ? S.widgetPos : { x: wa.x + wa.width - WIDGET_W - 12, y: wa.y + 12 };
+    const pos = onSomeDisplay(S.widgetPos) ? S.widgetPos : { x: wa.x + wa.width - Math.round(WIDGET_W * zoom()) - 12, y: wa.y + 12 };
     widgetWin = new BrowserWindow({
-      x: pos.x, y: pos.y, width: WIDGET_W, height: WIDGET_H, frame: false, transparent: true, resizable: false,
+      x: pos.x, y: pos.y, width: Math.round(WIDGET_W * zoom()), height: Math.round(WIDGET_H * zoom()), frame: false, transparent: true, resizable: false,
       maximizable: false, minimizable: false, fullscreenable: false, skipTaskbar: true, hasShadow: false,
       alwaysOnTop: S.widgetOnTop, show: false, title: 'Lapis widget', icon: ICON, webPreferences: webPrefs()
     });
     if (S.widgetOnTop) widgetWin.setAlwaysOnTop(true, 'floating');
     loadView(widgetWin, 'widget');
-    widgetWin.once('ready-to-show', () => { if (S.widget && !R.widgetHidden) widgetWin.showInactive(); });
+    widgetWin.once('ready-to-show', () => { keepWidgetOnScreen(); if (S.widget && !R.widgetHidden) widgetWin.showInactive(); });
     let moveT;
     widgetWin.on('move', () => {
       clearTimeout(moveT);
       moveT = setTimeout(() => { if (widgetWin && !widgetWin.isDestroyed()) { const [x, y] = widgetWin.getPosition(); S.widgetPos = { x, y }; save(); } }, 400);
     });
     widgetWin.on('close', e => { if (!quitting) { e.preventDefault(); setSetting('widget', false); } });
+  }
+  // After a size change, nudge the widget back inside the screen it's on.
+  function keepWidgetOnScreen() {
+    const b = widgetWin.getBounds(), a = screen.getDisplayMatching(b).workArea;
+    const x = Math.min(Math.max(b.x, a.x), a.x + a.width - b.width), y = Math.min(Math.max(b.y, a.y), a.y + a.height - b.height);
+    if (x !== b.x || y !== b.y) widgetWin.setPosition(x, y);
   }
   function syncWidget() {
     if (!widgetWin || widgetWin.isDestroyed()) return;
@@ -633,7 +659,7 @@ function run() {
 
   function createPopup() {
     popupWin = new BrowserWindow({
-      width: POPUP_W, height: popupH, frame: false, transparent: true, resizable: false, maximizable: false,
+      width: popupW(), height: popupH, frame: false, transparent: true, resizable: false, maximizable: false,
       minimizable: false, fullscreenable: false, skipTaskbar: true, hasShadow: false, alwaysOnTop: true,
       show: false, focusable: true, title: 'Lapis reminder', icon: ICON,
       webPreferences: webPrefs({ backgroundThrottling: false })
@@ -644,7 +670,7 @@ function run() {
   }
   function positionPopup() {
     const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-    popupWin.setBounds({ x: d.x + d.width - POPUP_W - 8, y: d.y + d.height - popupH - 8, width: POPUP_W, height: popupH });
+    popupWin.setBounds({ x: d.x + d.width - popupW() - 8, y: d.y + d.height - popupH - 8, width: popupW(), height: popupH });
   }
   function syncPopup() {
     if (!popupWin || popupWin.isDestroyed()) return;
@@ -772,8 +798,8 @@ function run() {
       case 'set': setSetting(a.key, a.value); break;
       case 'open-main': showMain(); break;
       case 'popup-size': {
-        const h = Math.max(120, Math.min(640, Math.round(+a.h || 0)));
-        if (h !== popupH) { popupH = h; if (popupWin && popupWin.isVisible()) positionPopup(); else if (popupWin) popupWin.setSize(POPUP_W, popupH); }
+        const h = Math.max(120, Math.min(Math.round(640 * zoom()), Math.round((+a.h || 0) * zoom())));
+        if (h !== popupH) { popupH = h; if (popupWin && popupWin.isVisible()) positionPopup(); else if (popupWin) popupWin.setSize(popupW(), popupH); }
         break;
       }
       case 'test-chime': chime('due'); break;

@@ -6,11 +6,13 @@ const assert = require('node:assert/strict');
 global.window = {};
 require('../renderer/mascot.js');
 const W = global.window;
+const D = require('../renderer/data.js');
 const POSES = ['idle', 'wave', 'chin', 'neck', 'thoracic', 'shoulders', 'twist', 'wrist', 'eyes', 'reach', 'walk', 'cheer', 'sleep',
-  'wingsUp', 'wingsDown', 'mudraL', 'mudraR', 'salute', 'horse', 'glass', 'drink', 'shh', 'kick', 'tarik', 'yawn', 'flag'];
+  'wingsUp', 'wingsDown', 'mudraL', 'mudraR', 'salute', 'horse', 'glass', 'drink', 'shh', 'kick', 'tarik', 'yawn', 'flag', 'proud', 'drowsy', 'sad'];
 
-test('20 kuih, each drawn in every pose and outfit', () => {
-  assert.equal(W.LAPIS_KUIH.length, 20);
+test('every kuih in the collection has artwork, drawn in every pose and outfit', () => {
+  const art = new Set(W.LAPIS_KUIH.map(k => k.id));
+  for (const k of D.KUIH) assert.ok(art.has(k.id), k.id + ' has artwork');
   for (const k of W.LAPIS_KUIH) for (const pose of POSES) for (const outfit of [undefined, ...W.LAPIS_OUTFITS]) {
     const svg = W.lapisSVG(pose, '', false, k.id, outfit, pose === 'idle');
     assert.ok(svg.startsWith('<svg') && svg.endsWith('</svg>'), `${k.id} ${pose} ${outfit}`);

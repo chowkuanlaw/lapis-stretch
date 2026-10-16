@@ -23,8 +23,11 @@ const DEFAULTS = {
   // 1.7.1 easter eggs
   goldFound: {}, flagDay: '', remix: false, lastTeh: '', lastNight: '',
   // 1.8.0
-  seenVersion: '', theme: 'auto', trayRing: true, pauseUntil: 0, chimeStyle: 'bell', volume: 70, widgetHideFull: true
+  seenVersion: '', theme: 'auto', trayRing: true, pauseUntil: 0, chimeStyle: 'bell', volume: 70, widgetHideFull: true,
+  // 1.9.0
+  streakSaver: true, textSize: 'normal'
 };
+const TEXT_SIZES = { normal: 1, large: 1.15, larger: 1.3 };
 const THEMES = ['auto', 'light', 'dark'];
 const CHIMES = ['bell', 'marimba', 'soft', 'pop'];
 const WATER_EVERY = [30, 45, 60, 90, 120];
@@ -39,7 +42,7 @@ function cleanState(saved) {
   pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
   pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
   for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded',
-    'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn', 'remix', 'trayRing', 'widgetHideFull']) {
+    'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn', 'remix', 'trayRing', 'widgetHideFull', 'streakSaver']) {
     if (typeof saved[k] === 'boolean') out[k] = saved[k];
   }
   pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
@@ -47,6 +50,7 @@ function cleanState(saved) {
   pick('volume', int(saved.volume, 0, 100));
   if (THEMES.includes(saved.theme)) out.theme = saved.theme;
   if (CHIMES.includes(saved.chimeStyle)) out.chimeStyle = saved.chimeStyle;
+  if (own(TEXT_SIZES, saved.textSize)) out.textSize = saved.textSize;
   if (typeof saved.seenVersion === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(saved.seenVersion)) out.seenVersion = saved.seenVersion;
   pick('idx', int(saved.idx, 0, 1e9));
   pick('lastUpdateCheck', num(saved.lastUpdateCheck, 0, 1e15));
@@ -98,4 +102,4 @@ function cleanState(saved) {
   return out;
 }
 
-module.exports = { DEFAULTS, WATER_EVERY, THEMES, CHIMES, cleanState };
+module.exports = { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState };

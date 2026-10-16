@@ -45,7 +45,12 @@
     yawn: K => ({ face: 'closed', mouth: 'yawn', arms: [IDLE_ARMS[0], [[87, 58], [98, 34], [92, 10]]],
       extra: `<path d="M77 ${51 + (K.faceDy || 0)} q3 5 0 7 q-3 -2 0 -7 Z" fill="#7CC7EA" stroke="#2A1F1A" stroke-width="1"/><text class="zz" x="102" y="${K.faceDy > 8 ? 30 : 18}">z</text><text class="zz" x="113" y="${K.faceDy > 8 ? 18 : 6}" style="font-size:13px">z</text>` }),
     // flag-day code: wave the Jalur Gemilang
-    flag: { arms: [IDLE_ARMS[0], [[87, 60], [100, 48], [104, 34]]], prop: 'flag', face: 'happy' }
+    flag: { arms: [IDLE_ARMS[0], [[87, 60], [100, 48], [104, 34]]], prop: 'flag', face: 'happy' },
+    // 1.9.0 kuih moods: proud at the daily goal, drowsy after a snooze, a little sad after 3 skips in a row
+    proud: { arms: [[[33, 60], [17, 70], [30, 83]], [[87, 60], [103, 70], [90, 83]]], face: 'happy',
+      extra: '<path d="M106 14 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 z" fill="#F4C542" stroke="#2A1F1A" stroke-width="1.3" stroke-linejoin="round"/><path d="M14 30 l1.5 3.5 3.5 1.5 -3.5 1.5 -1.5 3.5 -1.5 -3.5 -3.5 -1.5 3.5 -1.5 z" fill="#F4C542" stroke="#2A1F1A" stroke-width="1.2" stroke-linejoin="round"/>' },
+    drowsy: { face: 'droopy', mouth: 'flat', extra: '<text class="zz" x="100" y="14" style="font-size:12px">z</text>' },
+    sad: { body: 'rotate(3 60 100)', arms: [[[33, 61], [30, 79], [33, 95]], [[87, 61], [90, 79], [87, 95]]], mouth: 'sad' }
   };
 
   /* ---------- helpers for kuih art ---------- */
@@ -235,6 +240,76 @@
         [0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${18 + i * 14} 30 L${34 + i * 14} 106" stroke="#6E9C45" stroke-width="1.5"/>`).join('') +
         `<path d="M30 46 H90" stroke="#5E8A3A" stroke-width="2.5"/></g><rect x="30" y="32" width="60" height="70" rx="10" fill="none" ${O}/>` +
         `<path d="M48 34 Q60 40 72 34" stroke="#8A5A2B" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="60" cy="36" r="3.5" fill="#8A5A2B"/>`
+    },
+    /* ---------- 1.10.0: eight more kuih (artwork; joined to the collection in data.js) ---------- */
+    apambalik: {
+      name: 'Apam Balik', origin: 'Chinese & Malay', note: 'Folded griddle pancake with crushed peanuts, sugar and sweetcorn',
+      half: 36, faceDy: 14,
+      sil: '<path d="M18 102 C18 56 36 34 60 34 C84 34 102 56 102 102 Z"/>',
+      art: id => `<clipPath id="k${id}"><path d="M18 102 C18 56 36 34 60 34 C84 34 102 56 102 102 Z"/></clipPath><path d="M18 102 C18 56 36 34 60 34 C84 34 102 56 102 102 Z" fill="#DDA04B"/><g clip-path="url(#k${id})">` +
+        dotsIn(41, 26, (x, y) => y > 40 && y < 84 && (x - 60) ** 2 / 1600 + (y - 102) ** 2 / 4400 < 1, (x, y, r) => `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(1.6 + r() * 1.4).toFixed(1)}" ry="1.4" fill="#B9772B" opacity=".8"/>`) +
+        `<rect x="10" y="87" width="100" height="18" fill="#F4D36E"/><path d="M10 87 H110" stroke="#C98A35" stroke-width="2"/>` +
+        dotsIn(42, 16, (x, y) => y > 90 && y < 100, (x, y, r) => `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(3 + r() * 2).toFixed(1)}" height="2.6" rx="1" fill="#A8692E" transform="rotate(${(r() * 60 - 30).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`) +
+        `</g><path d="M18 102 C18 56 36 34 60 34 C84 34 102 56 102 102 Z" fill="none" ${O}/><path d="M32 66 Q38 48 54 42" stroke="#F2C47A" stroke-width="4" fill="none" stroke-linecap="round"/>`
+    },
+    koci: {
+      name: 'Kuih Koci', origin: 'Malay', note: 'Glutinous rice pyramid with a coconut filling, wrapped in banana leaf',
+      half: 23, faceDy: 18,
+      sil: '<path d="M60 14 C64 14 66 17 68 21 L98 92 C100 98 97 102 91 102 L29 102 C23 102 20 98 22 92 L52 21 C54 17 56 14 60 14 Z"/>',
+      art: id => `<clipPath id="k${id}"><path d="M60 14 C64 14 66 17 68 21 L98 92 C100 98 97 102 91 102 L29 102 C23 102 20 98 22 92 L52 21 C54 17 56 14 60 14 Z"/></clipPath><path d="M60 14 C64 14 66 17 68 21 L98 92 C100 98 97 102 91 102 L29 102 C23 102 20 98 22 92 L52 21 C54 17 56 14 60 14 Z" fill="#3F9145"/><g clip-path="url(#k${id})">` +
+        [0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${30 + i * 6} 104 L${56 + i * 1.2} 16" stroke="#63B157" stroke-width="2.4"/><path d="M${90 - i * 6} 104 L${64 - i * 1.2} 16" stroke="#2F7836" stroke-width="1.4"/>`).join('') +
+        `<path d="M60 14 L60 104" stroke="#2A6A30" stroke-width="2.4"/></g><path d="M60 14 C64 14 66 17 68 21 L98 92 C100 98 97 102 91 102 L29 102 C23 102 20 98 22 92 L52 21 C54 17 56 14 60 14 Z" fill="none" ${O}/>` +
+        `<path d="M56 18 Q60 8 64 18" fill="#3D2A6B" ${O.replace('3.5', '2')}/>`
+    },
+    putupiring: {
+      name: 'Putu Piring', origin: 'Malay', note: 'Steamed rice-flour cake with melted gula melaka inside, served on pandan leaf',
+      half: 34, faceDy: 16,
+      sil: '<path d="M20 96 C20 60 38 42 60 42 C82 42 100 60 100 96 Z"/><rect x="12" y="92" width="96" height="11" rx="5.5"/>',
+      art: () => `<rect x="12" y="92" width="96" height="11" rx="5.5" fill="#4FA34A" ${O.replace('3.5', '2.5')}/><path d="M18 97.5 H102" stroke="#86C96B" stroke-width="1.6"/>` +
+        `<path d="M20 96 C20 60 38 42 60 42 C82 42 100 60 100 96 Z" fill="#FBF6EA" ${O}/>` +
+        dotsIn(43, 30, (x, y) => (x - 60) ** 2 / 1300 + (y - 92) ** 2 / 2300 < 1 && y < 92, (x, y) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1" fill="#E3D8C0"/>`) +
+        `<path d="M48 45 Q60 40 72 45 Q70 52 66 50 Q64 58 60 54 Q56 59 54 50 Q50 53 48 45 Z" fill="#7A3E12" stroke="${INK}" stroke-width="1.6"/><path d="M53 45 Q58 43 63 44" stroke="#B4692E" stroke-width="1.6" fill="none" stroke-linecap="round"/>`
+    },
+    talam: {
+      name: 'Kuih Talam', origin: 'Nyonya & Malay', note: 'Green pandan layer under a thin layer of salty coconut cream',
+      half: 33, faceDy: 9,
+      sil: '<rect x="27" y="30" width="66" height="72" rx="12"/>',
+      art: id => `<clipPath id="k${id}"><rect x="27" y="30" width="66" height="72" rx="12"/></clipPath><g clip-path="url(#k${id})"><rect x="25" y="28" width="70" height="20" fill="#FFFBF1"/><rect x="25" y="48" width="70" height="56" fill="#4FAE5A"/><path d="M25 48 H95" stroke="#3A8E45" stroke-width="2"/><rect x="25" y="48" width="70" height="5" fill="#6CC174"/></g>` +
+        `<rect x="27" y="30" width="66" height="72" rx="12" fill="none" ${O}/><path d="M34 36 Q40 33 50 33" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    },
+    pelita: {
+      name: 'Tepung Pelita', origin: 'Malay', note: 'Coconut cream over pandan custard, set in a little banana-leaf cup',
+      half: 33, faceDy: 15,
+      sil: '<path d="M24 40 L96 40 L88 102 L32 102 Z"/><ellipse cx="60" cy="40" rx="37" ry="10"/>',
+      art: id => `<clipPath id="k${id}"><path d="M24 40 L96 40 L88 102 L32 102 Z"/></clipPath><path d="M24 40 L96 40 L88 102 L32 102 Z" fill="#4C9A45"/><g clip-path="url(#k${id})">` +
+        [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<path d="M${26 + i * 8.5} 40 L${33.5 + i * 6.6} 104" stroke="${i % 2 ? '#3B7E35' : '#68B25C'}" stroke-width="${i % 2 ? 1.6 : 2.4}"/>`).join('') +
+        `</g><path d="M24 40 L96 40 L88 102 L32 102 Z" fill="none" ${O}/><ellipse cx="60" cy="40" rx="37" ry="10" fill="#3F8A39" ${O.replace('3.5', '2.5')}/><ellipse cx="60" cy="39" rx="31" ry="7.5" fill="#FFFDF6" stroke="${INK}" stroke-width="1.8"/><path d="M42 37 Q50 34 58 35" stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>`
+    },
+    ketayap: {
+      name: 'Kuih Ketayap', origin: 'Malay', note: 'Green pandan crepe rolled around sweet coconut and gula melaka',
+      half: 26, faceDy: 4,
+      sil: '<rect x="34" y="20" width="52" height="82" rx="20"/>',
+      art: id => `<clipPath id="k${id}"><rect x="34" y="20" width="52" height="82" rx="20"/></clipPath><rect x="34" y="20" width="52" height="82" rx="20" fill="#5DB34F"/><g clip-path="url(#k${id})">` +
+        [0, 1, 2, 3, 4].map(i => `<path d="M30 ${40 + i * 15} Q60 ${46 + i * 15} 90 ${36 + i * 15}" stroke="#469A3D" stroke-width="2" fill="none"/>`).join('') +
+        dotsIn(44, 16, (x, y) => x > 38 && x < 82 && y > 34 && y < 98, (x, y) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.3" fill="#8ED07A"/>`) +
+        `</g><rect x="34" y="20" width="52" height="82" rx="20" fill="none" ${O}/><ellipse cx="60" cy="27" rx="19" ry="6.5" fill="#7A4220" stroke="${INK}" stroke-width="2"/>` +
+        [[52, 26], [58, 24], [64, 27], [69, 25], [56, 29]].map(([x, y]) => `<path d="M${x} ${y} l3 1" stroke="#E9C890" stroke-width="1.4" stroke-linecap="round"/>`).join('')
+    },
+    dodol: {
+      name: 'Dodol', origin: 'Malay', note: 'Rich, sticky toffee of coconut milk and gula melaka, stirred for hours for Hari Raya',
+      half: 31, faceDy: 6,
+      sil: '<rect x="29" y="30" width="62" height="72" rx="18"/>',
+      art: id => `<rect x="29" y="30" width="62" height="72" rx="18" fill="#4E2C1A" ${O}/><path d="M38 44 Q44 36 56 35" stroke="#8C5A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M80 52 Q82 60 81 68" stroke="#6E432A" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+        `<clipPath id="k${id}"><rect x="29" y="30" width="62" height="72" rx="18"/></clipPath><g clip-path="url(#k${id})"><path d="M25 104 L25 86 L33 82 L41 87 L49 81 L57 86 L65 80 L73 86 L81 81 L89 86 L95 83 L95 104 Z" fill="#E8D7A2" stroke="${INK}" stroke-width="2"/>` +
+        [36, 48, 60, 72, 84].map(x => `<path d="M${x} 90 L${x + 2} 102" stroke="#CDB77C" stroke-width="1.4"/>`).join('') + `</g><rect x="29" y="30" width="62" height="72" rx="18" fill="none" ${O}/>`
+    },
+    kuihbakar: {
+      name: 'Kuih Bakar', origin: 'Malay', note: 'Pandan cake baked in a flower mould until the top turns golden, sprinkled with sesame',
+      half: 36, faceDy: 12,
+      sil: scallop(60, 66, 27, 8, 11).map(c => `<circle cx="${c.x}" cy="${c.y}" r="${c.r}"/>`).join('') + '<circle cx="60" cy="66" r="29"/>',
+      art: () => bumpsShape(60, 66, 29, scallop(60, 66, 27, 8, 11), '#A3692B', INK) +
+        `<circle cx="60" cy="66" r="25" fill="#6FAF4A"/><circle cx="60" cy="66" r="22" fill="#C18A3F"/><circle cx="54" cy="58" r="7" fill="#9A5F25" opacity=".55"/><circle cx="70" cy="76" r="5" fill="#9A5F25" opacity=".45"/>` +
+        dotsIn(45, 12, inCircle(60, 66, 19), (x, y, r) => `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="1.9" ry="1" fill="#FFF4D6" transform="rotate(${(r() * 180).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`)
     }
   };
 
@@ -242,7 +317,8 @@
      Worn only in the few days before a festival and on the day itself (see data.js).
      Headwear sits on each kuih's top edge; clothing is clipped to the kuih's own outline. */
   const TOPS = { lapis: [18, 1], onde: [29, 0], serimuka: [24, 1], karipap: [30, 0], bahulu: [26, 0], angku: [26, 0], kapit: [14, 1], huat: [16, 0], bulan: [32, 1], tart: [27, 0],
-    murukku: [27, 0], ladoo: [32, 0], putu: [30, 0], vadai: [27, 0], jalebi: [20, 1], keklapis: [20, 1], celorot: [18, 0], pinjaram: [46, 0], cincin: [27, 0], hinompuka: [32, 1] };
+    murukku: [27, 0], ladoo: [32, 0], putu: [30, 0], vadai: [27, 0], jalebi: [20, 1], keklapis: [20, 1], celorot: [18, 0], pinjaram: [46, 0], cincin: [27, 0], hinompuka: [32, 1],
+    apambalik: [34, 0], koci: [14, 0], putupiring: [42, 0], talam: [30, 1], pelita: [30, 1], ketayap: [20, 1], dodol: [30, 1], kuihbakar: [28, 0] };
   const crown = sid => { const t = TOPS[sid] || [20, 1]; return t[0] + (t[1] ? 3 : 7); };
   const hem = K => Math.max(80, 70 + (K.faceDy || 0) + 6); // clothing starts below the mouth
   const S2 = `stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"`;
@@ -332,8 +408,9 @@
     let eyes;
     if (kind === 'happy') eyes = '<path class="line" d="M45 49 Q50 43 55 49"/><path class="line" d="M65 49 Q70 43 75 49"/>';
     else if (kind === 'closed') eyes = '<path class="line" d="M45 47 H55"/><path class="line" d="M65 47 H75"/>';
+    else if (kind === 'droopy') eyes = `<path d="M46.4 47 a3.6 3.6 0 0 0 7.2 0 Z" fill="${INK}"/><path d="M66.4 47 a3.6 3.6 0 0 0 7.2 0 Z" fill="${INK}"/><path class="line" d="M45 47 H55"/><path class="line" d="M65 47 H75"/>`;
     else eyes = '<circle class="eye" cx="50" cy="47" r="3.4"/><circle class="eye" cx="70" cy="47" r="3.4"/>';
-    const m = mouth === 'none' ? '' : mouth === 'yawn' ? `<ellipse cx="60" cy="60" rx="5.5" ry="7" fill="${INK}"/><ellipse cx="60" cy="63.5" rx="3" ry="2.4" fill="#E86A8A"/>` : '<path class="line" d="M53 57 Q60 64 67 57"/>';
+    const m = mouth === 'none' ? '' : mouth === 'flat' ? '<path class="line" d="M55 59 H65"/>' : mouth === 'sad' ? '<path class="line" d="M53 62 Q60 56 67 62"/>' : mouth === 'yawn' ? `<ellipse cx="60" cy="60" rx="5.5" ry="7" fill="${INK}"/><ellipse cx="60" cy="63.5" rx="3" ry="2.4" fill="#E86A8A"/>` : '<path class="line" d="M53 57 Q60 64 67 57"/>';
     return eyes + m + '<ellipse class="blush" cx="42" cy="60" rx="4.5" ry="2.6"/><ellipse class="blush" cx="78" cy="60" rx="4.5" ry="2.6"/>';
   }
   function figure(p, sticker, id, K, sid, outfit, gold) {

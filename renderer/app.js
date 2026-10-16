@@ -41,7 +41,9 @@
 
   const todayRec = () => (st.history || {})[dayKey(new Date())] || { total: 0, by: {} };
   const curEx = () => BY[st.cur || st.upNext];
-  const stats = () => computeStats(st.history, st.goal, st.workOn ? st.workDays : null, new Date());
+  const stats = () => computeStats(st.history, st.goal, st.workOn ? st.workDays : null, new Date(), { saver: st.streakSaver });
+  // Kuih moods (1.9.0): the resting pose while waiting for the next stretch
+  const moodPose = () => ({ sad: 'sad', drowsy: 'drowsy', proud: 'proud' }[st.mood] || 'idle');
   const isAvailable = id => !st.collect || st.codeUnlocked || STARTERS.includes(id) || own(st.unlocked || {}, id) || id === st.kuih;
   const collectedCount = () => KUIH.filter(k => isAvailable(k.id)).length;
   const ruleText = r => T('rule.' + r.type, { n: r.n });
@@ -307,7 +309,7 @@
               <div class="panel stat"><b id="stToday">0</b><span>${T('prog.today')}</span></div>
               <div class="panel stat"><b id="stWeek">0</b><span>${T('prog.week')}</span></div>
               <div class="panel stat"><b id="stBest">0</b><span>${T('prog.best')}</span></div>
-              <div class="panel stat" title="${esc(T('prog.streakHint'))}"><b id="stStreak">0</b><span>${T('prog.streak')}</span></div>
+              <div class="panel stat" title="${esc(T('prog.streakHint'))}"><b id="stStreak">0</b><span>${T('prog.streak')}</span><small class="saver" id="stSaver"></small></div>
             </div>
             <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall" id="weekBig"></div></section>
             <section class="panel month-panel" id="monthStretches"></section>
@@ -356,6 +358,7 @@
             <div class="settings-col">
               <section class="panel settings"><h2>${T('set.goal')}</h2>
                 <div class="set"><div class="lbl">${T('set.goalN')}<small>${T('set.goalSub')}</small></div><div class="stepper"><button type="button" class="stp" data-step="goal" data-d="-1" aria-label="${esc(T('set.fewer'))}">−</button><b id="goalVal">8</b><button type="button" class="stp" data-step="goal" data-d="1" aria-label="${esc(T('set.more'))}">+</button></div></div>
+                ${switchRow('streakSaver', T('set.saver'), T('set.saverSub'))}
                 ${switchRow('summaryOn', T('set.summary'), T('set.summarySub'))}
               </section>
               <section class="panel settings"><h2>${T('set.water')}</h2>
@@ -368,6 +371,7 @@
               </section>
               <section class="panel settings"><h2>${T('set.display')}</h2>
                 <div class="set"><div class="lbl">${T('set.lang')}</div>${langSeg()}</div>
+                <div class="set"><div class="lbl">${T('set.textSize')}</div><div class="seg" role="group" aria-label="${esc(T('set.textSize'))}">${['normal', 'large', 'larger'].map(m => `<button type="button" data-set="textSize" data-sval="${m}">${T('text.' + m)}</button>`).join('')}</div></div>
                 <div class="set"><div class="lbl">${T('set.theme')}</div><div class="seg" role="group" aria-label="${esc(T('set.theme'))}">${['auto', 'light', 'dark'].map(m => `<button type="button" data-set="theme" data-sval="${m}">${T('theme.' + m)}</button>`).join('')}</div></div>
                 ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('widgetHideFull', T('set.hideFull'), T('set.hideFullSub'))}${switchRow('trayRing', T('set.trayRing'), T('set.trayRingSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
               </section>
@@ -586,6 +590,7 @@
     $('#stWeek').textContent = sum;
     $('#stBest').textContent = Math.max(0, ...days.map(d => d.n));
     $('#stStreak').textContent = s.streak;
+    $('#stSaver').textContent = !st.streakSaver || !s.streak ? '' : s.saverUsed ? T('prog.saverUsed') : T('prog.saverLeft');
     $('#weekBig').innerHTML = weekBars(days, 150);
     const wd = lastDays(7, 'water'), wsum = wd.reduce((x, d) => x + d.n, 0), g = st.waterGoal;
     $('#pwToday').textContent = todayRec().water || 0;
@@ -647,7 +652,7 @@
     $('#banner').hidden = st.mode !== 'due';
     $('#heroActions').hidden = st.mode !== 'waiting';
     $('#heroActions').classList.toggle('resting', !!(st.resting && !st.paused));
-    const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : st.quiet ? 'shh' : (st.paused || st.away || st.resting) ? 'sleep' : 'idle';
+    const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : st.quiet ? 'shh' : (st.paused || st.away || st.resting) ? 'sleep' : moodPose();
     if (pose + outfit() + st.golden !== heroKey) { heroKey = pose + outfit() + st.golden; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#ring').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     renderToday(s);
@@ -698,6 +703,7 @@
     else if (st.away) { label = T('clock.away'); time = `${st.interval}:00`; sub = T('sub.away'); frac = 0; }
     else { const left = st.nextDue - now; label = T('clock.next'); time = mmss(left); sub = T('sub.next', { ex: exName(BY[st.upNext]), len: secsLabel(BY[st.upNext].secs) }); frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
     if (taps > 0) frac = taps / EGG_TAPS;
+    if (st.mood === 'sad' && st.mode === 'waiting' && !st.paused && !st.resting && !st.away) sub = T('mood.sad', { k: kuihName() });
     if (st.backMins && st.mode === 'waiting' && !st.paused) sub = T('sub.back', { n: st.backMins });
     if (st.eggMsg) sub = T('sub.egg');
     $('#clockLabel').textContent = label; $('#clockTime').textContent = time; $('#clockSub').textContent = sub;
@@ -755,7 +761,7 @@
   function renderWidget() {
     if (trayKuih !== st.kuih) { trayKuih = st.kuih; wPoseKey = ''; }
     syncTray();
-    const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : waterAsk() ? 'glass' : st.quiet ? 'shh' : st.mode === 'snoozed' || st.paused || st.away || st.resting ? 'sleep' : 'idle';
+    const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : waterAsk() ? 'glass' : st.quiet ? 'shh' : st.mode === 'snoozed' || st.paused || st.away || st.resting ? 'sleep' : moodPose();
     if (pose + outfit() + st.golden !== wPoseKey) { wPoseKey = pose + outfit() + st.golden; $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#widget').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     $('#widget').classList.toggle('water', waterAsk());
@@ -840,6 +846,7 @@
   }
   // "What's new" items for each version (newest first); the card shows those after the version you last saw.
   const NEWS = [
+    { v: '1.9.0', keys: ['news.1.9.0.a', 'news.1.9.0.b', 'news.1.9.0.c'] },
     { v: '1.8.0', keys: ['news.1.8.0.a', 'news.1.8.0.b', 'news.1.8.0.c', 'news.1.8.0.d'] },
     { v: '1.7.1', keys: ['news.1.7.1.a'] },
     { v: '1.7.0', keys: ['news.1.7.0.a', 'news.1.7.0.b', 'news.1.7.0.c'] }
