@@ -19,7 +19,15 @@
     reach: { arms: [[[33, 58], [28, 30], [38, 4]], [[87, 58], [92, 30], [82, 4]]], face: 'happy' },
     walk: { body: 'rotate(4 60 100)', arms: [[[33, 60], [22, 70], [18, 82]], [[87, 60], [98, 72], [106, 80]]], legs: [[[50, 100], [38, 136]], [[70, 100], [82, 136]]], extra: '<path class="fx" d="M8 62 H-4"/><path class="fx" d="M10 78 H-2"/><path class="fx" d="M8 94 H-2"/>' },
     cheer: { arms: [[[33, 58], [22, 40], [14, 22]], [[87, 58], [98, 40], [106, 22]]], face: 'happy' },
-    sleep: { face: 'closed', extra: '<text class="zz" x="98" y="12">z</text><text class="zz" x="110" y="0" style="font-size:13px">z</text>' }
+    sleep: { face: 'closed', extra: '<text class="zz" x="98" y="12">z</text><text class="zz" x="110" y="0" style="font-size:13px">z</text>' },
+    // dance moves (easter egg)
+    wingsUp: { arms: [[[33, 60], [16, 52], [0, 40]], [[87, 60], [104, 52], [120, 40]]], face: 'happy' },
+    wingsDown: { body: 'rotate(-4 60 100)', arms: [[[33, 60], [16, 64], [0, 64]], [[87, 60], [104, 64], [120, 64]]] },
+    mudraL: { body: 'translate(-3 2)', arms: [[[33, 60], [14, 56], [20, 36]], [[87, 60], [104, 60], [120, 54]]], legs: [[[50, 100], [36, 118], [42, 138]], [[70, 100], [84, 118], [78, 138]]], face: 'happy' },
+    mudraR: { body: 'translate(3 2)', arms: [[[33, 60], [16, 60], [0, 54]], [[87, 60], [106, 56], [100, 36]]], legs: [[[50, 100], [36, 118], [42, 138]], [[70, 100], [84, 118], [78, 138]]], face: 'happy' },
+    salute: { body: 'translate(0 3)', front: true, arms: [[[33, 62], [42, 86], [56, 82]], [[87, 62], [78, 86], [64, 82]]], face: 'happy' },
+    horse: { body: 'translate(0 4)', arms: [[[33, 60], [18, 46], [10, 26]], [[87, 60], [104, 66], [118, 62]]], legs: [[[50, 100], [34, 116], [32, 138]], [[70, 100], [86, 116], [88, 138]]] },
+    kick: { body: 'rotate(-6 60 100)', arms: [[[33, 60], [18, 46], [12, 30]], [[87, 60], [102, 48], [110, 32]]], legs: [[[50, 100], [48, 138]], [[70, 100], [88, 110], [104, 112]]], face: 'happy' }
   };
 
   /* ---------- helpers for kuih art ---------- */
@@ -227,8 +235,11 @@
     let s = '';
     legs.forEach(l => { const e = l[l.length - 1], dx = l[0][0] < 60 ? -3 : 3; s += `<polyline class="limb" points="${pts(l)}"/><ellipse class="foot" cx="${e[0] + dx}" cy="${e[1] + 2}" rx="8" ry="4.5"/>`; });
     s += `<g transform="${p.body || ''}">`;
-    arms.forEach(a => { const e = a[a.length - 1], dx = a[0][0] < 60 ? -d : d; s += `<g transform="translate(${dx} 0)"><polyline class="limb" points="${pts(a)}"/><circle class="hand" cx="${e[0]}" cy="${e[1]}" r="4.6"/></g>`; });
+    let armsSVG = '';
+    arms.forEach(a => { const e = a[a.length - 1], dx = a[0][0] < 60 ? -d : d; armsSVG += `<g transform="translate(${dx} 0)"><polyline class="limb" points="${pts(a)}"/><circle class="hand" cx="${e[0]}" cy="${e[1]}" r="4.6"/></g>`; });
+    if (!p.front) s += armsSVG;
     s += sticker ? K.sil : K.art(id) + `<g transform="translate(0 ${K.faceDy || 0})">${face(p.face, K.mouth)}</g>`;
+    if (p.front) s += armsSVG;
     s += '</g>' + (p.extra || '');
     return s;
   }

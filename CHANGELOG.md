@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0 (2026-10-16)
+
+- The surprise hidden in your kuih now has four versions, one for each kuih group: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Try a different kuih to find them all.
+
 ## 1.4.0 (2026-10-16)
 
 - A little surprise is hidden in your kuih. Be quick with it.

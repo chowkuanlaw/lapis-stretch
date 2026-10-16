@@ -515,15 +515,27 @@
     if (view === 'widget') { $('#widget').classList.toggle('tapping', taps > 0); if (st) tickWidget(); }
   }
 
-  /* The dance itself runs in its own full-screen window (view=egg). */
-  const DANCE = ['wave', 'cheer', 'twist', 'reach', 'shoulders', 'walk', 'thoracic', 'cheer'];
+  /* The dance itself runs in its own full-screen window (view=egg).
+     Each kuih group has its own song and dance; the kuih you picked decides which. */
+  const DANCES = {
+    malay: { title: 'Jom joget!', moves: ['wave', 'cheer', 'twist', 'reach', 'shoulders', 'walk', 'thoracic', 'cheer'], flipEvery: 1 },
+    chinese: { title: 'Huat ah!', moves: ['salute', 'salute', 'horse', 'cheer', 'kick', 'horse', 'reach', 'salute'], flipEvery: 2 },
+    indian: { title: 'Vaanga aadalaam!', moves: ['mudraL', 'mudraR', 'mudraL', 'mudraR', 'cheer', 'kick', 'mudraL', 'reach'], flipEvery: 4 },
+    borneo: { title: 'Jom sumazau!', moves: ['wingsUp', 'wingsDown', 'wingsUp', 'wingsDown', 'wingsUp', 'walk', 'wingsUp', 'cheer'], flipEvery: 2 }
+  };
+  const eggStyle = skin => {
+    const forced = new URLSearchParams(location.search).get('song');
+    if (DANCES[forced]) return forced;
+    const g = (KUIH_BY[skin] || KUIH_BY.lapis).group;
+    return DANCES[g] ? g : 'malay';
+  };
   let eggStarted = false, eggEnding = false, eggTimer = null, eggMaster = null;
   function buildEgg() {
     root.innerHTML = `<div class="egg" id="egg" role="img" aria-label="Your kuih is dancing. Click or press Escape to stop.">
       <div class="egg-dim"></div>
       <div class="egg-glow"></div>
       <div class="egg-confetti" id="eggConfetti"></div>
-      <p class="egg-title" id="eggTitle">Jom joget!</p>
+      <p class="egg-title" id="eggTitle"></p>
       <div class="egg-stage"><div class="egg-spin" id="eggSpin"><div class="egg-flip" id="eggFlip"><div class="egg-kuih" id="eggKuih"></div></div></div></div>
       <p class="egg-foot" id="eggFoot">Click anywhere or press Esc to stop</p>
     </div>`;
@@ -537,12 +549,17 @@
     const fx = Number(q.get('fx')), fy = Number(q.get('fy'));
     const ox = Number.isFinite(fx) ? fx - innerWidth / 2 : 0, oy = Number.isFinite(fy) ? fy - innerHeight / 2 : 0;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const skin = st.kuih || 'lapis';
+    const skin = st.kuih || 'lapis', style = eggStyle(skin);
+    $('#egg').dataset.style = style;
+    $('#eggTitle').textContent = DANCES[style].title;
     const k = $('#eggKuih');
     k.style.setProperty('--k', Math.round(Math.min(innerHeight * 0.62, 640)) + 'px');
     k.innerHTML = lapis('wave', '', false, skin);
-    // other kuih rain down while it dances
-    const others = KUIH.filter(x => x.id !== skin).sort(() => Math.random() - 0.5).slice(0, 14);
+    // other kuih rain down while it dances, friends from the same group first
+    const shuffle = a => a.sort(() => Math.random() - 0.5);
+    const mine = KUIH_BY[skin] ? KUIH_BY[skin].group : 'malay';
+    const others = [...shuffle(KUIH.filter(x => x.id !== skin && x.group === mine)), ...shuffle(KUIH.filter(x => x.group !== mine))].slice(0, 14);
+    shuffle(others);
     $('#eggConfetti').innerHTML = reduce ? '' : others.map((o, i) => {
       const left = (i / others.length) * 100 + Math.random() * 5, size = 56 + Math.round(Math.random() * 46);
       const dur = (3.2 + Math.random() * 2.2).toFixed(2), delay = (Math.random() * 2.5).toFixed(2), turn = Math.random() < 0.5 ? -1 : 1;
@@ -551,7 +568,7 @@
     $('#egg').classList.add('on');
     eggSpinTo(ox, oy, reduce, false);
     if (st.sound) chime('due');
-    eggTimer = setTimeout(() => startDance(skin, reduce), reduce ? 400 : 1000);
+    eggTimer = setTimeout(() => startDance(skin, style, reduce), reduce ? 400 : 1000);
     eggSafety = setTimeout(finishEgg, 12000);
   }
   let eggSafety = null, eggOrigin = [0, 0];
@@ -563,16 +580,16 @@
       : back ? [{ transform: near, opacity: 1 }, { transform: far, opacity: 0.3 }] : [{ transform: far, opacity: 0.6 }, { transform: near, opacity: 1 }];
     $('#eggSpin').animate(frames, { duration: reduce ? 300 : back ? 750 : 1000, easing: back ? 'cubic-bezier(.6,0,.8,.4)' : 'cubic-bezier(.2,.8,.3,1)', fill: 'both' });
   }
-  function startDance(skin, reduce) {
+  function startDance(skin, style, reduce) {
     if (eggEnding) return;
-    const egg = $('#egg'), k = $('#eggKuih'), flip = $('#eggFlip');
+    const egg = $('#egg'), k = $('#eggKuih'), flip = $('#eggFlip'), D = DANCES[style];
     egg.classList.add('dancing');
     if (reduce) egg.classList.add('calm');
-    if (st.sound) playJoget();
+    if (st.sound) playSong(style);
     let beat = 0;
     const show = () => {
-      k.innerHTML = lapis(DANCE[beat % DANCE.length], '', false, skin);
-      flip.classList.toggle('flip', beat % 2 === 1 && !reduce);
+      k.innerHTML = lapis(D.moves[beat % D.moves.length], '', false, skin);
+      flip.classList.toggle('flip', Math.floor(beat / D.flipEvery) % 2 === 1 && !reduce);
       $('#eggFoot').textContent = `Dancing for ${Math.max(1, 8 - Math.floor(beat / 2))} more seconds · click anywhere or press Esc to stop`;
     };
     show();
@@ -590,57 +607,115 @@
     setTimeout(() => api.act('egg-done'), 800);
   }
 
-  /* An original joget-style tune: violin-like melody, accordion off-beats,
-     bass and gendang (dum/tak) at 120 bpm, four bars = 8 seconds. */
-  function playJoget() {
+  /* Four original tunes, all synthesized here (no audio files), 120 bpm, four bars = 8 seconds.
+     Melodies: 0 = hold the previous note, -1 = rest; one step is an eighth note. */
+  function playSong(style) {
     try {
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
-      const t0 = ac.currentTime + 0.05, E = 0.25; // one eighth note
-      const out = ac.createGain(); out.gain.value = 0.55; out.connect(ac.destination); eggMaster = out;
+      const t0 = ac.currentTime + 0.05, E = 0.25, END = 32 * E;
+      const out = ac.createGain(); out.gain.value = { chinese: 0.45, indian: 0.6, borneo: 0.42 }[style] || 0.55; out.connect(ac.destination); eggMaster = out;
       const hz = m => 440 * Math.pow(2, (m - 69) / 12);
       const env = (g, t, peak, a, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); };
-      // melody: 0 = hold the previous note, -1 = rest
-      const mel = [69, 69, 74, 76, 77, 76, 74, 73, 74, 0, 69, 0, 70, 69, 67, 69, 65, 67, 69, 70, 72, 70, 69, 67, 69, 73, 76, 74, -1, 74, 74, 0];
-      for (let i = 0; i < mel.length; i++) {
-        const m = mel[i]; if (m <= 0) continue;
-        let len = 1; while (i + len < mel.length && mel[i + len] === 0) len++;
-        const t = t0 + i * E, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
-        const lfo = ac.createOscillator(), lg = ac.createGain();
-        o.type = 'sawtooth'; o.frequency.value = hz(m); f.type = 'lowpass'; f.frequency.value = 2400;
-        lfo.frequency.value = 5.5; lg.gain.value = 5; lfo.connect(lg); lg.connect(o.frequency);
-        o.connect(f); f.connect(g); g.connect(out);
-        env(g, t, 0.11, 0.03, len * E * 0.95);
-        o.start(t); o.stop(t + len * E + 0.1); lfo.start(t); lfo.stop(t + len * E + 0.1);
-      }
-      const chords = [[62, 65, 69], [62, 65, 69], [67, 70, 74], [69, 73, 76]];
-      const bass = [[38, 45], [38, 45], [43, 50], [45, 52]];
-      for (let bar = 0; bar < 4; bar++) {
-        for (let e = 0; e < 8; e++) {
-          const t = t0 + (bar * 8 + e) * E;
-          if (e % 2 === 1) chords[bar].forEach(m => { // accordion stabs on the off-beats
-            const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
-            o.type = 'square'; o.frequency.value = hz(m); f.type = 'lowpass'; f.frequency.value = 1700;
-            o.connect(f); f.connect(g); g.connect(out); env(g, t, 0.035, 0.01, 0.16); o.start(t); o.stop(t + 0.2);
-          });
-          if (e % 2 === 0) { // bass on the beat, root then fifth
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = 'triangle'; o.frequency.value = hz(bass[bar][(e / 2) % 2]);
-            o.connect(g); g.connect(out); env(g, t, 0.22, 0.01, 0.4); o.start(t); o.stop(t + 0.45);
-          }
-          const hit = ['dum', '', 'tak', 'dum', '', 'tak', 'tak', ''][e];
-          if (hit === 'dum') { // gendang: deep thump
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.18);
-            o.connect(g); g.connect(out); env(g, t, 0.6, 0.005, 0.24); o.start(t); o.stop(t + 0.3);
-          } else if (hit === 'tak') { // gendang: bright slap
-            const n = ac.createBufferSource(), buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.1), ac.sampleRate), d = buf.getChannelData(0);
-            for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / d.length);
-            const f = ac.createBiquadFilter(), g = ac.createGain();
-            n.buffer = buf; f.type = 'bandpass'; f.frequency.value = 2600; f.Q.value = 1.2;
-            n.connect(f); f.connect(g); g.connect(out); env(g, t, 0.35, 0.003, 0.08); n.start(t); n.stop(t + 0.1);
-          }
+      const at = i => t0 + i * E;
+      // one sustained, bowed or blown note, optionally sliding up into the pitch
+      const voice = (m, t, len, o) => {
+        const osc = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+        osc.type = o.type || 'sawtooth';
+        if (o.slide) { osc.frequency.setValueAtTime(hz(m - o.slide), t); osc.frequency.exponentialRampToValueAtTime(hz(m), t + 0.07); } else osc.frequency.value = hz(m);
+        f.type = o.filter || 'lowpass'; f.frequency.value = o.cut || 2400; f.Q.value = o.q || 0.7;
+        osc.connect(f); f.connect(g); g.connect(out);
+        env(g, t, o.peak || 0.1, o.attack || 0.03, len * 0.95);
+        osc.start(t); osc.stop(t + len + 0.1);
+        if (o.vib) { const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = o.vibRate || 5.5; lg.gain.value = o.vib; l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + len + 0.1); }
+      };
+      const melody = (mel, o) => {
+        for (let i = 0; i < mel.length; i++) {
+          const m = mel[i]; if (m <= 0) continue;
+          let n = 1; while (i + n < mel.length && mel[i + n] === 0) n++;
+          (o.pluck ? pluck : voice)(m, at(i), n * E, o);
         }
+      };
+      // plucked string (Karplus-Strong): sape, guzheng
+      const pluck = (m, t, len, o) => {
+        const sr = ac.sampleRate, dur = Math.max(0.6, Math.min(1.6, len + 0.5)), N = Math.floor(sr * dur), P = Math.max(2, Math.round(sr / hz(m)));
+        const buf = ac.createBuffer(1, N, sr), d = buf.getChannelData(0), damp = o.damp || 0.996;
+        for (let j = 0; j < P; j++) d[j] = Math.random() * 2 - 1;
+        for (let j = P; j < N; j++) d[j] = damp * 0.5 * (d[j - P] + d[j - P + 1]);
+        const s = ac.createBufferSource(), g = ac.createGain(), f = ac.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = o.cut || 3200;
+        s.buffer = buf; s.connect(f); f.connect(g); g.connect(out); g.gain.value = o.peak || 0.3; s.start(t);
+      };
+      // gongs: a few inharmonic partials with a long ring
+      const gong = (m, t, peak, ring, ratios) => (ratios || [1, 2.02, 2.76, 4.07]).forEach((r, i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'sine'; o.frequency.value = hz(m) * r;
+        o.connect(g); g.connect(out); env(g, t, peak / (1 + i * 1.3), 0.004, ring / (1 + i * 0.5)); o.start(t); o.stop(t + ring + 0.1);
+      });
+      const thump = (t, f0, f1, peak, len) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + len * 0.7);
+        o.connect(g); g.connect(out); env(g, t, peak, 0.005, len); o.start(t); o.stop(t + len + 0.05);
+      };
+      const noise = (t, peak, len, type, freq, q) => {
+        const n = ac.createBufferSource(), buf = ac.createBuffer(1, Math.floor(ac.sampleRate * (len + 0.02)), ac.sampleRate), d = buf.getChannelData(0);
+        for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / d.length);
+        const f = ac.createBiquadFilter(), g = ac.createGain();
+        n.buffer = buf; f.type = type; f.frequency.value = freq; f.Q.value = q || 1;
+        n.connect(f); f.connect(g); g.connect(out); env(g, t, peak, 0.003, len); n.start(t); n.stop(t + len + 0.02);
+      };
+      const drone = (ms, peak, type, cut) => ms.forEach(m => voice(m, t0, END, { type: type || 'sawtooth', cut: cut || 700, peak, attack: 0.4 }));
+      const each = fn => { for (let i = 0; i < 32; i++) fn(i % 8, at(i), Math.floor(i / 8)); };
+
+      if (style === 'chinese') {
+        // erhu-like lead in D major pentatonic, guzheng off-beats, lion-dance drum, cymbals and gong
+        melody([74, 0, 71, 69, 71, 74, 76, 0, 78, 76, 74, 71, 69, 0, 71, 0, 69, 71, 74, 0, 71, 69, 66, 64, 66, 69, 64, 0, 62, 0, 0, 0],
+          { type: 'sawtooth', filter: 'bandpass', cut: 1300, q: 0.8, peak: 0.2, vib: 7, vibRate: 6, slide: 1 });
+        const zheng = [[62, 66, 69], [62, 66, 71], [57, 62, 66], [57, 62, 64]];
+        each((e, t, bar) => {
+          if (e % 2 === 1) pluck(zheng[bar][(e >> 1) % 3] + 12, t, E, { peak: 0.14, damp: 0.994 });
+          if (['dum', 'dum', '', 'dum', 'dum', '', 'dum', 'roll'][e] === 'dum') thump(t, 120, 60, 0.6, 0.22);
+          if (e === 7) { thump(t, 140, 70, 0.35, 0.1); thump(t + E / 2, 140, 70, 0.35, 0.1); }
+          if (e === 2 || e === 6) noise(t, 0.16, 0.35, 'highpass', 5200, 0.7);
+          if (e === 0 && bar % 2 === 0) gong(50, t, 0.32, 2.2, [1, 1.48, 2.3, 3.1]);
+        });
+      } else if (style === 'indian') {
+        // nadaswaram-like reed in a Mayamalavagowla-style scale over a tanpura drone, with parai/thavil beat and talam bells
+        drone([50, 57, 62], 0.035, 'sawtooth', 650);
+        melody([69, 70, 69, 67, 66, 0, 67, 69, 70, 73, 74, 0, 73, 70, 69, 0, 74, 73, 70, 69, 67, 69, 66, 63, 67, 66, 63, 0, 62, 0, 0, 0],
+          { type: 'square', filter: 'bandpass', cut: 1500, q: 1.6, peak: 0.24, vib: 4, vibRate: 5, slide: 2 });
+        each((e, t) => {
+          const hit = ['dum', 'tak', '', 'tak', 'dum', '', 'tak', 'tak'][e];
+          if (hit === 'dum') thump(t, 160, 70, 0.6, 0.2);
+          if (hit === 'tak') { noise(t, 0.3, 0.07, 'bandpass', 3200, 1.4); thump(t, 420, 300, 0.12, 0.06); }
+          if (e === 0 || e === 4) gong(96, t, 0.07, 0.5, [1, 1.51, 2.4]);
+          if (e === 2 || e === 6) gong(96, t, 0.035, 0.08, [1, 1.51]);
+        });
+      } else if (style === 'borneo') {
+        // sape-like plucked lead in A minor pentatonic, kulintangan gong row, agung gongs and a sompoton-style drone
+        drone([57, 64], 0.03, 'square', 900);
+        melody([76, 76, 74, 72, 74, 0, 76, 79, 81, 0, 79, 76, 74, 76, 74, 72, 69, 72, 74, 76, 74, 72, 69, 67, 69, 69, 72, 0, 69, 0, 0, 0],
+          { pluck: true, peak: 0.42, damp: 0.997, cut: 3000 });
+        const kul = [69, 72, 74, 76, 79, 76, 74, 72];
+        each((e, t, bar) => {
+          gong(kul[(e + bar * 2) % 8] + 12, t, 0.05, 0.35, [1, 2.4, 3.9]);
+          if (e === 0) gong(45, t, 0.4, 1.8, [1, 2.01, 2.9]);
+          if (e === 4) gong(52, t, 0.3, 1.4, [1, 2.01, 2.9]);
+          if (e === 2 || e === 6) gong(64, t, 0.08, 0.25, [1, 2.6]);
+          if (e === 3 || e === 7) thump(t, 200, 110, 0.25, 0.12);
+        });
+      } else {
+        // joget: violin-like melody, accordion off-beats, bass and gendang (dum/tak)
+        melody([69, 69, 74, 76, 77, 76, 74, 73, 74, 0, 69, 0, 70, 69, 67, 69, 65, 67, 69, 70, 72, 70, 69, 67, 69, 73, 76, 74, -1, 74, 74, 0],
+          { type: 'sawtooth', cut: 2400, peak: 0.11, vib: 5, vibRate: 5.5 });
+        const chords = [[62, 65, 69], [62, 65, 69], [67, 70, 74], [69, 73, 76]], bass = [[38, 45], [38, 45], [43, 50], [45, 52]];
+        each((e, t, bar) => {
+          if (e % 2 === 1) chords[bar].forEach(m => voice(m, t, 0.17, { type: 'square', cut: 1700, peak: 0.035, attack: 0.01 }));
+          if (e % 2 === 0) voice(bass[bar][(e / 2) % 2], t, 0.42, { type: 'triangle', cut: 4000, peak: 0.22, attack: 0.01 });
+          const hit = ['dum', '', 'tak', 'dum', '', 'tak', 'tak', ''][e];
+          if (hit === 'dum') thump(t, 140, 55, 0.6, 0.24);
+          else if (hit === 'tak') noise(t, 0.35, 0.08, 'bandpass', 2600, 1.2);
+        });
       }
     } catch (e) { /* no audio device */ }
   }

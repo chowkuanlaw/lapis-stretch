@@ -338,5 +338,21 @@ body.view-egg{background:transparent;overflow:hidden;user-select:none;cursor:poi
 .egg.dancing .egg-kuih{animation:eggGroove .5s ease-in-out infinite}
 .egg.calm .egg-kuih,.egg.calm .egg-title{animation:none}
 @keyframes eggGroove{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-5vh) rotate(6deg)}}
+/* one look and groove per song (1.5.0) */
+.egg-title{font-size:min(11vh,110px,9vw)}
+.egg[data-style=chinese] .egg-glow{background:#C1272D}
+.egg[data-style=chinese] .egg-title{color:#FFD447}
+.egg[data-style=chinese].dancing .egg-kuih{animation:eggHop .5s cubic-bezier(.3,0,.5,1) infinite}
+@keyframes eggHop{0%,100%{transform:translateY(0) scale(1.05,.95)}45%{transform:translateY(-8vh) scale(.97,1.03)}}
+.egg[data-style=indian] .egg-glow{background:#B5267B}
+.egg[data-style=indian] .egg-title{color:#FFB347}
+.egg[data-style=indian].dancing .egg-kuih{animation:eggSlide 1s ease-in-out infinite}
+@keyframes eggSlide{0%,100%{transform:translateX(-5vh) rotate(-5deg)}25%,75%{transform:translateY(-3vh)}50%{transform:translateX(5vh) rotate(5deg)}}
+.egg[data-style=borneo] .egg-glow{background:#13737A}
+.egg[data-style=borneo] .egg-title{color:#9BE7C4}
+.egg[data-style=borneo].dancing .egg-kuih{animation:eggGlide 1s ease-in-out infinite}
+.egg[data-style=borneo].dancing .egg-title{animation-duration:1s}
+@keyframes eggGlide{0%,100%{transform:translateY(0) rotate(-9deg)}50%{transform:translateY(-2.5vh) rotate(9deg)}}
+.egg.calm[data-style] .egg-kuih{animation:none}
 .egg-foot{position:absolute;left:0;right:0;bottom:3vh;margin:0;text-align:center;font-size:15px;color:#C9D6CC;opacity:0;transition:opacity .3s}
 .egg.dancing .egg-foot{opacity:1}
