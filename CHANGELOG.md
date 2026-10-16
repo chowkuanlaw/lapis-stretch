@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0 (2026-10-16)
+
+- **Time away counts as a break.** Stepping away for 5 minutes, or locking your PC for a minute or more, now also clears a reminder that was waiting for you, and Lapis says "Welcome back" with how long you were away. The reminder no longer chimes again while you're away.
+- **Ramadan mode** (on by default). During the fasting month, water reminders pause and the 2-minute walkaround (which ends with a drink) is left out of the cycle until Hari Raya. Today shows which day of Ramadan it is.
+- **Balik kerja wrap-up** (on by default). When your working hours end and you're still at the PC, your kuih waves goodbye with today's stretches, glasses and streak. On the day of the Friday summary, the summary says goodbye instead.
+- **More festive outfits:** Merdeka (31 August) and Malaysia Day (16 September), with a striped headband, a blue top with a gold sash and the Jalur Gemilang, and Christmas (25 December), with a Santa hat and a present.
+- **Month calendar** on Progress, for both stretches and water. Each day is shaded by how close it got to your goal; go back up to 12 months.
+
 ## 1.6.2 (2026-10-16)
 
 - Progress is split into two tabs, **Stretches** and **Water**, so each shows only its own numbers and 7-day chart. "See progress" on Today's Daily goal tile opens Stretches; on the Water tile it opens Water.

@@ -11,17 +11,20 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Pop-up reminder.** A card slides up in the bottom-right corner, above whatever app you're in, without stealing focus. Start, Snooze, Skip or pick a different stretch. It chimes, and for one-side-at-a-time stretches it chimes again when to switch sides.
 - **Desktop widget.** A small countdown card that stays on top of your windows. Drag it anywhere.
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. Closing the window keeps reminders running.
-- **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Progress** (week chart, best day, streak, water), **Stretches**, **Your kuih** and **Settings**.
+- **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Progress** (week chart, best day, streak, a month calendar, and water), **Stretches**, **Your kuih** and **Settings**.
 - **Quick setup on first launch.** Say hello, choose English or Bahasa Melayu, pick your kuih, choose how often, done.
 - **Working hours.** Reminds you only during your working days and hours (Monday to Friday, 9 to 6 by default) and skips lunch. Outside them Lapis rests, and the widget says when it's back.
 - **Quiet in meetings.** While an app is full screen or presenting, or Windows Do not disturb is on, reminders wait and come 2 minutes after you're done.
 - **Water reminders.** Every hour your kuih holds up a glass of water. Tap **Done, I drank** to count it toward your 8 glasses a day.
 - **Daily goal and Friday summary.** Aim for 8 stretches a day, and get a look back at your week before you head home on Friday.
+- **Balik kerja wrap-up.** When your working hours end, your kuih waves goodbye with your stretches, glasses and streak for the day.
+- **Month calendar.** Progress shows each month as a calendar, shaded by how close each day got to your stretch or water goal.
+- **Ramadan mode.** During the fasting month, water reminders pause and the walkaround (which ends with a drink) is left out until Raya.
 - **Collect the kuih.** Start with four kuih and meet the other 16 as you stretch, from your first 5 stretches to a 500-stretch milestone.
-- **Festive outfits.** For Hari Raya, Chinese New Year, Deepavali, Kaamatan and Gawai, your kuih dresses up for the few days before and on the day itself.
+- **Festive outfits.** For Hari Raya, Chinese New Year, Deepavali, Kaamatan, Gawai, Merdeka, Malaysia Day and Christmas, your kuih dresses up for the few days before and on the day itself.
 - **English or Bahasa Melayu.** Every screen, reminder and the tray menu.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
-- **Knows when you're away.** After 5 minutes of no keyboard or mouse activity, or when you lock or sleep your PC, the timer restarts so you're not nagged the moment you sit back down.
+- **Time away counts as a break.** After 5 minutes of no keyboard or mouse activity, or when you lock your PC for a minute or more or sleep it, the timer restarts and any reminder that was waiting is cleared, so you're not nagged the moment you sit back down.
 - **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime on or off, widget on or off, optional Windows notification, start with Windows and language.
 - **Pick your kuih.** 20 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
 - **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.

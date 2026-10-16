@@ -46,7 +46,7 @@
     'set.toast': 'Windows notification too', 'set.toastSub': 'Also shows in the Windows notification centre',
     'set.desktop': 'Desktop', 'set.widget': 'Desktop widget', 'set.widgetSub': 'Small countdown card on your desktop',
     'set.onTop': 'Keep widget on top', 'set.onTopSub': 'Stays above your other windows',
-    'set.away': 'When you step away', 'set.awayReset': 'Restart timer when I am away', 'set.awayResetSub': 'After 5 min idle, or when you lock or sleep your PC',
+    'set.away': 'When you step away', 'set.awayReset': 'Restart timer when I am away', 'set.awayResetSub': 'After 5 min idle, or when you lock or sleep your PC. Time away counts as a break, and a waiting reminder is cleared.',
     'set.autostart': 'Start with Windows', 'set.autostartSub': 'Lapis starts quietly in the tray when you sign in',
     'set.updates': 'Updates', 'set.autoUpdate': 'Update automatically', 'set.autoUpdateSub': 'Checks GitHub when Lapis starts and once a day',
     'set.version': 'Version', 'set.check': 'Check now', 'set.checksAuto': 'Lapis checks for updates automatically', 'set.checksManual': 'Lapis only checks when you click Check now',
@@ -92,7 +92,19 @@
     'tray.due': 'Time to stretch!', 'tray.active': 'Stretching: {ex}', 'tray.done': 'Nice, stretch done', 'tray.paused': 'Paused', 'tray.away': 'Away from desk',
     'tray.next': 'Next stretch in {t}', 'tray.resting': 'Resting until {when}', 'tray.quiet': 'In a meeting: your stretch waits', 'tray.today': '{n} stretches today',
     'tray.now': 'Stretch now', 'tray.open': 'Open Lapis', 'tray.widget': 'Show desktop widget', 'tray.autostart': 'Start with Windows', 'tray.quit': 'Quit Lapis',
-    'toast.title': "It's time to stretch!", 'toast.readyTitle': 'Lapis update ready', 'toast.readyBody': 'Restart Lapis to update to {v}. It will also install the next time you quit.'
+    'toast.title': "It's time to stretch!", 'toast.readyTitle': 'Lapis update ready', 'toast.readyBody': 'Restart Lapis to update to {v}. It will also install the next time you quit.',
+    // 1.7.0
+    'fest.merdeka': 'Merdeka Day', 'fest.malaysiaday': 'Malaysia Day', 'fest.xmas': 'Christmas',
+    'greet.merdeka': 'Selamat Hari Merdeka!', 'greet.malaysiaday': 'Selamat Hari Malaysia!', 'greet.xmas': 'Merry Christmas!',
+    'set.ramadan': 'Ramadan mode', 'set.ramadanSub': 'During the fasting month, water reminders pause and the walk (which ends with a drink) is left out.',
+    'set.wrap': 'End-of-day wrap-up', 'set.wrapSub': 'A short goodbye with your day when your working hours end.',
+    'sub.back': 'Welcome back! Your {n} min away counted as a break.', 'w.back': 'Welcome back!',
+    'ram.banner': 'Ramadan, day {n}. Water reminders are paused and the walk is left out until Raya. Selamat berpuasa!',
+    'water.ramadan': 'reminders paused for Ramadan',
+    'wrap.tag': '{time} · Balik kerja!', 'wrap.title': 'Time to go home!', 'wrap.met': 'You reached your goal today. Rest well!', 'wrap.notMet': 'Tomorrow is another day. Rest well!',
+    'wrap.stretches': 'stretches', 'wrap.glasses': 'glasses', 'wrap.streak': 'day streak', 'wrap.bye': 'See you!',
+    'prog.prevMonth': 'Previous month', 'prog.nextMonth': 'Next month', 'prog.monthGoal': '{n} days at your goal', 'prog.monthWater': '{n} days at {g} glasses',
+    'prog.less': 'Less', 'prog.more': 'More', 'prog.atGoal': 'At goal'
   };
   const ms = {
     'nav.today': 'Hari ini', 'nav.stretches': 'Regangan', 'nav.kuih': 'Kuih anda', 'nav.progress': 'Kemajuan', 'nav.settings': 'Tetapan',
@@ -137,7 +149,7 @@
     'set.toast': 'Pemberitahuan Windows juga', 'set.toastSub': 'Turut dipaparkan di pusat pemberitahuan Windows',
     'set.desktop': 'Desktop', 'set.widget': 'Widget desktop', 'set.widgetSub': 'Kad kiraan detik kecil di desktop anda',
     'set.onTop': 'Kekalkan widget di atas', 'set.onTopSub': 'Kekal di atas tetingkap lain',
-    'set.away': 'Bila anda tinggalkan meja', 'set.awayReset': 'Mula semula pemasa bila saya tiada', 'set.awayResetSub': 'Selepas 5 minit tanpa aktiviti, atau bila PC dikunci atau tidur',
+    'set.away': 'Bila anda tinggalkan meja', 'set.awayReset': 'Mula semula pemasa bila saya tiada', 'set.awayResetSub': 'Selepas 5 minit tanpa aktiviti, atau bila PC dikunci atau tidur. Masa anda tiada dikira sebagai rehat, dan peringatan yang menunggu dikosongkan.',
     'set.autostart': 'Mula bersama Windows', 'set.autostartSub': 'Lapis bermula secara senyap di dulang sistem bila anda log masuk',
     'set.updates': 'Kemas kini', 'set.autoUpdate': 'Kemas kini secara automatik', 'set.autoUpdateSub': 'Semak GitHub bila Lapis dimulakan dan sekali sehari',
     'set.version': 'Versi', 'set.check': 'Semak sekarang', 'set.checksAuto': 'Lapis menyemak kemas kini secara automatik', 'set.checksManual': 'Lapis hanya menyemak bila anda klik Semak sekarang',
@@ -183,7 +195,19 @@
     'tray.due': 'Masa meregang!', 'tray.active': 'Sedang meregang: {ex}', 'tray.done': 'Bagus, regangan selesai', 'tray.paused': 'Dijeda', 'tray.away': 'Tiada di meja',
     'tray.next': 'Regangan seterusnya dalam {t}', 'tray.resting': 'Rehat hingga {when}', 'tray.quiet': 'Dalam mesyuarat: regangan anda menunggu', 'tray.today': '{n} regangan hari ini',
     'tray.now': 'Regang sekarang', 'tray.open': 'Buka Lapis', 'tray.widget': 'Tunjuk widget desktop', 'tray.autostart': 'Mula bersama Windows', 'tray.quit': 'Keluar Lapis',
-    'toast.title': 'Masa untuk meregang!', 'toast.readyTitle': 'Kemas kini Lapis sedia', 'toast.readyBody': 'Mulakan semula Lapis untuk kemas kini ke {v}. Ia juga akan dipasang bila anda keluar nanti.'
+    'toast.title': 'Masa untuk meregang!', 'toast.readyTitle': 'Kemas kini Lapis sedia', 'toast.readyBody': 'Mulakan semula Lapis untuk kemas kini ke {v}. Ia juga akan dipasang bila anda keluar nanti.',
+    // 1.7.0
+    'fest.merdeka': 'Hari Merdeka', 'fest.malaysiaday': 'Hari Malaysia', 'fest.xmas': 'Hari Krismas',
+    'greet.merdeka': 'Selamat Hari Merdeka!', 'greet.malaysiaday': 'Selamat Hari Malaysia!', 'greet.xmas': 'Selamat Hari Krismas!',
+    'set.ramadan': 'Mod Ramadan', 'set.ramadanSub': 'Sepanjang bulan puasa, peringatan air dihentikan dan aktiviti berjalan (yang diakhiri dengan minum) tidak dimasukkan.',
+    'set.wrap': 'Ringkasan hujung hari', 'set.wrapSub': 'Ucapan ringkas bersama pencapaian hari anda bila waktu kerja tamat.',
+    'sub.back': 'Selamat kembali! {n} minit anda tiada dikira sebagai rehat.', 'w.back': 'Selamat kembali!',
+    'ram.banner': 'Ramadan, hari ke-{n}. Peringatan air dihentikan dan aktiviti berjalan tidak dimasukkan sehingga Raya. Selamat berpuasa!',
+    'water.ramadan': 'peringatan dihentikan sepanjang Ramadan',
+    'wrap.tag': '{time} · Balik kerja!', 'wrap.title': 'Jom balik!', 'wrap.met': 'Anda capai sasaran hari ini. Rehat secukupnya!', 'wrap.notMet': 'Esok masih ada. Rehat secukupnya!',
+    'wrap.stretches': 'regangan', 'wrap.glasses': 'gelas', 'wrap.streak': 'hari berturut-turut', 'wrap.bye': 'Jumpa lagi!',
+    'prog.prevMonth': 'Bulan sebelumnya', 'prog.nextMonth': 'Bulan berikutnya', 'prog.monthGoal': '{n} hari capai sasaran', 'prog.monthWater': '{n} hari capai {g} gelas',
+    'prog.less': 'Kurang', 'prog.more': 'Lebih', 'prog.atGoal': 'Capai sasaran'
   };
   const STR = { en, ms };
   const LANGS = ['en', 'ms'];

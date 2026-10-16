@@ -32,7 +32,20 @@
     drink: K => ({ body: 'rotate(-5 60 100)', front: true, face: 'closed', mouth: 'none', arms: [IDLE_ARMS[0], [[87, 62], [100, 80], [77, 66 + (K.faceDy || 0)]]], prop: 'sip' }),
     // quiet during meetings: finger to lips
     shh: K => ({ front: true, mouth: 'none', arms: [IDLE_ARMS[0], [[87, 62], [86, 84], [62, 62 + (K.faceDy || 0)]]], extra: '<path class="fx" d="M100 40 q6 -4 12 0"/><path class="fx" d="M102 30 q8 -6 16 0"/>' }),
-    kick: { body: 'rotate(-6 60 100)', arms: [[[33, 60], [18, 46], [12, 30]], [[87, 60], [102, 48], [110, 32]]], legs: [[[50, 100], [48, 138]], [[70, 100], [88, 110], [104, 112]]], face: 'happy' }
+    kick: { body: 'rotate(-6 60 100)', arms: [[[33, 60], [18, 46], [12, 30]], [[87, 60], [102, 48], [110, 32]]], legs: [[[50, 100], [48, 138]], [[70, 100], [88, 110], [104, 112]]], face: 'happy' },
+    // 1.7.0 easter eggs: pulling teh tarik (Friday 3:30 pm), and yawning late at night
+    tarik: K => {
+      const d = (K.half || 28) - 28, lx = 26 - d, ly = 104, rx = 106 + d, ry = 12;
+      return {
+        arms: [[[33, 62], [22, 84], [lx, ly]], [[87, 58], [102, 38], [rx, ry]]], face: 'happy',
+        extra: `<path d="M${rx - 12} ${ry + 10} C${rx - 30} ${ry + 40} ${lx + 6} ${ly - 70} ${lx + 2} ${ly - 8}" fill="none" stroke="#9A5420" stroke-width="6.5" stroke-linecap="round"/><path d="M${rx - 12} ${ry + 10} C${rx - 30} ${ry + 40} ${lx + 6} ${ly - 70} ${lx + 2} ${ly - 8}" fill="none" stroke="#D99A5B" stroke-width="2.4" stroke-linecap="round" transform="translate(-1.5 0)"/>` +
+          PROPS.mug(lx, ly - 2, 0, true) + PROPS.mug(rx, ry + 4, -118, false)
+      };
+    },
+    yawn: K => ({ face: 'closed', mouth: 'yawn', arms: [IDLE_ARMS[0], [[87, 58], [98, 34], [92, 10]]],
+      extra: `<path d="M77 ${51 + (K.faceDy || 0)} q3 5 0 7 q-3 -2 0 -7 Z" fill="#7CC7EA" stroke="#2A1F1A" stroke-width="1"/><text class="zz" x="102" y="${K.faceDy > 8 ? 30 : 18}">z</text><text class="zz" x="113" y="${K.faceDy > 8 ? 18 : 6}" style="font-size:13px">z</text>` }),
+    // MERDEKA code: wave the Jalur Gemilang
+    flag: { arms: [IDLE_ARMS[0], [[87, 60], [100, 48], [104, 34]]], prop: 'flag', face: 'happy' }
   };
 
   /* ---------- helpers for kuih art ---------- */
@@ -270,9 +283,44 @@
         [0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${10 + i * 15} ${y + 13} l7 -6 l7 6 l-7 6 Z" fill="none" stroke="#F3E3C3" stroke-width="1.6"/><circle cx="${17 + i * 15}" cy="${y + 13}" r="1.4" fill="#1F1A17"/>`).join('') +
         `<rect x="0" y="${y}" width="120" height="4" fill="#C9CED6"/>` + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => `<circle cx="${6 + i * 11}" cy="${y + 2}" r="2.4" fill="#E9EDF2" stroke="#8A919C" stroke-width=".8"/>`).join('') + '</g>',
       prop: null
+    },
+    merdeka: { // Merdeka and Malaysia Day: red and white striped headband, royal blue top with a gold sash, waving the Jalur Gemilang
+      hat: y => `<path d="M41 ${y + 2} Q60 ${y - 7} 79 ${y + 2} L79 ${y + 8} Q60 ${y - 1} 41 ${y + 8} Z" fill="#FFFFFF" ${S2}/><path d="M41 ${y + 4.5} Q60 ${y - 4.5} 79 ${y + 4.5}" stroke="#CC0001" stroke-width="2.4" fill="none"/>` +
+        `<path d="M78 ${y + 4} q10 -2 13 6 M78 ${y + 6} q8 4 9 12" fill="none" stroke="#CC0001" stroke-width="3" stroke-linecap="round"/><circle cx="79" cy="${y + 5}" r="3" fill="#CC0001" stroke="${INK}" stroke-width="1.5"/>`,
+      body: (y, id) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="#1B2A8F"/><rect x="0" y="${y}" width="120" height="3" fill="#FFCC00"/><path d="M20 ${y} L100 ${y + 30}" stroke="#FFCC00" stroke-width="6"/><path d="M20 ${y} L100 ${y + 30}" stroke="#CC0001" stroke-width="2" stroke-dasharray="4 3"/></g>`,
+      prop: (x, y) => PROPS.flag(x, y + 6)
+    },
+    xmas: { // Christmas: Santa hat, red top with white fur trim and a belt, holding a wrapped present
+      hat: y => `<path d="M42 ${y + 1} Q48 ${y - 26} 72 ${y - 22} Q86 ${y - 18} 90 ${y - 4} Q80 ${y - 14} 74 ${y - 10} L78 ${y + 1} Z" fill="#D7263D" ${S2}/><path d="M40 ${y + 2} Q60 ${y - 5} 80 ${y + 2} L80 ${y + 7} Q60 ${y} 40 ${y + 7} Z" fill="#FFFDF5" ${S2}/><circle cx="90" cy="${y - 3}" r="5" fill="#FFFDF5" ${S2}/>`,
+      body: (y, id) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="#D7263D"/><rect x="0" y="${y}" width="120" height="6" fill="#FFFDF5"/><rect x="0" y="${y + 14}" width="120" height="5" fill="#1F1A17"/><rect x="54" y="${y + 12.5}" width="12" height="8" rx="1.5" fill="none" stroke="#F4C542" stroke-width="2"/></g>`,
+      prop: (x, y) => `<g transform="translate(${x} ${y + 2}) rotate(-8)"><rect x="-10" y="-9" width="20" height="18" rx="2" fill="#2E8B57" ${S2}/><path d="M0 -9 V9 M-10 0 H10" stroke="#F4C542" stroke-width="3"/><path d="M0 -9 q-7 -8 -9 -2 q4 3 9 2 q7 -8 9 -2 q-4 3 -9 2" fill="#F4C542" stroke="${INK}" stroke-width="1.4"/></g>`
+    },
+    pyjama: { // late-night easter egg: floppy nightcap and striped pyjamas
+      hat: y => `<g transform="translate(120 0) scale(-1 1)"><path d="M42 ${y + 2} Q46 ${y - 22} 70 ${y - 20} Q92 ${y - 16} 98 ${y + 6} Q86 ${y - 6} 76 ${y - 6} L78 ${y + 2} Z" fill="#5C6BC0" ${S2}/><path d="M50 ${y - 12} l4 3 M62 ${y - 16} l3 4 M74 ${y - 13} l3 3" stroke="#C5CAE9" stroke-width="2" stroke-linecap="round"/><path d="M40 ${y + 2} Q60 ${y - 4} 80 ${y + 2} L80 ${y + 6} Q60 ${y} 40 ${y + 6} Z" fill="#C5CAE9" ${S2}/><circle cx="98" cy="${y + 8}" r="5" fill="#FFF3B0" ${S2}/></g>`,
+      body: (y, id) => `<g clip-path="url(#c${id})"><rect x="0" y="${y}" width="120" height="40" fill="#9FB4E8"/>` +
+        [0, 1, 2, 3, 4, 5, 6, 7].map(i => `<rect x="${6 + i * 15}" y="${y}" width="5" height="40" fill="#E3EBFB"/>`).join('') +
+        `<path d="M48 ${y} L60 ${y + 9} L72 ${y}" fill="#E3EBFB" stroke="#5C6BC0" stroke-width="1.6"/>` + [0, 1].map(i => `<circle cx="60" cy="${y + 14 + i * 8}" r="1.9" fill="#5C6BC0"/>`).join('') + '</g>',
+      prop: null
     }
   };
+  OUTFITS.malaysiaday = OUTFITS.merdeka;
+  // Jalur Gemilang: 14 red and white stripes, a blue canton with the yellow crescent and 14-point star
+  function jalur(w) {
+    const h = w / 2, s = h / 14, cw = w / 2, ch = s * 8;
+    let o = '';
+    for (let i = 0; i < 14; i++) o += `<rect x="0" y="${(i * s).toFixed(2)}" width="${w}" height="${(s + 0.05).toFixed(2)}" fill="${i % 2 ? '#FFFFFF' : '#CC0001'}"/>`;
+    o += `<rect x="0" y="0" width="${cw}" height="${ch.toFixed(2)}" fill="#010066"/>`;
+    const cy = ch / 2, mx = cw * 0.36, r1 = ch * 0.38;
+    o += `<circle cx="${mx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${r1.toFixed(2)}" fill="#FFCC00"/><circle cx="${(mx + r1 * 0.32).toFixed(2)}" cy="${cy.toFixed(2)}" r="${(r1 * 0.82).toFixed(2)}" fill="#010066"/>`;
+    const sx = cw * 0.66, R = ch * 0.34, r = R * 0.45;
+    o += `<polygon fill="#FFCC00" points="${Array.from({ length: 28 }, (_, i) => { const a = i * Math.PI / 14 - Math.PI / 2, rr = i % 2 ? r : R; return (sx + rr * Math.cos(a)).toFixed(2) + ',' + (cy + rr * Math.sin(a)).toFixed(2); }).join(' ')}"/>`;
+    return o + `<rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="${INK}" stroke-width="1.4"/>`;
+  }
   const PROPS = {
+    flag: (x, y) => `<g transform="translate(${x} ${y})"><path d="M0 6 V-40" stroke="#7A4A22" stroke-width="2.6" stroke-linecap="round"/><g transform="translate(1 -40) skewY(-6)">${jalur(32)}</g><circle cx="0" cy="-41" r="2.2" fill="#F4C542" stroke="${INK}" stroke-width="1"/></g>`,
+    // stainless-steel teh tarik mug; tilt in degrees, foam on top when upright
+    mug: (x, y, tilt, foam) => `<g transform="translate(${x} ${y}) rotate(${tilt})"><path d="M8 -4 q8 0 8 7 q0 7 -8 7" fill="none" stroke="${INK}" stroke-width="2.4"/><path d="M8 -4 q6 0 6 7 q0 6 -6 6" fill="none" stroke="#C9CED6" stroke-width="1.2"/><path d="M-9 -10 L9 -10 L8 12 L-8 12 Z" fill="#D5DAE1" ${S2}/><path d="M-5 -8 V9" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity=".8"/>` +
+      (foam ? `<path d="M-9 -10 Q-6 -15 -2 -11 Q1 -16 5 -11 Q8 -14 9 -10 Z" fill="#F3E2C4" stroke="${INK}" stroke-width="1.5"/>` : '') + '</g>',
     glass: (x, y) => `<g transform="translate(${x} ${y - 10})"><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="#EAF6FB" ${S2}/><path d="M-7 -3 L7 -3 L6 11 L-6 11 Z" fill="#5BC0EB"/><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="none" ${S2}/><path d="M-4 -7 V6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>`,
     sip: (x, y) => `<g transform="translate(${x - 9} ${y - 7}) rotate(-55)"><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="#EAF6FB" ${S2}/><path d="M-6.8 -6 L1 -11 L8 -11 L6 11 L-6 11 Z" fill="#5BC0EB"/><path d="M-8 -11 L8 -11 L6 11 L-6 11 Z" fill="none" ${S2}/><path d="M-4 -6 V6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>`
   };
@@ -285,10 +333,10 @@
     if (kind === 'happy') eyes = '<path class="line" d="M45 49 Q50 43 55 49"/><path class="line" d="M65 49 Q70 43 75 49"/>';
     else if (kind === 'closed') eyes = '<path class="line" d="M45 47 H55"/><path class="line" d="M65 47 H75"/>';
     else eyes = '<circle class="eye" cx="50" cy="47" r="3.4"/><circle class="eye" cx="70" cy="47" r="3.4"/>';
-    const m = mouth === 'none' ? '' : '<path class="line" d="M53 57 Q60 64 67 57"/>';
+    const m = mouth === 'none' ? '' : mouth === 'yawn' ? `<ellipse cx="60" cy="60" rx="5.5" ry="7" fill="${INK}"/><ellipse cx="60" cy="63.5" rx="3" ry="2.4" fill="#E86A8A"/>` : '<path class="line" d="M53 57 Q60 64 67 57"/>';
     return eyes + m + '<ellipse class="blush" cx="42" cy="60" rx="4.5" ry="2.6"/><ellipse class="blush" cx="78" cy="60" rx="4.5" ry="2.6"/>';
   }
-  function figure(p, sticker, id, K, sid, outfit) {
+  function figure(p, sticker, id, K, sid, outfit, gold) {
     const legs = p.legs || IDLE_LEGS, arms = p.arms || IDLE_ARMS, d = (K.half || 28) - 28;
     const O2 = outfit && OUTFITS[outfit], fy = K.faceDy || 0;
     // what the right hand holds: the pose's own prop (a glass) wins over a festive one
@@ -302,8 +350,9 @@
     if (!p.front) s += armsSVG + held;
     if (sticker) s += K.sil;
     else {
-      s += K.art(id);
+      s += (gold ? `<g filter="url(#gd${id})">` : '') + K.art(id);
       if (O2) s += `<clipPath id="c${id}">${K.sil}</clipPath>` + O2.body(hem(K), id, sid);
+      if (gold) s += '</g>';
       s += `<g transform="translate(0 ${fy})">${face(p.face, p.mouth || K.mouth)}</g>`;
       if (O2 && O2.face) s += O2.face(fy);
     }
@@ -323,10 +372,16 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 8 92 98" width="92" height="98">${K.art(id)}<g transform="translate(0 ${K.faceDy || 0})">${f}</g></svg>`;
   };
   window.LAPIS_KUIH = Object.entries(KUIH).map(([id, k]) => ({ id, name: k.name, origin: k.origin, note: k.note }));
-  window.lapisSVG = function (pose, label, bob, skin, outfit) {
+  // Golden kuih (1.7.0 easter egg): the kuih's own colours turned to gold, with a glow and sparkles.
+  const GOLD = id => `<defs><filter id="gd${id}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".45 .88 .17 0 .12  .30 .58 .11 0 .06  .09 .18 .03 0 0  0 0 0 1 0"/><feComponentTransfer><feFuncR type="gamma" amplitude="1.05" exponent=".6"/><feFuncG type="gamma" amplitude="1" exponent=".7"/><feFuncB type="gamma" amplitude=".9" exponent="1"/></feComponentTransfer></filter>` +
+    `<radialGradient id="gh${id}"><stop offset="0" stop-color="#FFE38A" stop-opacity=".85"/><stop offset="1" stop-color="#FFE38A" stop-opacity="0"/></radialGradient></defs><circle cx="60" cy="64" r="62" fill="url(#gh${id})"/>`;
+  const sparkle = (x, y, r) => `<path d="M${x} ${y - r} Q${x + r * 0.2} ${y - r * 0.2} ${x + r} ${y} Q${x + r * 0.2} ${y + r * 0.2} ${x} ${y + r} Q${x - r * 0.2} ${y + r * 0.2} ${x - r} ${y} Q${x - r * 0.2} ${y - r * 0.2} ${x} ${y - r} Z" fill="#FFD84D" stroke="${INK}" stroke-width="1.3"/>`;
+  const SPARKLES = sparkle(10, 20, 8) + sparkle(114, 70, 7) + sparkle(18, 96, 5) + sparkle(104, 8, 5);
+  window.lapisSVG = function (pose, label, bob, skin, outfit, golden) {
     const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid], id = ++uid;
     const p0 = POSES[pose] || POSES.idle, p = typeof p0 === 'function' ? p0(K) : p0;
     const o = Object.prototype.hasOwnProperty.call(OUTFITS, outfit) ? outfit : null;
-    return `<svg class="lapis" viewBox="-8 -${o ? 30 : 14} 136 ${o ? 182 : 166}" role="img" aria-label="${label || K.name}"><g class="${bob ? 'bob' : ''}"><g class="stk">${figure(p, true, id, K, sid, o)}</g><g>${figure(p, false, id, K, sid, o)}</g></g></svg>`;
+    const g = !!golden;
+    return `<svg class="lapis${g ? ' golden' : ''}" viewBox="-8 -${o ? 30 : 14} 136 ${o ? 182 : 166}" role="img" aria-label="${label || K.name}">${g ? GOLD(id) : ''}<g class="${bob ? 'bob' : ''}"><g class="stk">${figure(p, true, id, K, sid, o)}</g><g>${figure(p, false, id, K, sid, o, g)}</g></g>${g ? `<g class="sparkles">${SPARKLES}</g>` : ''}</svg>`;
   };
 })();

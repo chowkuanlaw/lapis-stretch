@@ -12,7 +12,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
-const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress } = require('./renderer/data.js');
+const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
 const QUIET = require('./quiet.js');
 
@@ -55,7 +55,9 @@ function run() {
     lang: 'en', goal: 8,
     workOn: true, workDays: [1, 2, 3, 4, 5], workStart: 540, workEnd: 1080, lunchOn: true, lunchStart: 780, lunchEnd: 840, // minutes after midnight
     quietMeetings: true, waterOn: true, waterEvery: 60, waterGoal: 8, summaryOn: true, lastSummary: '',
-    collect: true, unlocked: {}, codeUnlocked: false, collectInit: false
+    collect: true, unlocked: {}, codeUnlocked: false, collectInit: false,
+    // 1.7.0
+    ramadanOn: true, wrapOn: true, lastWrap: ''
   };
   const WATER_EVERY = [30, 45, 60, 90, 120];
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
@@ -63,7 +65,8 @@ function run() {
   const R = {
     mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null,
     update: null, updateMsg: null, checking: false,
-    resting: false, quiet: false, quietCheck: false, nextWater: 0, waterCheck: false, notices: [], noticeUntil: 0, codeMsg: null, codeMsgUntil: 0
+    resting: false, quiet: false, quietCheck: false, nextWater: 0, waterCheck: false, notices: [], noticeUntil: 0, codeMsg: null, codeMsgUntil: 0,
+    locked: 0, backMins: 0, backUntil: 0, wrapCheck: false, nextWrapCheck: 0
   };
 
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
@@ -80,7 +83,7 @@ function run() {
     pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
     pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
     for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded',
-      'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit']) {
+      'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn']) {
       if (typeof saved[k] === 'boolean') out[k] = saved[k];
     }
     pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
@@ -103,7 +106,7 @@ function run() {
     if (ls < le) { out.lunchStart = ls; out.lunchEnd = le; }
     pick('waterEvery', WATER_EVERY.includes(saved.waterEvery) ? saved.waterEvery : undefined);
     pick('waterGoal', int(saved.waterGoal, 1, 20));
-    if (typeof saved.lastSummary === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.lastSummary)) out.lastSummary = saved.lastSummary;
+    for (const k of ['lastSummary', 'lastWrap']) if (typeof saved[k] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved[k])) out[k] = saved[k];
     if (saved.unlocked && typeof saved.unlocked === 'object' && !Array.isArray(saved.unlocked)) {
       for (const id of Object.keys(saved.unlocked)) {
         const d = saved.unlocked[id];
@@ -152,6 +155,9 @@ function run() {
   function dayKey(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
   function mmss(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${pad(s % 60)}`; }
   function today() { const k = dayKey(new Date()); return S.history[k] || (S.history[k] = { total: 0, by: {} }); }
+  // Ramadan mode: no water reminders, and the walk (which ends with a drink) is left out of the cycle.
+  const puasa = () => (S.ramadanOn ? ramadanOn(new Date()) : null);
+  function skipWalk() { if (puasa()) { let n = 0; while (CYCLE[S.idx % CYCLE.length] === 'walk' && n++ < CYCLE.length) S.idx++; } }
   function upNext() { return BY[CYCLE[S.idx % CYCLE.length]]; }
   const exName = ex => I18N.tx(S.lang, ex, 'name');
 
@@ -265,6 +271,25 @@ function run() {
     S.lastSummary = week; save();
     pushNotice({ type: 'summary', week });
   }
+  /* End-of-day wrap-up (1.7.0): once a working day, when your working hours end and you're still at the PC.
+     On the day the Friday summary shows, the summary says goodbye instead. */
+  function wrapDue(now) {
+    if (!S.wrapOn || !S.workOn || S.paused || R.wrapCheck || now < R.nextWrapCheck) return;
+    const d = new Date(now), k = dayKey(d), m = minsOf(d);
+    if (S.lastWrap === k || !S.workDays.includes(d.getDay()) || m < S.workEnd || m > S.workEnd + 120) return;
+    const lastDay = S.workDays.reduce((a, b) => ((b + 6) % 7 > (a + 6) % 7 ? b : a), S.workDays[0]);
+    if (S.summaryOn && d.getDay() === lastDay) return; // the weekly summary says goodbye that day
+    let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
+    if (idle >= AWAY_SECS || R.locked) { R.nextWrapCheck = now + 30e3; return; } // say it when you're back at the desk
+    R.wrapCheck = true;
+    (S.quietMeetings ? isQuietTime() : Promise.resolve(false)).then(quiet => {
+      R.wrapCheck = false;
+      if (quiet) { R.nextWrapCheck = Date.now() + MEETING_RECHECK; return; }
+      S.lastWrap = k; save();
+      pushNotice({ type: 'wrap', day: k });
+      chime('done');
+    });
+  }
 
   function publicState() {
     const { widgetPos, firstRun, lastUpdateCheck, closedAt, reopenHidden, collectInit, ...rest } = S;
@@ -272,7 +297,8 @@ function run() {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
       switched: R.switched, away: !!R.awaySince,
       resting: R.resting, backAt: R.resting ? nextWorkStart(Date.now()) : 0, quiet: R.quiet,
-      nextWater: S.waterOn && !R.resting ? R.nextWater : 0, notice: R.notices[0] || null,
+      nextWater: S.waterOn && !R.resting && !puasa() ? R.nextWater : 0, notice: R.notices[0] || null,
+      ramadan: puasa(), backMins: Date.now() < R.backUntil ? R.backMins : 0,
       codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
       eggMsg: Date.now() < eggMsgUntil,
       version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
@@ -309,7 +335,7 @@ function run() {
     broadcast();
   }
   function schedule(ms) { S.nextDue = Date.now() + ms; if (S.paused) S.pausedLeft = ms; save(); }
-  function advance() { if (R.cur === upNext().id) S.idx++; }
+  function advance() { if (R.cur === upNext().id) S.idx++; skipWalk(); }
   function finish() {
     const rec = today(); rec.total++; rec.by[R.cur] = (rec.by[R.cur] || 0) + 1;
     advance(); schedule(S.interval * 60e3); chime('done');
@@ -321,7 +347,7 @@ function run() {
   function snooze() { schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 3500; broadcast(); }
   function different() {
     const base = R.cur || upNext().id; let i = S.idx;
-    do { i++; } while (CYCLE[i % CYCLE.length] === base);
+    do { i++; } while (CYCLE[i % CYCLE.length] === base || (puasa() && CYCLE[i % CYCLE.length] === 'walk'));
     S.idx = i; save();
     if (R.mode === 'due') R.cur = upNext().id;
     broadcast();
@@ -334,8 +360,21 @@ function run() {
     }
     save(); broadcast();
   }
+  // Back from sleep: start a fresh countdown, and clear a reminder that waited while the PC slept.
   function restartCountdown() {
-    if (R.mode === 'waiting' && !S.paused && !R.resting) { R.awaySince = null; R.quiet = false; schedule(S.interval * 60e3); broadcast(); }
+    if (S.paused || R.resting) return;
+    if (R.mode === 'due' && S.awayReset) { R.mode = 'waiting'; R.cur = null; }
+    if (R.mode === 'waiting') { R.awaySince = null; R.quiet = false; schedule(S.interval * 60e3); broadcast(); }
+  }
+  /* Away from the desk (1.7.0): 5 minutes without keyboard or mouse, or a locked screen for a minute or more,
+     counts as a break. Coming back clears a reminder that was waiting and starts a fresh countdown. */
+  function backFromAway(now) {
+    const since = R.awaySince; R.awaySince = null;
+    if (!since || now - since < 60e3) { broadcast(); return; }
+    if (R.mode === 'due') { R.mode = 'waiting'; R.cur = null; }
+    R.quiet = false; schedule(S.interval * 60e3);
+    R.backMins = Math.max(1, Math.round((now - since) / 60e3)); R.backUntil = now + 15000;
+    broadcast(); setTimeout(broadcast, 15100);
   }
 
   /* ---------- updates ---------- */
@@ -422,7 +461,8 @@ function run() {
     switch (key) {
       case 'interval': S.interval = [15, 20, 30, 45, 60].includes(+value) ? +value : 20; if (R.mode === 'waiting') schedule(S.interval * 60e3); break;
       case 'snooze': S.snooze = [5, 10, 15].includes(+value) ? +value : 10; break;
-      case 'sound': case 'toast': case 'awayReset': case 'quietMeetings': case 'summaryOn': S[key] = !!value; break;
+      case 'sound': case 'toast': case 'awayReset': case 'quietMeetings': case 'summaryOn': case 'wrapOn': S[key] = !!value; break;
+      case 'ramadanOn': S.ramadanOn = !!value; skipWalk(); break;
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
@@ -467,23 +507,30 @@ function run() {
       else { if (R.mode === 'waiting' && !S.paused) schedule(S.interval * 60e3); R.nextWater = now + S.waterEvery * 60e3; }
       broadcast();
     }
-    if (S.awayReset && R.mode === 'waiting' && !S.paused && !R.resting) {
-      let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
-      if (idle >= AWAY_SECS) { if (!R.awaySince) { R.awaySince = now - idle * 1000; broadcast(); } }
-      else if (R.awaySince) { R.awaySince = null; schedule(S.interval * 60e3); broadcast(); }
+    if (S.awayReset && (R.mode === 'waiting' || R.mode === 'due') && !S.paused && !R.resting) {
+      if (R.locked) { if (!R.awaySince) { R.awaySince = R.locked; broadcast(); } }
+      else {
+        let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
+        if (idle >= AWAY_SECS) { if (!R.awaySince) { R.awaySince = now - idle * 1000; broadcast(); } }
+        else if (R.awaySince) backFromAway(now);
+      }
     } else if (R.awaySince) { R.awaySince = null; broadcast(); }
+    if (R.mode === 'waiting') skipWalk();
 
     if (R.mode === 'waiting' && !S.paused && !R.awaySince && !R.resting && !R.quietCheck && now >= S.nextDue) dueOrHold();
-    else if (R.mode === 'due' && now - R.dueAt > (R.rechimes + 1) * 5 * 60e3) { R.rechimes++; chime('due'); }
+    else if (R.mode === 'due' && !R.awaySince && now - R.dueAt > (R.rechimes + 1) * 5 * 60e3) { R.rechimes++; chime('due'); }
     else if (R.mode === 'active') {
       const left = R.activeEnd - now, ex = BY[R.cur];
       if (ex.sides && !R.switched && left <= R.activeSecs * 500) { R.switched = true; chime('switch'); broadcast(); }
       if (left <= 0) finish();
     } else if ((R.mode === 'done' || R.mode === 'snoozed') && now >= R.msgUntil) { R.mode = 'waiting'; R.cur = null; broadcast(); }
 
-    if (S.waterOn && !R.resting && !S.paused && R.mode === 'waiting' && now >= R.nextWater) waterDue(now);
+    const fasting = puasa();
+    if (fasting && R.notices.some(n => n.type === 'water')) { R.notices = R.notices.filter(n => n.type !== 'water'); broadcast(); }
+    if (S.waterOn && !fasting && !R.resting && !S.paused && R.mode === 'waiting' && now >= R.nextWater) waterDue(now);
     if (R.noticeUntil && now >= R.noticeUntil) closeNotice();
     summaryDue(now);
+    wrapDue(now);
 
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
@@ -766,7 +813,8 @@ function run() {
     applyAutostart();
     ensureStartMenuShortcut();
     powerMonitor.on('resume', restartCountdown);
-    powerMonitor.on('unlock-screen', restartCountdown);
+    powerMonitor.on('lock-screen', () => { R.locked = Date.now(); });
+    powerMonitor.on('unlock-screen', () => { R.locked = 0; tick(); });
     screen.on('display-removed', () => { if (widgetWin && !onSomeDisplay(S.widgetPos)) { S.widgetPos = null; const wa = screen.getPrimaryDisplay().workArea; widgetWin.setPosition(wa.x + wa.width - WIDGET_W - 12, wa.y + 12); } });
     setInterval(tick, 1000);
     broadcast();

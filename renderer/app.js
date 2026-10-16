@@ -115,6 +115,8 @@
     if (kt) { onKuihTap(kt); return; }
     const pg = e.target.closest('[data-page]');
     if (pg) { if (pg.dataset.ptab) ptab = pg.dataset.ptab; setPage(pg.dataset.page); return; }
+    const mo = e.target.closest('[data-mon]');
+    if (mo) { monthOff = Math.min(0, Math.max(-12, monthOff + Number(mo.dataset.mon))); if (st) renderMain(); return; }
     const pt = e.target.closest('[data-ptab]');
     if (pt) { ptab = pt.dataset.ptab; if (st) renderMain(); return; }
     const ob = e.target.closest('[data-ob]');
@@ -168,7 +170,7 @@
   }).join('');
   const obKuih = () => (st.collect && !st.codeUnlocked ? `<div class="ob-kuih ob-starters"><div class="kgrid small four">${STARTERS.map(id => { const k = KUIH_BY[id]; return `<button type="button" class="ktile" data-set="kuih" data-sval="${k.id}" data-kid="${k.id}" aria-pressed="false" title="${esc(tx(k, 'note'))}"><span class="kimg">${lapis('idle', k.name, false, k.id)}</span><b>${k.name}</b></button>`; }).join('')}</div></div>` : `<div class="ob-kuih">${kuihTiles('small')}</div>`);
 
-  let page = 'today', ptab = 'stretches', obForce = false, obStep = 0;
+  let page = 'today', ptab = 'stretches', obForce = false, obStep = 0, monthOff = 0;
   function setPage(p) {
     if (!PAGES.some(x => x.id === p)) return;
     page = p;
@@ -275,6 +277,7 @@
               <div class="panel stat" title="${esc(T('prog.streakHint'))}"><b id="stStreak">0</b><span>${T('prog.streak')}</span></div>
             </div>
             <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall" id="weekBig"></div></section>
+            <section class="panel month-panel" id="monthStretches"></section>
             <section class="panel"><h2>${T('prog.byStretch')}</h2><div class="bylist" id="byList"></div></section>
           </div>
           <div class="ptab" id="ptab-water" role="tabpanel" aria-labelledby="tab-water" hidden>
@@ -285,6 +288,7 @@
               <div class="panel stat"><b id="pwGoal">0</b><span id="pwGoalLbl"></span></div>
             </div>
             <section class="panel"><h2>${T('prog.last7')}</h2><div class="week tall water" id="waterBig"></div></section>
+            <section class="panel month-panel" id="monthWater"></section>
           </div>
         </section>
 
@@ -303,10 +307,12 @@
                 <div class="set tsels">${timeSelect('workStart', T('set.from'), 300, 780)}${timeSelect('workEnd', T('set.to'), 720, 1410)}</div>
                 ${switchRow('lunchOn', T('set.lunch'), T('set.lunchSub'))}
                 <div class="set tsels" id="lunchTimes">${timeSelect('lunchStart', T('set.from'), 660, 900)}${timeSelect('lunchEnd', T('set.to'), 690, 960)}</div>
+                ${switchRow('wrapOn', T('set.wrap'), T('set.wrapSub'))}
               </section>
               <section class="panel settings"><h2>${T('set.meetBreaks')}</h2>
                 ${switchRow('quietMeetings', T('set.quiet'), T('set.quietSub') + ' ' + T('set.quietHow'))}
                 ${switchRow('awayReset', T('set.awayReset'), T('set.awayResetSub'))}
+                ${switchRow('ramadanOn', T('set.ramadan'), T('set.ramadanSub'))}
               </section>
             </div>
             <div class="settings-col">
@@ -451,20 +457,22 @@
     const w = tr.water || 0;
     $('#glasses').innerHTML = glasses(w, st.waterGoal);
     $('#glasses').setAttribute('aria-label', T('water.count', { n: w, g: st.waterGoal }));
-    $('#waterNote').textContent = st.waterOn ? T('water.count', { n: w, g: st.waterGoal }) + (st.nextWater ? ' · ' + T('water.next', { time: fmtTime(st.nextWater) }) : '') : T('water.off');
+    $('#waterNote').textContent = !st.waterOn ? T('water.off') : st.ramadan ? T('water.count', { n: w, g: st.waterGoal }) + ' · ' + T('water.ramadan')
+      : T('water.count', { n: w, g: st.waterGoal }) + (st.nextWater ? ' · ' + T('water.next', { time: fmtTime(st.nextWater) }) : '');
     renderNextKuih(s);
     const f = festival(), fb = $('#festBanner');
-    fb.hidden = !f;
+    fb.hidden = !f && !st.ramadan;
     if (f) {
       const name = T('fest.' + f.id), k = kuihName();
       $('#festText').textContent = f.daysLeft === 0 ? T('fest.day', { greet: T('greet.' + f.id), k }) : f.daysLeft === 1 ? T('fest.tomorrow', { fest: name, k }) : T('fest.soon', { fest: name, n: f.daysLeft, k });
-    }
+    } else if (st.ramadan) $('#festText').textContent = T('ram.banner', { n: st.ramadan.day });
   }
   function renderComing() {
-    const n = CYCLE.length, key = [st.idx, st.kuih, L(), outfit()].join('|');
+    const n = CYCLE.length, key = [st.idx, st.kuih, L(), outfit(), !!st.ramadan].join('|');
     if (key === comingKey) return;
     comingKey = key;
-    const ids = [1, 2, 3, 4].map(i => CYCLE[(st.idx + i) % n]);
+    const ids = [];
+    for (let i = 1; ids.length < 4 && i <= n * 2; i++) { const id = CYCLE[(st.idx + i) % n]; if (!(st.ramadan && id === 'walk')) ids.push(id); }
     $('#coming').innerHTML = ids.map(id => { const e = BY[id]; return `<button type="button" class="coming-item" data-ex="${e.id}" title="${esc(T('coming.do', { ex: exName(e) }))}"><span class="ci-img">${lapis(e.pose, doing(e))}</span><b>${exName(e)}</b></button>`; }).join('');
   }
 
@@ -480,6 +488,31 @@
   function weekBars(days, maxH, goal) {
     const max = Math.max(goal || st.goal || 8, ...days.map(d => d.n));
     return days.map(d => `<div class="d${d.today ? ' today' : ''}${d.n ? ' has' : ''}"><span class="n">${d.n || ''}</span><div class="b" style="height:${Math.max(6, (d.n / max) * maxH)}px"></div><span class="l">${d.l}</span></div>`).join('');
+  }
+  /* Month calendar (1.7.0): one square per day, darker the closer you got to your goal. */
+  function monthHTML(field, goal) {
+    const now = new Date(), first = new Date(now.getFullYear(), now.getMonth() + monthOff, 1, 12);
+    const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate(), lead = (first.getDay() + 6) % 7;
+    const DN = T('days').split(','), heads = [1, 2, 3, 4, 5, 6, 0].map(d => `<span class="mh">${DN[d]}</span>`).join('');
+    const work = st.workOn ? st.workDays : null, h = st.history || {}, tk = dayKey(now);
+    let cells = '', atGoal = 0;
+    for (let i = 0; i < lead; i++) cells += '<span class="mc pad"></span>';
+    for (let d = 1; d <= days; d++) {
+      const day = new Date(first.getFullYear(), first.getMonth(), d, 12), k = dayKey(day), rec = h[k], n = rec ? (rec[field] || 0) : 0;
+      const future = k > tk, lvl = !n ? 0 : n >= goal ? 4 : Math.min(3, 1 + Math.floor(n / goal * 3));
+      if (n >= goal) atGoal++;
+      const off = work && !work.includes(day.getDay());
+      const label = `${day.toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' })}: ${n}`;
+      cells += `<span class="mc l${lvl}${future ? ' future' : ''}${off ? ' off' : ''}${k === tk ? ' today' : ''}" title="${esc(label)}" aria-label="${esc(label)}" role="img">${d}</span>`;
+    }
+    const title = first.toLocaleDateString(loc(), { month: 'long', year: 'numeric' });
+    const note = field === 'water' ? T('prog.monthWater', { n: atGoal, g: goal }) : T('prog.monthGoal', { n: atGoal });
+    const leg = [0, 1, 2, 3, 4].map(l => `<span class="mc l${l}" aria-hidden="true"></span>`).join('');
+    return `<div class="month-head"><h2>${esc(title)}</h2><span class="month-note">${note}</span><span class="spacer"></span>
+        <button type="button" class="mnav" data-mon="-1" aria-label="${esc(T('prog.prevMonth'))}" title="${esc(T('prog.prevMonth'))}"${monthOff <= -12 ? ' disabled' : ''}>‹</button>
+        <button type="button" class="mnav" data-mon="1" aria-label="${esc(T('prog.nextMonth'))}" title="${esc(T('prog.nextMonth'))}"${monthOff >= 0 ? ' disabled' : ''}>›</button></div>
+      <div class="month ${field === 'water' ? 'water' : ''}">${heads}${cells}</div>
+      <div class="month-legend">${T('prog.less')} ${leg} ${T('prog.more')} <span class="spacer"></span><span class="mc l4" aria-hidden="true"></span> ${T('prog.atGoal')}</div>`;
   }
   function renderProgress(s) {
     const days = lastDays(7), sum = days.reduce((a, d) => a + d.n, 0), tr = todayRec();
@@ -497,6 +530,7 @@
     $('#pwGoal').textContent = wd.filter(d => d.n >= g).length;
     $('#pwGoalLbl').textContent = T('prog.waterGoalDays', { g });
     $('#waterBig').innerHTML = weekBars(wd, 150, g);
+    if (ptab === 'water') $('#monthWater').innerHTML = monthHTML('water', g); else $('#monthStretches').innerHTML = monthHTML('total', st.goal);
     const by = Object.entries(tr.by || {}).filter(([id, n]) => own(BY, id) && Number.isInteger(n)).sort((a, b) => b[1] - a[1]);
     const top = Math.max(1, ...by.map(([, n]) => n));
     $('#byList').innerHTML = by.length
@@ -595,6 +629,7 @@
     else if (st.away) { label = T('clock.away'); time = `${st.interval}:00`; sub = T('sub.away'); frac = 0; }
     else { const left = st.nextDue - now; label = T('clock.next'); time = mmss(left); sub = T('sub.next', { ex: exName(BY[st.upNext]), len: secsLabel(BY[st.upNext].secs) }); frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
     if (taps > 0) frac = taps / EGG_TAPS;
+    if (st.backMins && st.mode === 'waiting' && !st.paused) sub = T('sub.back', { n: st.backMins });
     if (st.eggMsg) sub = T('sub.egg');
     $('#clockLabel').textContent = label; $('#clockTime').textContent = time; $('#clockSub').textContent = sub;
     $('#clockTime').classList.toggle('small', small);
@@ -670,6 +705,7 @@
     else if (st.away) { label = T('w.away'); time = `${st.interval}:00`; frac = 0; }
     else { const left = st.nextDue - now; label = T('w.next'); time = mmss(left); frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
     if (taps > 0) frac = taps / EGG_TAPS;
+    if (st.backMins && st.mode === 'waiting' && !st.paused && !waterAsk()) label = T('w.back');
     if (st.eggMsg) label = T('w.egg');
     $('#wLabel').textContent = label; $('#wTime').textContent = time;
     $('#wTime').classList.toggle('small', small);
@@ -697,6 +733,12 @@
         <div class="row center"><button class="btn" data-w="unlock-use" type="button">${T('un.use', { k: esc(k.name) })}</button><button class="btn ghost" data-w="notice-close" type="button">${T('un.keep', { k: esc(kuihName()) })}</button></div></div>`;
     }
     if (n.type === 'summary') return summaryHTML(n.week);
+    if (n.type === 'wrap') {
+      const rec = (st.history || {})[n.day] || { total: 0 }, met = rec.total >= st.goal, s = stats();
+      return `<div class="nc-row"><div class="nc-img">${lapis('wave', kuihName())}</div><div class="nc-body"><p class="nc-tag">${T('wrap.tag', { time: fmtMin(st.workEnd) })}</p><h3>${T('wrap.title')}</h3>
+        <div class="wrap-stats"><span><b>${rec.total}/${st.goal}</b> ${T('wrap.stretches')}</span>${st.waterOn ? `<span><b>${rec.water || 0}</b> ${T('wrap.glasses')}</span>` : ''}<span><b>${s.streak}</b> ${T('wrap.streak')}</span></div>
+        <p class="nc-sub">${met ? T('wrap.met') : T('wrap.notMet')}</p><div class="row"><button class="btn" data-w="notice-close" type="button">${T('wrap.bye')}</button></div></div></div>`;
+    }
     return '';
   }
   function summaryHTML(week) {

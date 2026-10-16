@@ -150,9 +150,13 @@
     deepavali: ['2026-11-08', '2027-10-28', '2028-10-17', '2029-11-05', '2030-10-26'],
     cny: ['2027-02-06', '2028-01-26', '2029-02-13', '2030-02-03'],
     raya: ['2027-03-10', '2028-02-27', '2029-02-15', '2030-02-05'],
-    kaamatan: [], gawai: []
+    kaamatan: [], gawai: [], merdeka: [], malaysiaday: [], xmas: []
   };
-  for (let y = 2026; y <= 2035; y++) { FESTIVAL_DAYS.kaamatan.push(`${y}-05-31`); FESTIVAL_DAYS.gawai.push(`${y}-06-01`); }
+  // Fixed-date festivals (1.7.0 adds Merdeka, Malaysia Day and Christmas).
+  for (let y = 2026; y <= 2035; y++) {
+    FESTIVAL_DAYS.kaamatan.push(`${y}-05-31`); FESTIVAL_DAYS.gawai.push(`${y}-06-01`);
+    FESTIVAL_DAYS.merdeka.push(`${y}-08-31`); FESTIVAL_DAYS.malaysiaday.push(`${y}-09-16`); FESTIVAL_DAYS.xmas.push(`${y}-12-25`);
+  }
   const LEAD_DAYS = 4;
   function festivalOn(now) {
     const today = keyDate(dayKey(now || new Date()));
@@ -166,7 +170,20 @@
     return best;
   }
 
-  const api = { EX, CYCLE, BY, KUIH, KUIH_GROUPS, KUIH_BY, STARTERS, RULES, RULE_BY, computeStats, ruleProgress, festivalOn, FESTIVAL_DAYS, dayKey };
+  /* ---------- Ramadan (1.7.0) ----------
+     The fasting month runs up to the day before Hari Raya. It is 29 or 30 days long and its first
+     day is confirmed by moon sighting, so Lapis treats the 30 days before Raya as Ramadan
+     (it may start a day early). Returns { day, raya } while it's on, otherwise null. */
+  function ramadanOn(now) {
+    const today = keyDate(dayKey(now || new Date()));
+    for (const k of FESTIVAL_DAYS.raya) {
+      const left = Math.round((keyDate(k) - today) / 864e5);
+      if (left >= 1 && left <= 30) return { day: 31 - left, raya: k };
+    }
+    return null;
+  }
+
+  const api = { EX, CYCLE, BY, KUIH, KUIH_GROUPS, KUIH_BY, STARTERS, RULES, RULE_BY, computeStats, ruleProgress, festivalOn, ramadanOn, FESTIVAL_DAYS, dayKey };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.LapisData = api;
 })(typeof self !== 'undefined' ? self : this);
