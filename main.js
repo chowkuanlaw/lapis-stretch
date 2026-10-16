@@ -37,7 +37,7 @@ function run() {
   const DEFAULTS = {
     interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
     autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
-    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis'
+    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis', onboarded: false
   };
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = Object.assign({}, DEFAULTS);
@@ -47,7 +47,11 @@ function run() {
   let popupH = 230, saveTimer = null, lastDay = dayKey(new Date());
 
   function loadState() {
-    try { S = Object.assign({}, DEFAULTS, JSON.parse(fs.readFileSync(stateFile(), 'utf8'))); } catch (e) { S = Object.assign({}, DEFAULTS); }
+    let saved = null;
+    try { saved = JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { saved = null; }
+    S = Object.assign({}, DEFAULTS, saved || {});
+    // People upgrading from 1.2 or earlier already know Lapis: skip the first-launch setup.
+    if (saved && saved.onboarded === undefined) S.onboarded = true;
     delete S.updateCheck; // replaced by autoUpdate in 1.1.0
     if (!KUIH_BY[S.kuih]) S.kuih = 'lapis';
     // A fresh launch (e.g. first thing in the morning) starts a new countdown instead of firing at once.
@@ -213,6 +217,7 @@ function run() {
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
       case 'kuih': if (!KUIH_BY[value]) return; S.kuih = value; break;
+      case 'onboarded': S.onboarded = !!value; break;
       case 'autoUpdate':
         S.autoUpdate = !!value;
         if (S.autoUpdate) setTimeout(() => checkForUpdate(false), 0);
@@ -260,7 +265,7 @@ function run() {
 
   function createMain(show) {
     mainWin = new BrowserWindow({
-      width: 1060, height: 800, minWidth: 380, minHeight: 500, show: false, title: 'Lapis',
+      width: 1120, height: 760, minWidth: 720, minHeight: 560, show: false, title: 'Lapis',
       icon: ICON, backgroundColor: bg(), autoHideMenuBar: true, webPreferences: webPrefs()
     });
     lockDown(mainWin);
@@ -433,7 +438,7 @@ function run() {
 
   app.whenReady().then(() => {
     loadState();
-    const startHidden = process.argv.includes('--hidden') && !S.firstRun;
+    const startHidden = process.argv.includes('--hidden') && !S.firstRun && S.onboarded; // the first-launch setup always shows
     createPopup();
     createWidget();
     createMain(!startHidden);

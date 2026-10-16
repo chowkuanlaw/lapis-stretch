@@ -2,7 +2,7 @@
   'use strict';
   const api = window.lapis;
   const view = api.view;
-  const { EX, BY, KUIH, KUIH_GROUPS, KUIH_BY } = window.LapisData;
+  const { EX, BY, CYCLE, KUIH, KUIH_GROUPS, KUIH_BY } = window.LapisData;
   // Draw with the kuih the user picked (Kuih Lapis until the first state arrives).
   const lapis = (pose, label, bob, skin) => window.lapisSVG(pose, label, bob, skin || (st && st.kuih) || 'lapis');
   const kuihName = () => (KUIH_BY[(st && st.kuih) || 'lapis'] || KUIH_BY.lapis).name;
@@ -45,9 +45,9 @@
     let top = '', actions = '', links = '', extra = '';
     if (m === 'waiting') {
       top = `<p class="tag">${st.paused ? 'Paused · up next' : 'Up next'}</p>`;
-      actions = `<button class="btn ghost" data-act="now" type="button">Start now</button><button class="linkbtn" data-act="different" type="button">Different stretch</button><span class="spacer"></span><span class="left">${secsLabel(ex.secs)}</span>`;
+      actions = compact === 'today' ? `<span class="left">${secsLabel(ex.secs)}</span>` : `<button class="btn ghost" data-act="now" type="button">Start now</button><button class="linkbtn" data-act="different" type="button">Different stretch</button><span class="spacer"></span><span class="left">${secsLabel(ex.secs)}</span>`;
     } else if (m === 'due') {
-      if (compact) top = `<p class="shout">It's time to <em>stretch!</em></p>`;
+      if (compact === true) top = `<p class="shout">It's time to <em>stretch!</em></p>`;
       actions = `<button class="btn" data-act="start" type="button">Start</button><button class="btn ghost" data-act="snooze" type="button">Snooze ${st.snooze} min</button><span class="spacer"></span><span class="left">${secsLabel(ex.secs)}</span>`;
       links = `<div class="links"><button class="linkbtn" data-act="different" type="button">Different stretch</button><button class="linkbtn" data-act="skip" type="button">Skip this one</button></div>`;
     } else if (m === 'active') {
@@ -85,10 +85,14 @@
   }
 
   document.addEventListener('click', e => {
+    const pg = e.target.closest('[data-page]');
+    if (pg) { setPage(pg.dataset.page); return; }
+    const ob = e.target.closest('[data-ob]');
+    if (ob) { obAction(ob.dataset.ob); return; }
     const a = e.target.closest('[data-act]');
     if (a) { api.act(a.dataset.act); return; }
     const x = e.target.closest('[data-ex]');
-    if (x) { api.act('now', { ex: x.dataset.ex }); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    if (x) { api.act('now', { ex: x.dataset.ex }); if (view === 'main') setPage('today'); return; }
     const s = e.target.closest('[data-set]');
     if (s) {
       const k = s.dataset.set;
@@ -99,101 +103,282 @@
     if (w) api.act(w.dataset.w);
   });
 
-  /* ---------- main window ---------- */
-  const SWITCHES = [
-    ['sound', 'Chime', 'A soft two-note bell when it is time'],
-    ['widget', 'Desktop widget', 'Small countdown card on your desktop'],
-    ['widgetOnTop', 'Keep widget on top', 'Stays above your other windows'],
-    ['toast', 'Windows notification too', 'Also shows in the Windows notification centre'],
-    ['awayReset', 'Restart timer when I am away', 'After 5 min idle, or when you lock or sleep your PC'],
-    ['autostart', 'Start with Windows', 'Lapis starts quietly in the tray when you sign in'],
-    ['autoUpdate', 'Update automatically', 'Checks GitHub when Lapis starts and once a day']
+  /* ---------- main window: sidebar app ---------- */
+  const PAGES = [
+    { id: 'today', label: 'Today', icon: '<path d="M3 9.5 10 4l7 5.5V16a1 1 0 0 1-1 1h-3.5v-4.5h-5V17H4a1 1 0 0 1-1-1z"/>' },
+    { id: 'stretches', label: 'Stretches', icon: '<path d="M7 5h10M7 10h10M7 15h10"/><circle cx="3.5" cy="5" r="1"/><circle cx="3.5" cy="10" r="1"/><circle cx="3.5" cy="15" r="1"/>' },
+    { id: 'kuih', label: 'Your kuih', icon: '<circle cx="10" cy="10" r="7"/><circle cx="7.5" cy="8.5" r=".6"/><circle cx="12.5" cy="8.5" r=".6"/><path d="M7.5 12.2q2.5 2 5 0"/>' },
+    { id: 'progress', label: 'Progress', icon: '<path d="M4 16V11M8.5 16V6M13 16V9M17 16V4"/>' },
+    { id: 'settings', label: 'Settings', icon: '<path d="M3 6h8M15 6h2M3 14h2M9 14h8"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="14" r="2"/>' }
   ];
+  const svgIcon = body => `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const SETTING_GROUPS = [
+    { title: 'Alerts', items: [['sound', 'Chime', 'A soft two-note bell when it is time'], ['toast', 'Windows notification too', 'Also shows in the Windows notification centre']] },
+    { title: 'Desktop', items: [['widget', 'Desktop widget', 'Small countdown card on your desktop'], ['widgetOnTop', 'Keep widget on top', 'Stays above your other windows']] },
+    { title: 'When you step away', items: [['awayReset', 'Restart timer when I am away', 'After 5 min idle, or when you lock or sleep your PC'], ['autostart', 'Start with Windows', 'Lapis starts quietly in the tray when you sign in']] }
+  ];
+  const switchRow = ([k, t, d], pre) => `<div class="set"><div class="lbl" id="${pre || ''}lbl-${k}">${t}<small>${d}</small></div><button class="switch" role="switch" aria-labelledby="${pre || ''}lbl-${k}" data-set="${k}" type="button"></button></div>`;
+  const segGroup = (key, label, vals, fmt) => `<div class="seg" role="group" aria-label="${label}">${vals.map(v => `<button type="button" data-set="${key}" data-val="${v}">${fmt(v)}</button>`).join('')}</div>`;
+  const kuihTiles = size => KUIH_GROUPS.map(g => `<div class="kgroup"><h3>${g.title} <span>${g.sub}</span></h3><div class="kgrid ${size}">${KUIH.filter(k => k.group === g.id).map(k => `<button type="button" class="ktile" data-set="kuih" data-sval="${k.id}" aria-pressed="false" title="${esc(k.note)}"><span class="kimg">${lapis('idle', k.name, false, k.id)}</span><b>${k.name}</b></button>`).join('')}</div></div>`).join('');
+
+  let page = 'today', obForce = false, obStep = 0;
+  function setPage(p) {
+    if (!PAGES.some(x => x.id === p)) return;
+    page = p;
+    const c = $('#content'); if (c) c.scrollTop = 0;
+    if (st) renderMain();
+  }
+
   function buildMain() {
     root.innerHTML = `
-    <div class="app">
-      <header class="top">
-        <div class="brand"><span class="logo" id="logo"></span>
-          <div><h1>Lapis</h1><p>Stretch nudges from a kuih lapis while you work</p></div></div>
-        <button class="btn ghost" data-w="pause" id="pauseBtn" type="button">Pause reminders</button>
-      </header>
-      <div class="update-bar" id="updateBar" hidden><span id="updateText"></span><button class="btn" id="updateBtn" type="button" hidden></button></div>
-      <main class="grid">
-        <section class="stage">
-          <div class="clock">
+    <div class="shell">
+      <nav class="side-nav" aria-label="Lapis">
+        <div class="nav-brand"><span class="logo" id="logo"></span><span class="nav-title">Lapis</span></div>
+        ${PAGES.map(p => `<button type="button" class="nav-item" data-page="${p.id}" aria-label="${p.label}" title="${p.label}">${svgIcon(p.icon)}<span>${p.label}</span></button>`).join('')}
+        <div class="nav-spacer"></div>
+        <button type="button" class="nav-item nav-pause" data-w="pause" id="navPause" aria-label="Pause reminders" title="Pause reminders">${svgIcon('<rect x="5" y="4" width="3.2" height="12" rx="1"/><rect x="11.8" y="4" width="3.2" height="12" rx="1"/>')}</button>
+        <div class="nav-status">
+          <p class="ns-title" id="nsTitle">Reminders on</p>
+          <p class="ns-sub" id="nsSub"></p>
+          <button class="btn ghost small" data-w="pause" id="pauseBtn" type="button">Pause reminders</button>
+        </div>
+        <p class="nav-version" id="navVersion"></p>
+      </nav>
+
+      <div class="content" id="content">
+        <div class="update-bar" id="updateBar" hidden><span id="updateText"></span><button class="btn" id="updateBtn" type="button" hidden></button></div>
+
+        <section class="page" id="page-today" aria-labelledby="h-today">
+          <header class="page-head"><h1 id="h-today">Today</h1><p id="todayDate"></p></header>
+          <div class="banner" id="banner" hidden><strong>It's time to <em>stretch!</em></strong><span>Quick one while you're here.</span></div>
+          <section class="hero" aria-label="Next stretch">
             <div class="ring" id="ring">
               <svg class="r" viewBox="0 0 132 132" aria-hidden="true"><circle class="track" cx="66" cy="66" r="58"/><circle class="arc" id="arc" cx="66" cy="66" r="58"/></svg>
               <div class="ring-mascot" id="heroMascot"></div>
             </div>
-            <div><p class="eyebrow" id="clockLabel">Next stretch in</p><p class="time" id="clockTime">--:--</p><p class="sub" id="clockSub"></p></div>
+            <div class="hero-text"><p class="eyebrow" id="clockLabel">Next stretch in</p><p class="time" id="clockTime">--:--</p><p class="sub" id="clockSub"></p></div>
+            <div class="hero-actions" id="heroActions">
+              <button class="btn" data-act="now" type="button">Start now</button>
+              <button class="btn ghost" data-act="different" type="button">Different stretch</button>
+            </div>
+          </section>
+          <div class="today-row">
+            <article class="card" id="card"></article>
+            <section class="panel today-panel" aria-label="Today's progress">
+              <div class="big"><b id="todayCount">0</b><span id="todayWord">stretches today</span><button class="linkbtn" data-page="progress" type="button">See progress</button></div>
+              <div class="week" id="week"></div>
+            </section>
           </div>
-          <div class="banner" id="banner" hidden><strong>It's time to <em>stretch!</em></strong><span>Quick one while you're here.</span></div>
-          <article class="card" id="card"></article>
-          <p class="note">Lapis lives in your system tray. Closing this window keeps the reminders running; right-click the tray icon to quit.</p>
+          <section class="coming" aria-labelledby="h-coming">
+            <h2 id="h-coming">Coming up</h2>
+            <div class="coming-list" id="coming"></div>
+          </section>
         </section>
-        <aside class="side">
-          <section class="panel today">
-            <h2>Today</h2>
-            <div class="big"><b id="todayCount">0</b><span id="todayWord">stretches done</span></div>
-            <div class="week" id="week"></div>
-            <p class="foot" id="weekFoot"></p>
-          </section>
-          <section class="panel settings">
-            <h2>Settings</h2>
-            <div class="set"><div class="lbl">Remind me every<small>Minutes between nudges</small></div><div class="seg" id="segInterval">${[15, 20, 30, 45, 60].map(v => `<button type="button" data-set="interval" data-val="${v}">${v}</button>`).join('')}</div></div>
-            <div class="set"><div class="lbl">Snooze for<small>When you're mid-meeting</small></div><div class="seg" id="segSnooze">${[5, 10, 15].map(v => `<button type="button" data-set="snooze" data-val="${v}">${v} min</button>`).join('')}</div></div>
-            ${SWITCHES.map(([k, t, d]) => `<div class="set"><div class="lbl" id="lbl-${k}">${t}<small>${d}</small></div><button class="switch" role="switch" aria-labelledby="lbl-${k}" data-set="${k}" type="button"></button></div>`).join('')}
-            <div class="set"><div class="lbl">Version <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">Check now</button></div>
-          </section>
-        </aside>
-      </main>
-      <section class="panel kuih-panel" aria-labelledby="kuihTitle">
-        <div class="lib-head"><h2 id="kuihTitle">Your kuih</h2><p id="kuihNote"></p></div>
-        ${KUIH_GROUPS.map(g => `<div class="kgroup"><h3>${g.title} <span>${g.sub}</span></h3><div class="kgrid">${KUIH.filter(k => k.group === g.id).map(k => `<button type="button" class="ktile" data-set="kuih" data-sval="${k.id}" aria-pressed="false" title="${k.note.replace(/"/g, '&quot;')}"><span class="kimg">${lapis('idle', k.name, false, k.id)}</span><b>${k.name}</b></button>`).join('')}</div></div>`).join('')}
-      </section>
-      <section class="panel library">
-        <div class="lib-head"><h2>All stretches</h2><p>Click one to do it now. Lapis rotates through these, with a walk every few rounds.</p></div>
-        <div class="lib" id="lib"></div>
-      </section>
+
+        <section class="page" id="page-stretches" aria-labelledby="h-str" hidden>
+          <header class="page-head"><h1 id="h-str">Stretches</h1><p>Lapis rotates through these, with a walk every few rounds. Click one to do it now.</p></header>
+          <div class="lib big" id="lib"></div>
+        </section>
+
+        <section class="page" id="page-kuih" aria-labelledby="h-kuih" hidden>
+          <header class="page-head"><h1 id="h-kuih">Your kuih</h1><p>Shows up on reminders, the desktop widget and the tray icon.</p></header>
+          <div class="kuih-layout">
+            <aside class="panel kuih-sel" aria-label="Selected kuih">
+              <div class="kuih-big" id="kuihBig"></div>
+              <div class="kuih-info"><h2 id="kuihName"></h2><span class="chip" id="kuihOrigin"></span><p id="kuihNote"></p></div>
+            </aside>
+            <div class="kuih-groups">${kuihTiles('')}</div>
+          </div>
+        </section>
+
+        <section class="page" id="page-progress" aria-labelledby="h-prog" hidden>
+          <header class="page-head"><h1 id="h-prog">Progress</h1><p>Your stretches over the last week.</p></header>
+          <div class="stats">
+            <div class="panel stat"><b id="stToday">0</b><span>today</span></div>
+            <div class="panel stat"><b id="stWeek">0</b><span>last 7 days</span></div>
+            <div class="panel stat"><b id="stBest">0</b><span>best day this week</span></div>
+            <div class="panel stat"><b id="stStreak">0</b><span id="stStreakLbl">day streak</span></div>
+          </div>
+          <section class="panel"><h2>Last 7 days</h2><div class="week tall" id="weekBig"></div></section>
+          <section class="panel"><h2>Today by stretch</h2><div class="bylist" id="byList"></div></section>
+        </section>
+
+        <section class="page" id="page-settings" aria-labelledby="h-set" hidden>
+          <header class="page-head"><h1 id="h-set">Settings</h1></header>
+          <div class="settings-grid">
+            <section class="panel settings"><h2>Reminders</h2>
+              <div class="set"><div class="lbl">Remind me every<small>Minutes between nudges</small></div>${segGroup('interval', 'Minutes between reminders', [15, 20, 30, 45, 60], v => v)}</div>
+              <div class="set"><div class="lbl">Snooze for<small>When you're mid-meeting</small></div>${segGroup('snooze', 'Snooze length', [5, 10, 15], v => v + ' min')}</div>
+            </section>
+            ${SETTING_GROUPS.map(g => `<section class="panel settings"><h2>${g.title}</h2>${g.items.map(i => switchRow(i)).join('')}</section>`).join('')}
+            <section class="panel settings"><h2>Updates</h2>
+              ${switchRow(['autoUpdate', 'Update automatically', 'Checks GitHub when Lapis starts and once a day'])}
+              <div class="set"><div class="lbl">Version <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">Check now</button></div>
+            </section>
+            <section class="panel settings"><h2>About</h2>
+              <p class="note-p">Lapis lives in your system tray, near the clock. Closing this window keeps the reminders running; right-click the tray icon to quit.</p>
+              <button class="btn ghost" data-ob="open" type="button">Show the welcome again</button>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="onboard" id="onboard" role="dialog" aria-modal="true" aria-labelledby="obTitle0" hidden>
+      <div class="ob-card">
+        <div class="ob-steps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="ob-body ob-center" data-step="0">
+          <div class="ob-hero" id="obWave"></div>
+          <h2 id="obTitle0">Hi, I'm Lapis</h2>
+          <p>Every 20 minutes I'll pop up with one quick desk stretch: chin tucks, neck stretches, a walk to refill your water. Two minutes of setup and we're off.</p>
+        </div>
+        <div class="ob-body" data-step="1" hidden>
+          <h2>Who's stretching with you?</h2>
+          <p>Pick a kuih. It shows up on reminders, the desktop widget and the tray. You can change it any time.</p>
+          <div class="ob-kuih">${kuihTiles('small')}</div>
+        </div>
+        <div class="ob-body" data-step="2" hidden>
+          <h2>How often?</h2>
+          <p>Most people like every 20 minutes. Lapis also restarts the timer when you've been away from your desk.</p>
+          <div class="panel settings ob-settings">
+            <div class="set"><div class="lbl">Remind me every<small>Minutes between nudges</small></div>${segGroup('interval', 'Minutes between reminders', [15, 20, 30, 45, 60], v => v)}</div>
+            ${switchRow(['autostart', 'Start with Windows', 'Lapis starts quietly in the tray when you sign in'], 'ob-')}
+            ${switchRow(['widget', 'Desktop widget', 'Small countdown card on your desktop'], 'ob-')}
+          </div>
+        </div>
+        <div class="ob-body ob-center" data-step="3" hidden>
+          <div class="ob-hero" id="obCheer"></div>
+          <h2 id="obDoneTitle">See you in 20 minutes</h2>
+          <p>Lapis lives in your tray, near the clock. Click it any time to open this window, or right-click it to pause.</p>
+        </div>
+        <div class="ob-actions">
+          <button class="linkbtn" data-ob="skip" type="button" id="obSkip">Skip</button>
+          <span class="spacer"></span>
+          <button class="btn ghost" data-ob="back" type="button" id="obBack">Back</button>
+          <button class="btn" data-ob="next" type="button" id="obNext">Get started</button>
+        </div>
+      </div>
     </div>`;
   }
+
   let heroKey = '', kuihKey = '';
   function renderKuihParts() {
     if (kuihKey === st.kuih) return;
     kuihKey = st.kuih;
     const k = KUIH_BY[st.kuih] || KUIH_BY.lapis;
     $('#logo').innerHTML = lapis('wave', k.name);
-    $('#lib').innerHTML = EX.map(e => `<button type="button" data-ex="${e.id}"><div class="mini">${lapis(e.pose, k.name + ' doing ' + e.name.toLowerCase())}</div><b>${e.name}</b><span>${e.dose}</span></button>`).join('');
-    $('#kuihNote').innerHTML = `<b>${k.name}</b> · ${k.origin}. ${k.note} Your kuih appears on reminders, the widget and the tray icon.`;
+    $('#lib').innerHTML = EX.map(e => `<button type="button" data-ex="${e.id}"><div class="mini">${lapis(e.pose, k.name + ' doing ' + e.name.toLowerCase())}</div><b>${e.name}</b><span>${e.dose}</span><small>${e.cue}</small></button>`).join('');
+    $('#kuihBig').innerHTML = lapis('wave', k.name);
+    $('#kuihName').textContent = k.name;
+    $('#kuihOrigin').textContent = k.origin;
+    $('#kuihNote').textContent = k.note;
+    $('#obWave').innerHTML = lapis('wave', k.name);
+    $('#obCheer').innerHTML = lapis('cheer', k.name);
     document.querySelectorAll('.ktile').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sval === st.kuih)));
-    heroKey = '';
+    heroKey = ''; comingKey = '';
   }
+
+  let comingKey = '';
+  function renderComing() {
+    const n = CYCLE.length, key = st.idx + '|' + st.kuih;
+    if (key === comingKey) return;
+    comingKey = key;
+    const ids = [1, 2, 3, 4].map(i => CYCLE[(st.idx + i) % n]);
+    $('#coming').innerHTML = ids.map(id => { const e = BY[id]; return `<button type="button" class="coming-item" data-ex="${e.id}" title="Do ${esc(e.name)} now"><span class="ci-img">${lapis(e.pose, kuihName() + ' doing ' + e.name.toLowerCase())}</span><b>${e.name}</b></button>`; }).join('');
+  }
+
+  function lastDays(count) {
+    const out = [], D = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const h = (st.history || {})[dayKey(d)];
+      out.push({ l: i === 0 ? 'Today' : D[d.getDay()], n: h ? h.total : 0, today: i === 0 });
+    }
+    return out;
+  }
+  function weekBars(days, maxH) {
+    const max = Math.max(8, ...days.map(d => d.n));
+    return days.map(d => `<div class="d${d.today ? ' today' : ''}${d.n ? ' has' : ''}"><span class="n">${d.n || ''}</span><div class="b" style="height:${Math.max(6, (d.n / max) * maxH)}px"></div><span class="l">${d.l}</span></div>`).join('');
+  }
+  function renderProgress() {
+    const days = lastDays(7), sum = days.reduce((a, d) => a + d.n, 0), t = todayRec();
+    $('#stToday').textContent = t.total;
+    $('#stWeek').textContent = sum;
+    $('#stBest').textContent = Math.max(0, ...days.map(d => d.n));
+    let streak = 0;
+    for (let i = t.total ? 0 : 1; i < 366; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const h = (st.history || {})[dayKey(d)];
+      if (h && h.total) streak++; else break;
+    }
+    $('#stStreak').textContent = streak;
+    $('#stStreakLbl').textContent = streak === 1 ? 'day streak' : 'day streak';
+    $('#weekBig').innerHTML = weekBars(days, 150);
+    const by = Object.entries(t.by || {}).filter(([id]) => BY[id]).sort((a, b) => b[1] - a[1]);
+    const top = Math.max(1, ...by.map(([, n]) => n));
+    $('#byList').innerHTML = by.length
+      ? by.map(([id, n]) => `<div class="byrow"><span>${BY[id].name}</span><div class="bybar"><i style="width:${(n / top) * 100}%"></i></div><b>${n}</b></div>`).join('')
+      : '<p class="empty">No stretches yet today. Your first one is coming up.</p>';
+  }
+
+  function renderOnboarding() {
+    const show = st.onboarded === false || obForce;
+    $('#onboard').hidden = !show;
+    if (!show) return;
+    document.querySelectorAll('.ob-body').forEach(b => { b.hidden = +b.dataset.step !== obStep; });
+    document.querySelectorAll('.ob-steps i').forEach((d, i) => d.classList.toggle('on', i <= obStep));
+    $('#obBack').hidden = obStep === 0;
+    $('#obSkip').hidden = obStep === 3;
+    $('#obNext').textContent = ['Get started', 'Next', 'Next', 'Start stretching'][obStep];
+    $('#obDoneTitle').textContent = `See you in ${st.interval} minutes`;
+  }
+  function obAction(what) {
+    if (what === 'open') { obForce = true; obStep = 0; }
+    else if (what === 'back') obStep = Math.max(0, obStep - 1);
+    else if (what === 'next' && obStep < 3) obStep++;
+    else if (what === 'next' || what === 'skip') { obForce = false; obStep = 0; api.act('set', { key: 'onboarded', value: true }); }
+    renderMain();
+    const n = $('#obNext'); if (n && !$('#onboard').hidden) n.focus();
+  }
+
   function renderMain() {
     renderKuihParts();
-    renderCard($('#card'), false);
-    $('#banner').hidden = st.mode !== 'due';
+    // navigation
+    document.querySelectorAll('.nav-item[data-page]').forEach(b => {
+      if (b.dataset.page === page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+      b.classList.toggle('alert', b.dataset.page === 'today' && (st.mode === 'due' || st.mode === 'active'));
+    });
+    PAGES.forEach(p => { $('#page-' + p.id).hidden = p.id !== page; });
+    // sidebar status
+    $('#nsTitle').textContent = st.paused ? 'Reminders paused' : 'Reminders on';
+    $('#nsSub').textContent = st.paused ? 'Resume when you are back' : `Every ${st.interval} min` + (st.awayReset ? ' · restarts when you are away' : '');
     $('#pauseBtn').textContent = st.paused ? 'Resume reminders' : 'Pause reminders';
+    $('#navPause').setAttribute('aria-label', st.paused ? 'Resume reminders' : 'Pause reminders');
+    $('#navPause').title = $('#navPause').getAttribute('aria-label');
+    $('#navVersion').textContent = `Version ${st.version || ''}` + (st.update && st.update.state === 'ready' ? ' · update ready' : '');
+    // today
+    $('#todayDate').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    renderCard($('#card'), 'today');
+    $('#banner').hidden = st.mode !== 'due';
+    $('#heroActions').hidden = st.mode !== 'waiting';
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : (st.paused || st.away) ? 'sleep' : 'idle';
     if (pose !== heroKey) { heroKey = pose; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active'); }
     $('#ring').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
-    document.querySelectorAll('.seg [data-set]').forEach(b => b.setAttribute('aria-pressed', String(st[b.dataset.set] === +b.dataset.val)));
-    document.querySelectorAll('.switch[data-set]').forEach(b => b.setAttribute('aria-checked', String(!!st[b.dataset.set])));
     const t = todayRec();
     $('#todayCount').textContent = t.total;
-    $('#todayWord').textContent = t.total === 1 ? 'stretch done' : 'stretches done';
-    const days = [], D = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const h = (st.history || {})[dayKey(d)];
-      days.push({ l: i === 0 ? 'Today' : D[d.getDay()], n: h ? h.total : 0, today: i === 0 });
-    }
-    const max = Math.max(8, ...days.map(d => d.n)), sum = days.reduce((a, d) => a + d.n, 0);
-    $('#week').innerHTML = days.map(d => `<div class="d${d.today ? ' today' : ''}${d.n ? ' has' : ''}"><span class="n">${d.n || ''}</span><div class="b" style="height:${Math.max(6, (d.n / max) * 78)}px"></div><span class="l">${d.l}</span></div>`).join('');
-    $('#weekFoot').textContent = sum ? `${sum} stretches in the last 7 days.` : 'Your week fills in as you stretch.';
+    $('#todayWord').textContent = t.total === 1 ? 'stretch today' : 'stretches today';
+    $('#week').innerHTML = weekBars(lastDays(7), 64);
+    renderComing();
+    // other pages
+    if (page === 'progress') renderProgress();
+    document.querySelectorAll('.seg [data-set]').forEach(b => b.setAttribute('aria-pressed', String(st[b.dataset.set] === +b.dataset.val)));
+    document.querySelectorAll('.switch[data-set]').forEach(b => b.setAttribute('aria-checked', String(!!st[b.dataset.set])));
     $('#version').textContent = st.version || '';
     $('#updateMsg').textContent = st.updateMsg || (st.autoUpdate ? 'Lapis checks for updates automatically' : 'Lapis only checks when you click Check now');
     $('#checkBtn').disabled = !!st.checking || !!(st.update && st.update.state !== 'available');
     renderUpdateBar();
+    renderOnboarding();
     tickMain();
   }
   function renderUpdateBar() {
@@ -215,10 +400,10 @@
     const now = Date.now(); let label, time, sub, frac;
     if (st.mode === 'active') {
       const left = st.activeEnd - now; label = 'Stretching'; time = mmss(left); sub = curEx().name; frac = 1 - left / (st.activeSecs * 1000);
-    } else if (st.mode === 'due') { label = 'Right now'; time = '0:00'; sub = 'Stretch time'; frac = 1; }
+    } else if (st.mode === 'due') { label = 'Right now'; time = '0:00'; sub = curEx().name + ' is waiting for you'; frac = 1; }
     else if (st.paused) { label = 'Paused'; time = mmss(st.pausedLeft); sub = 'Resume when you are back at your desk'; frac = 1 - Math.min(1, st.pausedLeft / (st.interval * 60e3)); }
     else if (st.away) { label = 'Away from desk'; time = `${st.interval}:00`; sub = 'The timer restarts when you are back'; frac = 0; }
-    else { const left = st.nextDue - now; label = 'Next stretch in'; time = mmss(left); sub = `Every ${st.interval} minutes`; frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
+    else { const left = st.nextDue - now; label = 'Next stretch in'; time = mmss(left); sub = `${BY[st.upNext].name} is next · ${secsLabel(BY[st.upNext].secs)}`; frac = 1 - Math.min(1, left / (st.interval * 60e3)); }
     $('#clockLabel').textContent = label; $('#clockTime').textContent = time; $('#clockSub').textContent = sub;
     const C = 2 * Math.PI * 58, arc = $('#arc');
     arc.style.strokeDasharray = C; arc.style.strokeDashoffset = C * (1 - Math.max(0, Math.min(1, frac)));

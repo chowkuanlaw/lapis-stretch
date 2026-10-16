@@ -11,13 +11,17 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Pop-up reminder.** A card slides up in the bottom-right corner, above whatever app you're in, without stealing focus. Start, Snooze, Skip or pick a different stretch. It chimes, and for one-side-at-a-time stretches it chimes again when to switch sides.
 - **Desktop widget.** A small countdown card that stays on top of your windows. Drag it anywhere.
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. Closing the window keeps reminders running.
+- **A tidy main window.** A sidebar with five pages: **Today** (countdown, up next, today's tally, what's coming up), **Stretches**, **Your kuih**, **Progress** (week chart, best day, streak) and **Settings**.
+- **Quick setup on first launch.** Say hello, pick your kuih, choose how often, done.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Knows when you're away.** After 5 minutes of no keyboard or mouse activity, or when you lock or sleep your PC, the timer restarts so you're not nagged the moment you sit back down.
 - **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, chime on or off, widget on or off, optional Windows notification and start with Windows.
 - **Pick your kuih.** Choose from 20 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon.
 - **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.
 
-![The Lapis main window](docs/main-window.png)
+![The Lapis main window: the Today page](docs/main-window.png)
+
+![First-launch setup: pick your kuih](docs/welcome.png)
 
 ![The 20 kuih you can choose from](docs/kuih-friends.png)
 
