@@ -30,7 +30,7 @@ mv "$OUT/electron.exe" "$OUT/Lapis.exe"
 rm -f "$OUT/resources/default_app.asar"
 APP="$OUT/resources/app"
 mkdir -p "$APP"
-cp -r "$ROOT/main.js" "$ROOT/quiet.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/LICENSE" "$ROOT/renderer" "$ROOT/assets" "$APP/"
+cp -r "$ROOT/main.js" "$ROOT/quiet.js" "$ROOT/state.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/LICENSE" "$ROOT/renderer" "$ROOT/assets" "$APP/"
 cp "$ROOT/scripts/README.txt" "$OUT/README.txt"
 
 echo "Adding the Windows libraries Lapis uses (from package-lock.json)..."

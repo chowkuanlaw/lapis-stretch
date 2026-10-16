@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.0 (2026-10-16)
+
+- **Pause for a while.** Pause for 30 minutes, 1 hour, 2 hours, until tomorrow, or until you resume, from the tray menu, the widget or the sidebar. Lapis shows when reminders come back on and resumes by itself.
+- **Countdown ring on the tray icon.** A ring around your kuih fills as the next stretch gets closer (can be turned off in Settings).
+- **The widget hides itself while an app is full screen or presenting**, so it never shows up on a projector (on by default).
+- **Chime sound and volume.** Choose Bell, Marimba, Soft or Pop, set the volume, and try it with Test. The volume also applies to the dance songs.
+- **Light or Dark mode**, or follow Windows, in Settings.
+- **"What's new" card** after each update, listing what changed since the version you last used.
+- **Resting screen.** Outside working hours, Today shows a single "Stretch anyway" button instead of the usual buttons.
+- **Month numbers** beside the Progress calendar: total, days at your goal, average per working day and your best day.
+- **Reset my data** in Settings clears your history, collected kuih and badges (it asks twice). Your settings stay.
+- Behind the scenes: automatic tests (dates, festivals, Ramadan, streaks, translations, saved settings and every kuih drawing) now run before every release, and a release is never published if any fail.
+
 ## 1.7.1 (2026-10-16)
 
 - A few new surprises for the curious: something rare and shiny, a Friday afternoon tradition, and a kuih that thinks you should be in bed. The secret code box has more to give, too.

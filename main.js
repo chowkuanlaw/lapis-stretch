@@ -15,6 +15,7 @@ const { pathToFileURL } = require('url');
 const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
 const QUIET = require('./quiet.js');
+const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, cleanState } = require('./state.js');
 
 const AUMID = 'app.lapis.stretch';
 const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
@@ -50,22 +51,6 @@ function run() {
   Menu.setApplicationMenu(null);
 
   /* ---------- state ---------- */
-  const DEFAULTS = {
-    interval: 20, snooze: 10, sound: true, toast: false, widget: true, widgetOnTop: true,
-    autostart: true, awayReset: true, paused: false, pausedLeft: 0, nextDue: 0, idx: 0,
-    history: {}, widgetPos: null, firstRun: true, autoUpdate: true, lastUpdateCheck: 0, kuih: 'lapis', onboarded: false,
-    closedAt: 0, reopenHidden: false, // for picking up where Lapis left off after a quick restart
-    // 1.6.0
-    lang: 'en', goal: 8,
-    workOn: true, workDays: [1, 2, 3, 4, 5], workStart: 540, workEnd: 1080, lunchOn: true, lunchStart: 780, lunchEnd: 840, // minutes after midnight
-    quietMeetings: true, waterOn: true, waterEvery: 60, waterGoal: 8, summaryOn: true, lastSummary: '',
-    collect: true, unlocked: {}, codeUnlocked: false, collectInit: false,
-    // 1.7.0
-    ramadanOn: true, wrapOn: true, lastWrap: '',
-    // 1.7.1 easter eggs
-    goldFound: {}, flagDay: '', remix: false, lastTeh: '', lastNight: ''
-  };
-  const WATER_EVERY = [30, 45, 60, 90, 120];
   const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = JSON.parse(JSON.stringify(DEFAULTS));
   const R = {
@@ -73,76 +58,14 @@ function run() {
     update: null, updateMsg: null, checking: false,
     resting: false, quiet: false, quietCheck: false, nextWater: 0, waterCheck: false, notices: [], noticeUntil: 0, codeMsg: null, codeMsgUntil: 0,
     locked: 0, backMins: 0, backUntil: 0, wrapCheck: false, nextWrapCheck: 0,
-    golden: false, eggCheck: false, nextEggCheck: 0, nightAgain: 0
+    golden: false, eggCheck: false, nextEggCheck: 0, nightAgain: 0,
+    widgetHidden: false, nextFullCheck: 0, resetUntil: 0
   };
 
   let mainWin = null, widgetWin = null, popupWin = null, eggWin = null, eggSafety = null, eggMsgUntil = 0, tray = null, quitting = false;
   let popupH = 230, saveTimer = null, lastDay = dayKey(new Date()), resumeHidden = false;
   const t = (key, vars) => I18N.t(S.lang, key, vars);
 
-  // Only known settings with the right types are read back from disk; anything else falls back to the default.
-  function cleanState(saved) {
-    const out = JSON.parse(JSON.stringify(DEFAULTS));
-    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return out;
-    const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : undefined);
-    const int = (v, lo, hi) => (Number.isInteger(v) ? num(v, lo, hi) : undefined);
-    const pick = (k, v) => { if (v !== undefined) out[k] = v; };
-    pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
-    pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
-    for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded',
-      'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn', 'remix']) {
-      if (typeof saved[k] === 'boolean') out[k] = saved[k];
-    }
-    pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));
-    pick('idx', int(saved.idx, 0, 1e9));
-    pick('lastUpdateCheck', num(saved.lastUpdateCheck, 0, 1e15));
-    pick('nextDue', num(saved.nextDue, 0, 1e15));
-    pick('closedAt', num(saved.closedAt, 0, 1e15));
-    if (typeof saved.reopenHidden === 'boolean') out.reopenHidden = saved.reopenHidden;
-    if (own(KUIH_BY, saved.kuih)) out.kuih = saved.kuih;
-    if (I18N.LANGS.includes(saved.lang)) out.lang = saved.lang;
-    pick('goal', int(saved.goal, 1, 30));
-    if (Array.isArray(saved.workDays)) {
-      const days = [...new Set(saved.workDays.filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort();
-      if (days.length) out.workDays = days;
-    }
-    const or = (v, d) => (v === undefined ? d : v);
-    const ws = or(int(saved.workStart, 0, 1410), out.workStart), we = or(int(saved.workEnd, 30, 1440), out.workEnd);
-    if (ws < we) { out.workStart = ws; out.workEnd = we; }
-    const ls = or(int(saved.lunchStart, 0, 1410), out.lunchStart), le = or(int(saved.lunchEnd, 30, 1440), out.lunchEnd);
-    if (ls < le) { out.lunchStart = ls; out.lunchEnd = le; }
-    pick('waterEvery', WATER_EVERY.includes(saved.waterEvery) ? saved.waterEvery : undefined);
-    pick('waterGoal', int(saved.waterGoal, 1, 20));
-    for (const k of ['lastSummary', 'lastWrap', 'flagDay', 'lastTeh', 'lastNight']) if (typeof saved[k] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved[k])) out[k] = saved[k];
-    if (saved.unlocked && typeof saved.unlocked === 'object' && !Array.isArray(saved.unlocked)) {
-      for (const id of Object.keys(saved.unlocked)) {
-        const d = saved.unlocked[id];
-        if (own(KUIH_BY, id) && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) out.unlocked[id] = d;
-      }
-    }
-    if (saved.goldFound && typeof saved.goldFound === 'object' && !Array.isArray(saved.goldFound)) {
-      for (const id of Object.keys(saved.goldFound)) {
-        const d = saved.goldFound[id];
-        if (own(KUIH_BY, id) && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) out.goldFound[id] = d;
-      }
-    }
-    const wp = saved.widgetPos;
-    if (wp && typeof wp === 'object' && num(wp.x, -1e5, 1e5) !== undefined && num(wp.y, -1e5, 1e5) !== undefined) out.widgetPos = { x: Math.round(wp.x), y: Math.round(wp.y) };
-    const h = saved.history;
-    if (h && typeof h === 'object' && !Array.isArray(h)) {
-      for (const day of Object.keys(h).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().slice(-400)) {
-        const v = h[day]; if (!v || typeof v !== 'object') continue;
-        const by = {};
-        if (v.by && typeof v.by === 'object') for (const id of Object.keys(v.by)) if (own(BY, id) && Number.isInteger(v.by[id]) && v.by[id] > 0 && v.by[id] < 1e4) by[id] = v.by[id];
-        const rec = { total: Number.isInteger(v.total) && v.total >= 0 && v.total < 1e5 ? v.total : 0, by };
-        if (Number.isInteger(v.water) && v.water > 0 && v.water < 100) rec.water = v.water;
-        out.history[day] = rec;
-      }
-    }
-    // People upgrading from 1.2 or earlier already know Lapis: skip the first-launch setup.
-    if (saved.onboarded === undefined) out.onboarded = true;
-    return out;
-  }
   function loadState() {
     let saved = null;
     try { saved = JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { saved = null; }
@@ -159,7 +82,13 @@ function run() {
     R.resting = S.workOn && !isWorkTime(new Date(now));
     R.nextWater = now + S.waterEvery * 60e3;
     collectionUpdate(true);
+    // "What's new" (1.8.0): once after each update. New users just start on this version.
+    const v = app.getVersion();
+    if (!S.onboarded || S.firstRun) S.seenVersion = v;
+    else if (S.seenVersion !== v) R.notices.push({ type: 'news', from: S.seenVersion || '1.6.2', v });
+    applyTheme();
   }
+  function applyTheme() { nativeTheme.themeSource = S.theme === 'auto' ? 'system' : S.theme; }
   function writeNow() { try { fs.writeFileSync(stateFile(), JSON.stringify(S)); } catch (e) { /* best effort */ } }
   function writeOnQuit() { clearTimeout(saveTimer); S.closedAt = Date.now(); writeNow(); }
   function save() { clearTimeout(saveTimer); saveTimer = setTimeout(writeNow, 300); }
@@ -332,7 +261,7 @@ function run() {
   }
 
   function publicState() {
-    const { widgetPos, firstRun, lastUpdateCheck, closedAt, reopenHidden, collectInit, ...rest } = S;
+    const { widgetPos, firstRun, lastUpdateCheck, closedAt, reopenHidden, collectInit, seenVersion, ...rest } = S;
     return Object.assign(rest, {
       mode: R.mode, cur: R.cur, upNext: upNext().id, activeEnd: R.activeEnd, activeSecs: R.activeSecs,
       switched: R.switched, away: !!R.awaySince,
@@ -340,6 +269,7 @@ function run() {
       nextWater: S.waterOn && !R.resting && !puasa() ? R.nextWater : 0, notice: R.notices[0] || null,
       ramadan: puasa(), backMins: Date.now() < R.backUntil ? R.backMins : 0,
       golden: R.golden && (R.mode === 'due' || R.mode === 'active' || R.mode === 'done'),
+      resetDone: Date.now() < R.resetUntil,
       codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
       eggMsg: Date.now() < eggMsgUntil,
       version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
@@ -398,7 +328,7 @@ function run() {
     broadcast();
   }
   function togglePause() {
-    if (S.paused) { S.paused = false; S.nextDue = Date.now() + Math.max(S.pausedLeft, 1000); }
+    if (S.paused) { S.paused = false; S.pauseUntil = 0; S.nextDue = Date.now() + Math.max(S.pausedLeft, 1000); }
     else {
       S.paused = true; S.pausedLeft = Math.max(0, S.nextDue - Date.now());
       if (R.mode !== 'active') { R.mode = 'waiting'; R.cur = null; }
@@ -406,6 +336,38 @@ function run() {
     save(); broadcast();
   }
   // Back from sleep: start a fresh countdown, and clear a reminder that waited while the PC slept.
+  /* Pause for a while (1.8.0): 30 min, 1 or 2 hours, until tomorrow, or until you resume. */
+  function pauseFor(kind) {
+    if (S.paused) return;
+    const now = Date.now(), mins = { m30: 30, h1: 60, h2: 120 }[kind];
+    let until = 0;
+    if (mins) until = now + mins * 60e3;
+    else if (kind === 'tomorrow') {
+      const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(0, 0, 0, 0);
+      until = (S.workOn && nextWorkStart(d.getTime())) || d.getTime() + S.workStart * 60e3;
+    } else if (kind !== 'forever') return;
+    togglePause();
+    S.pauseUntil = until; save(); broadcast();
+  }
+  function pauseItems() {
+    return [['m30', 'pause.m30'], ['h1', 'pause.h1'], ['h2', 'pause.h2'], ['tomorrow', 'pause.tomorrow'], ['forever', 'pause.forever']]
+      .map(([k, label]) => ({ label: t(label), click: () => pauseFor(k) }));
+  }
+  function pauseMenu(win) {
+    if (S.paused) { togglePause(); return; }
+    Menu.buildFromTemplate(pauseItems()).popup(win && !win.isDestroyed() ? { window: win } : {});
+  }
+  /* Start fresh (1.8.0): clears history, collected kuih and badges on this PC. Settings stay. */
+  function resetData() {
+    Object.assign(S, { history: {}, unlocked: {}, goldFound: {}, codeUnlocked: false, flagDay: '', remix: false, idx: 0,
+      lastSummary: '', lastWrap: '', lastTeh: '', lastNight: '', collectInit: true });
+    if (S.collect && !STARTERS.includes(S.kuih)) S.kuih = 'lapis';
+    R.notices = R.notices.filter(n => n.type === 'news'); R.noticeUntil = 0; R.golden = false;
+    if (R.mode !== 'active') { R.mode = 'waiting'; R.cur = null; }
+    if (!S.paused) schedule(S.interval * 60e3);
+    R.resetUntil = Date.now() + 6000;
+    writeNow(); broadcast(); setTimeout(broadcast, 6100);
+  }
   function restartCountdown() {
     if (S.paused || R.resting) return;
     if (R.mode === 'due' && S.awayReset) { R.mode = 'waiting'; R.cur = null; }
@@ -508,6 +470,11 @@ function run() {
       case 'snooze': S.snooze = [5, 10, 15].includes(+value) ? +value : 10; break;
       case 'sound': case 'toast': case 'awayReset': case 'quietMeetings': case 'summaryOn': case 'wrapOn': S[key] = !!value; break;
       case 'ramadanOn': S.ramadanOn = !!value; skipWalk(); break;
+      case 'trayRing': S.trayRing = !!value; break;
+      case 'widgetHideFull': S.widgetHideFull = !!value; R.nextFullCheck = 0; break;
+      case 'theme': if (!THEMES.includes(value)) return; S.theme = value; applyTheme(); break;
+      case 'chimeStyle': if (!CHIMES.includes(value)) return; S.chimeStyle = value; break;
+      case 'volume': { const v = Math.round(+value); if (!(v >= 0 && v <= 100)) return; S.volume = v; break; }
       case 'widget': S.widget = !!value; syncWidget(); break;
       case 'widgetOnTop': S.widgetOnTop = !!value; if (widgetWin) widgetWin.setAlwaysOnTop(S.widgetOnTop, 'floating'); break;
       case 'autostart': S.autostart = !!value; applyAutostart(); break;
@@ -578,6 +545,14 @@ function run() {
     wrapDue(now);
     eggNotices(now);
 
+    if (S.paused && S.pauseUntil && now >= S.pauseUntil) togglePause();
+    // Hide the desktop widget while an app is full screen or presenting (1.8.0); checked every 5 seconds.
+    if (now >= R.nextFullCheck) {
+      R.nextFullCheck = now + 5000;
+      const hide = S.widget && S.widgetHideFull && QUIET.fullScreenBusy();
+      if (hide !== R.widgetHidden) { R.widgetHidden = hide; syncWidget(); }
+    }
+
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
     if (S.autoUpdate && !R.checking && now - (S.lastUpdateCheck || 0) > UPDATE_EVERY) checkForUpdate(false);
@@ -641,7 +616,7 @@ function run() {
     });
     if (S.widgetOnTop) widgetWin.setAlwaysOnTop(true, 'floating');
     loadView(widgetWin, 'widget');
-    widgetWin.once('ready-to-show', () => { if (S.widget) widgetWin.showInactive(); });
+    widgetWin.once('ready-to-show', () => { if (S.widget && !R.widgetHidden) widgetWin.showInactive(); });
     let moveT;
     widgetWin.on('move', () => {
       clearTimeout(moveT);
@@ -651,8 +626,9 @@ function run() {
   }
   function syncWidget() {
     if (!widgetWin || widgetWin.isDestroyed()) return;
-    if (S.widget && !widgetWin.isVisible()) widgetWin.showInactive();
-    if (!S.widget && widgetWin.isVisible()) widgetWin.hide();
+    const want = S.widget && !R.widgetHidden;
+    if (want && !widgetWin.isVisible()) widgetWin.showInactive();
+    if (!want && widgetWin.isVisible()) widgetWin.hide();
   }
 
   function createPopup() {
@@ -714,7 +690,7 @@ function run() {
     if (R.mode === 'due') return t('tray.due');
     if (R.mode === 'active') return t('tray.active', { ex: exName(ex) });
     if (R.mode === 'done') return t('tray.done');
-    if (S.paused) return t('tray.paused');
+    if (S.paused) return S.pauseUntil ? t('tray.pausedUntil', { when: whenLabel(S.pauseUntil) }) : t('tray.paused');
     if (R.resting) return t('tray.resting', { when: whenLabel(nextWorkStart(Date.now())) });
     if (R.quiet) return t('tray.quiet');
     if (R.awaySince) return t('tray.away');
@@ -733,7 +709,7 @@ function run() {
       { label: t('tray.today', { n: today().total }), enabled: false },
       { type: 'separator' },
       { label: t('tray.now'), click: () => becomeDue(null, true) },
-      { label: S.paused ? t('resume') : t('pause'), click: togglePause },
+      S.paused ? { label: t('resume'), click: togglePause } : { label: t('pause'), submenu: pauseItems() },
       { type: 'separator' },
       { label: t('tray.open'), click: showMain },
       { label: t('tray.widget'), type: 'checkbox', checked: S.widget, click: m => setSetting('widget', m.checked) },
@@ -811,6 +787,9 @@ function run() {
       case 'water-add': drankWater(false); break;
       case 'water-later': if (top && top.type === 'water') { R.nextWater = Date.now() + WATER_LATER; closeNotice(); } break;
       case 'notice-close': if (top) closeNotice(); break;
+      case 'news-close': if (top && top.type === 'news') { S.seenVersion = app.getVersion(); save(); closeNotice(); } break;
+      case 'pause-menu': pauseMenu(BrowserWindow.fromWebContents(evt.sender)); break;
+      case 'reset-data': if (BrowserWindow.fromWebContents(evt.sender) === mainWin) resetData(); break;
       case 'night-more': if (top && top.type === 'night') { R.nightAgain = Date.now() + 5 * 60e3; closeNotice(); } break;
       case 'unlock-use': if (top && top.type === 'unlock') { setSetting('kuih', top.id); closeNotice(); } break;
       case 'summary-open': if (top && top.type === 'summary') { closeNotice(); showMain(); } break;

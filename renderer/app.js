@@ -48,16 +48,34 @@
 
   /* ---------- sound (played by the pop-up window) ---------- */
   let ac = null;
+  // Volume (1.8.0): 70 is the original loudness.
+  const vol = () => (st && Number.isFinite(st.volume) ? st.volume : 70) / 70;
+  // Four chime sounds (1.8.0): bell (the original), marimba, soft and pop.
+  const CHIME_STYLES = {
+    bell: { type: 'sine', mul: 1, attack: 0.02, decay: 1.1, gap: 0.17, level: 1 },
+    marimba: { type: 'triangle', mul: 1, attack: 0.005, decay: 0.45, gap: 0.14, level: 1.3, over: 4 },
+    soft: { type: 'sine', mul: 0.5, attack: 0.09, decay: 1.5, gap: 0.24, level: 0.9 },
+    pop: { type: 'square', mul: 1, attack: 0.004, decay: 0.13, gap: 0.11, level: 0.45, cut: 1800 }
+  };
   function chime(kind) {
     try {
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
+      const v = vol(); if (v <= 0) return;
+      const c = CHIME_STYLES[st && st.chimeStyle] || CHIME_STYLES.bell;
       const notes = kind === 'due' ? [659.25, 880] : kind === 'done' ? [783.99, 987.77, 1174.66] : kind === 'water' ? [1046.5, 783.99] : [587.33];
+      const peak = (kind === 'water' ? 0.14 : 0.22) * c.level * v, decay = kind === 'water' ? c.decay * 0.55 : c.decay;
       notes.forEach((f, i) => {
-        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + 0.05 + i * 0.17;
-        o.type = 'sine'; o.frequency.value = f;
-        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(kind === 'water' ? 0.14 : 0.22, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + (kind === 'water' ? 0.6 : 1.1));
-        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 1.2);
+        const t = ac.currentTime + 0.05 + i * c.gap;
+        const tone = (freq, p) => {
+          const o = ac.createOscillator(), g = ac.createGain();
+          o.type = c.type; o.frequency.value = freq;
+          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(p, t + c.attack); g.gain.exponentialRampToValueAtTime(0.0001, t + c.attack + decay);
+          if (c.cut) { const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = c.cut; o.connect(fl); fl.connect(g); } else o.connect(g);
+          g.connect(ac.destination); o.start(t); o.stop(t + c.attack + decay + 0.1);
+        };
+        tone(f * c.mul, Math.min(0.5, peak));
+        if (c.over) tone(f * c.over, Math.min(0.5, peak) * 0.12);
       });
     } catch (e) { /* no audio device */ }
   }
@@ -139,11 +157,20 @@
       api.act('set', { key: k, value: s.dataset.sval !== undefined ? s.dataset.sval : s.dataset.val !== undefined ? +s.dataset.val : !st[k] });
       return;
     }
+    const rs = e.target.closest('#resetBtn');
+    if (rs) { resetClick(rs); return; }
     const w = e.target.closest('[data-w]');
     if (w) api.act(w.dataset.w);
   });
+  // "Reset my data" asks twice: the first click arms it for 5 seconds.
+  let resetArmed = null;
+  function resetClick(b) {
+    if (resetArmed) { clearTimeout(resetArmed); resetArmed = null; b.textContent = T('set.resetBtn'); b.classList.remove('danger'); api.act('reset-data'); return; }
+    b.textContent = T('set.resetConfirm'); b.classList.add('danger');
+    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = T('set.resetBtn'); b.classList.remove('danger'); }, 5000);
+  }
   document.addEventListener('change', e => {
-    const s = e.target.closest('select[data-set]');
+    const s = e.target.closest('select[data-set], input[type=range][data-set]');
     if (s) api.act('set', { key: s.dataset.set, value: +s.value });
   });
   document.addEventListener('keydown', e => {
@@ -190,11 +217,11 @@
         <div class="nav-brand"><button type="button" class="logo kuih-tap" id="logo" aria-label="${esc(T('w.kuih'))}"></button><span class="nav-title">Lapis</span></div>
         ${PAGES.map(p => `<button type="button" class="nav-item" data-page="${p.id}" aria-label="${esc(T('nav.' + p.id))}" title="${esc(T('nav.' + p.id))}">${svgIcon(p.icon)}<span>${T('nav.' + p.id)}</span></button>`).join('')}
         <div class="nav-spacer"></div>
-        <button type="button" class="nav-item nav-pause" data-w="pause" id="navPause">${svgIcon('<rect x="5" y="4" width="3.2" height="12" rx="1"/><rect x="11.8" y="4" width="3.2" height="12" rx="1"/>')}</button>
+        <button type="button" class="nav-item nav-pause" data-w="pause-menu" id="navPause">${svgIcon('<rect x="5" y="4" width="3.2" height="12" rx="1"/><rect x="11.8" y="4" width="3.2" height="12" rx="1"/>')}</button>
         <div class="nav-status">
           <p class="ns-title" id="nsTitle"></p>
           <p class="ns-sub" id="nsSub"></p>
-          <button class="btn ghost small" data-w="pause" id="pauseBtn" type="button"></button>
+          <button class="btn ghost small" data-w="pause-menu" id="pauseBtn" type="button"></button>
         </div>
         <p class="nav-version" id="navVersion"></p>
       </nav>
@@ -213,8 +240,9 @@
             </div>
             <div class="hero-text"><p class="eyebrow" id="clockLabel"></p><p class="time" id="clockTime">--:--</p><p class="sub" id="clockSub"></p></div>
             <div class="hero-actions" id="heroActions">
-              <button class="btn" data-act="now" type="button">${T('btn.startNow')}</button>
-              <button class="btn ghost" data-act="different" type="button">${T('btn.different')}</button>
+              <button class="btn work-only" data-act="now" type="button">${T('btn.startNow')}</button>
+              <button class="btn ghost work-only" data-act="different" type="button">${T('btn.different')}</button>
+              <button class="btn ghost rest-only" data-act="now" type="button">${T('btn.anyway')}</button>
             </div>
           </section>
           <article class="card" id="card" hidden></article>
@@ -304,7 +332,12 @@
               <section class="panel settings"><h2>${T('set.reminders')}</h2>
                 <div class="set"><div class="lbl">${T('set.every')}<small>${T('set.everySub')}</small></div>${segGroup('interval', T('set.every'), [15, 20, 30, 45, 60], v => v)}</div>
                 <div class="set"><div class="lbl">${T('set.snooze')}<small>${T('set.snoozeSub')}</small></div>${segGroup('snooze', T('set.snooze'), [5, 10, 15], v => T('mins', { n: v }))}</div>
-                ${switchRow('sound', T('set.sound'), T('set.soundSub'))}${switchRow('toast', T('set.toast'), T('set.toastSub'))}
+                ${switchRow('sound', T('set.sound'), T('set.soundSub'))}
+                <div class="set stack" id="chimeRows"><div class="lbl">${T('set.chimeStyle')}</div>
+                  <div class="seg" role="group" aria-label="${esc(T('set.chimeStyle'))}">${['bell', 'marimba', 'soft', 'pop'].map(c => `<button type="button" data-set="chimeStyle" data-sval="${c}">${T('chime.' + c)}</button>`).join('')}</div>
+                  <div class="vol-row"><label for="volIn">${T('set.volume')}</label><input id="volIn" type="range" min="0" max="100" step="10" data-set="volume"><button class="btn ghost small" data-w="test-chime" type="button">${T('set.test')}</button></div>
+                </div>
+                ${switchRow('toast', T('set.toast'), T('set.toastSub'))}
               </section>
               <section class="panel settings"><h2>${T('set.work')}</h2>
                 ${switchRow('workOn', T('set.workOn'), T('set.workOnSub'))}
@@ -335,7 +368,8 @@
               </section>
               <section class="panel settings"><h2>${T('set.display')}</h2>
                 <div class="set"><div class="lbl">${T('set.lang')}</div>${langSeg()}</div>
-                ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
+                <div class="set"><div class="lbl">${T('set.theme')}</div><div class="seg" role="group" aria-label="${esc(T('set.theme'))}">${['auto', 'light', 'dark'].map(m => `<button type="button" data-set="theme" data-sval="${m}">${T('theme.' + m)}</button>`).join('')}</div></div>
+                ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('widgetHideFull', T('set.hideFull'), T('set.hideFullSub'))}${switchRow('trayRing', T('set.trayRing'), T('set.trayRingSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
               </section>
             </div>
           </div>
@@ -344,6 +378,7 @@
               <div>
                 <div class="set"><div class="lbl">${T('set.version')} <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">${T('set.check')}</button></div>
                 ${switchRow('autoUpdate', T('set.autoUpdate'), T('set.autoUpdateSub'))}
+                <div class="set"><div class="lbl">${T('set.reset')}<small id="resetMsg" aria-live="polite">${T('set.resetSub')}</small></div><button class="btn ghost" id="resetBtn" type="button">${T('set.resetBtn')}</button></div>
               </div>
               <div class="about-text"><p class="note-p">${T('set.aboutText')}</p><button class="btn ghost" data-ob="open" type="button">${T('set.welcome')}</button></div>
             </div>
@@ -523,13 +558,25 @@
       cells += `<span class="mc l${lvl}${future ? ' future' : ''}${off ? ' off' : ''}${k === tk ? ' today' : ''}" title="${esc(label)}" aria-label="${esc(label)}" role="img">${d}</span>`;
     }
     const title = first.toLocaleDateString(loc(), { month: 'long', year: 'numeric' });
-    const note = field === 'water' ? T('prog.monthWater', { n: atGoal, g: goal }) : T('prog.monthGoal', { n: atGoal });
     const leg = [0, 1, 2, 3, 4].map(l => `<span class="mc l${l}" aria-hidden="true"></span>`).join('');
-    return `<div class="month-head"><h2>${esc(title)}</h2><span class="month-note">${note}</span><span class="spacer"></span>
+    // the month's numbers beside the calendar (1.8.0)
+    let total = 0, best = null, workSoFar = 0;
+    for (let d = 1; d <= days; d++) {
+      const day = new Date(first.getFullYear(), first.getMonth(), d, 12), k = dayKey(day);
+      if (k > tk) break;
+      const n = h[k] ? (h[k][field] || 0) : 0;
+      total += n;
+      if (n > 0 && (!best || n > best.n)) best = { n, day };
+      if (!work || work.includes(day.getDay())) workSoFar++;
+    }
+    const avg = workSoFar ? Math.round(total / workSoFar * 10) / 10 : 0;
+    const stat = (b, l) => `<div class="mstat"><b>${b}</b><span>${l}</span></div>`;
+    const side = `<div class="mstats">${stat(total, field === 'water' ? T('prog.mTotalW') : T('prog.mTotal'))}${stat(atGoal, field === 'water' ? T('prog.monthWaterShort', { g: goal }) : T('prog.mGoal'))}${stat(avg.toLocaleString(loc()), T('prog.mAvg'))}${stat(best ? best.n : '–', best ? T('prog.mBestOn', { date: best.day.toLocaleDateString(loc(), { weekday: 'short', day: 'numeric', month: 'short' }) }) : T('prog.mBest'))}</div>`;
+    return `<div class="month-head"><h2>${esc(title)}</h2><span class="spacer"></span>
         <button type="button" class="mnav" data-mon="-1" aria-label="${esc(T('prog.prevMonth'))}" title="${esc(T('prog.prevMonth'))}"${monthOff <= -12 ? ' disabled' : ''}>‹</button>
         <button type="button" class="mnav" data-mon="1" aria-label="${esc(T('prog.nextMonth'))}" title="${esc(T('prog.nextMonth'))}"${monthOff >= 0 ? ' disabled' : ''}>›</button></div>
-      <div class="month ${field === 'water' ? 'water' : ''}">${heads}${cells}</div>
-      <div class="month-legend">${T('prog.less')} ${leg} ${T('prog.more')} <span class="spacer"></span><span class="mc l4" aria-hidden="true"></span> ${T('prog.atGoal')}</div>`;
+      <div class="month-wrap"><div><div class="month ${field === 'water' ? 'water' : ''}">${heads}${cells}</div>
+      <div class="month-legend">${T('prog.less')} ${leg} ${T('prog.more')} <span class="spacer"></span><span class="mc l4" aria-hidden="true"></span> ${T('prog.atGoal')}</div></div>${side}</div>`;
   }
   function renderProgress(s) {
     const days = lastDays(7), sum = days.reduce((a, d) => a + d.n, 0), tr = todayRec();
@@ -586,7 +633,7 @@
     PAGES.forEach(p => { $('#page-' + p.id).hidden = p.id !== page; });
     // sidebar status
     $('#nsTitle').textContent = st.paused ? T('ns.paused') : st.resting ? T('ns.resting') : st.quiet ? T('ns.quiet') : T('ns.on');
-    $('#nsSub').textContent = st.paused ? T('ns.resume') : st.resting ? T('ns.back', { when: whenLabel(st.backAt) })
+    $('#nsSub').textContent = st.paused ? (st.pauseUntil ? T('ns.pausedUntil', { when: whenLabel(st.pauseUntil) }) : T('ns.resume')) : st.resting ? T('ns.back', { when: whenLabel(st.backAt) })
       : (st.workOn ? T('ns.hours', { n: st.interval, from: fmtMin(st.workStart), to: fmtMin(st.workEnd) }) : T('ns.every', { n: st.interval })) + (st.awayReset ? T('ns.away') : '');
     $('#pauseBtn').textContent = st.paused ? T('resume') : T('pause');
     $('#navPause').setAttribute('aria-label', st.paused ? T('resume') : T('pause'));
@@ -599,6 +646,7 @@
     if (!card.hidden) renderCard(card, 'today'); else cardKey = '';
     $('#banner').hidden = st.mode !== 'due';
     $('#heroActions').hidden = st.mode !== 'waiting';
+    $('#heroActions').classList.toggle('resting', !!(st.resting && !st.paused));
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : st.quiet ? 'shh' : (st.paused || st.away || st.resting) ? 'sleep' : 'idle';
     if (pose + outfit() + st.golden !== heroKey) { heroKey = pose + outfit() + st.golden; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#ring').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
@@ -613,6 +661,10 @@
     document.querySelectorAll('select[data-set]').forEach(sel => { if (document.activeElement !== sel) sel.value = String(st[sel.dataset.set]); });
     document.querySelectorAll('#page-settings .tsels select').forEach(sel => { sel.disabled = (sel.dataset.set.startsWith('work') && !st.workOn) || (sel.dataset.set.startsWith('lunch') && (!st.lunchOn || !st.workOn)) || (sel.dataset.set.startsWith('water') && !st.waterOn); });
     $('#goalVal').textContent = st.goal;
+    if (document.activeElement !== $('#volIn')) $('#volIn').value = String(st.volume);
+    $('#chimeRows').classList.toggle('off', !st.sound);
+    $('#resetMsg').textContent = st.resetDone ? T('set.resetDone') : T('set.resetSub');
+    $('#resetMsg').classList.toggle('ok', !!st.resetDone);
     $('#version').textContent = st.version || '';
     $('#updateMsg').textContent = st.updateMsg ? T(st.updateMsg.k, st.updateMsg.v) : (st.autoUpdate ? T('set.checksAuto') : T('set.checksManual'));
     $('#checkBtn').disabled = !!st.checking || !!(st.update && st.update.state !== 'available');
@@ -640,7 +692,7 @@
     if (st.mode === 'active') {
       const left = st.activeEnd - now; label = T('clock.active'); time = mmss(left); sub = exName(curEx()); frac = 1 - left / (st.activeSecs * 1000);
     } else if (st.mode === 'due') { label = T('clock.due'); time = '0:00'; sub = T('sub.due', { ex: exName(curEx()) }); frac = 1; }
-    else if (st.paused) { label = T('clock.paused'); time = mmss(st.pausedLeft); sub = T('sub.paused'); frac = 1 - Math.min(1, st.pausedLeft / (st.interval * 60e3)); }
+    else if (st.paused) { label = T('clock.paused'); time = mmss(st.pausedLeft); sub = st.pauseUntil ? T('sub.pausedUntil', { when: whenLabel(st.pauseUntil) }) : T('sub.paused'); frac = 1 - Math.min(1, st.pausedLeft / (st.interval * 60e3)); }
     else if (st.resting) { label = T('clock.resting'); time = whenLabel(st.backAt) || '--'; sub = T('sub.resting'); frac = 0; small = true; }
     else if (st.quiet) { label = T('clock.quiet'); time = T('w.waiting'); sub = T('sub.quiet'); frac = 1; small = true; }
     else if (st.away) { label = T('clock.away'); time = `${st.interval}:00`; sub = T('sub.away'); frac = 0; }
@@ -669,23 +721,30 @@
       <div class="w-text"><p class="w-label" id="wLabel"></p><p class="w-time" id="wTime">--:--</p><p class="w-sub" id="wSub"></p></div>
       <div class="w-btns">
         <button type="button" data-w="now" id="wNow" title="${esc(T('w.stretchNow'))}" aria-label="${esc(T('w.stretchNow'))}">${ICONS.now}</button>
-        <button type="button" data-w="pause" id="wPause">${ICONS.pause}</button>
+        <button type="button" data-w="pause-menu" id="wPause">${ICONS.pause}</button>
         <button type="button" data-w="open-main" title="${esc(T('w.open'))}" aria-label="${esc(T('w.open'))}">${ICONS.open}</button>
       </div>
       <div class="w-bar"><i id="wBar"></i></div>
     </div>`;
   }
   let wPoseKey = '', trayKuih = '';
-  function sendTrayIcon(skin) {
+  function sendTrayIcon(skin, step) {
     // Draw the kuih's body at tray sizes; the main process turns these into the tray icon.
-    const svg = window.lapisBodySVG(skin);
+    // With a step (0-16) it sits inside a ring that fills as the next stretch gets closer (1.8.0).
+    const svg = window.lapisBodySVG(skin), ring = step >= 0;
     const img = new Image();
     img.onload = () => {
       const images = [[16, 1], [24, 1.5], [32, 2], [48, 3]].map(([px, scale]) => {
         const c = document.createElement('canvas'); c.width = c.height = px;
-        const g = c.getContext('2d'), r = Math.min(px / 92, px / 98);
-        const w = 92 * r, h = 98 * r;
+        const g = c.getContext('2d'), lw = Math.max(2, Math.round(px * 0.13)), inner = ring ? px - 2 * lw - 1 : px;
+        const r = Math.min(inner / 92, inner / 98), w = 92 * r, h = 98 * r;
         g.drawImage(img, (px - w) / 2, (px - h) / 2, w, h);
+        if (ring) {
+          const R = px / 2 - lw / 2;
+          g.lineWidth = lw; g.lineCap = 'butt';
+          g.strokeStyle = 'rgba(140,140,140,.5)'; g.beginPath(); g.arc(px / 2, px / 2, R, 0, Math.PI * 2); g.stroke();
+          if (step > 0) { g.strokeStyle = '#E0336F'; g.beginPath(); g.arc(px / 2, px / 2, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * step / 16); g.stroke(); }
+        }
         return { scale, url: c.toDataURL('image/png') };
       });
       api.act('tray-icon', { images });
@@ -694,7 +753,8 @@
   }
   const waterAsk = () => st.notice && st.notice.type === 'water' && st.notice.state === 'ask' && st.mode === 'waiting';
   function renderWidget() {
-    if (trayKuih !== st.kuih) { trayKuih = st.kuih; wPoseKey = ''; sendTrayIcon(st.kuih || 'lapis'); }
+    if (trayKuih !== st.kuih) { trayKuih = st.kuih; wPoseKey = ''; }
+    syncTray();
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : waterAsk() ? 'glass' : st.quiet ? 'shh' : st.mode === 'snoozed' || st.paused || st.away || st.resting ? 'sleep' : 'idle';
     if (pose + outfit() + st.golden !== wPoseKey) { wPoseKey = pose + outfit() + st.golden; $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#widget').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
@@ -709,14 +769,27 @@
     $('#wSub').classList.toggle('w-update', !!ready);
     tickWidget();
   }
+  // Tray ring (1.8.0): 16 steps while counting down, full when a stretch is due, none while paused or resting.
+  let trayKey = '';
+  function trayStep() {
+    if (!st.trayRing) return -1;
+    if (st.mode === 'due' || st.mode === 'active') return 16;
+    if (st.mode !== 'waiting' || st.paused || st.resting || st.away || st.quiet) return -1;
+    return Math.floor(16 * (1 - Math.min(1, Math.max(0, (st.nextDue - Date.now()) / (st.interval * 60e3)))));
+  }
+  function syncTray() {
+    const step = trayStep(), key = (st.kuih || 'lapis') + '|' + step;
+    if (key !== trayKey) { trayKey = key; sendTrayIcon(st.kuih || 'lapis', step); }
+  }
   function tickWidget() {
+    syncTray();
     const now = Date.now(); let label, time, frac, small = false;
     if (st.mode === 'due') { label = T('w.due'); time = T('w.now'); frac = 1; }
     else if (st.mode === 'active') { const left = st.activeEnd - now; label = exName(curEx()); time = mmss(left); frac = 1 - left / (st.activeSecs * 1000); }
     else if (st.mode === 'done') { label = T('w.nice'); time = T('w.done'); frac = 1; }
     else if (st.mode === 'snoozed') { label = T('w.snoozed'); time = mmss(st.nextDue - now); frac = 0; }
     else if (waterAsk()) { label = T('w.water'); time = T('w.glass', { n: (todayRec().water || 0) + 1 }); frac = 1; small = true; }
-    else if (st.paused) { label = T('w.paused'); time = mmss(st.pausedLeft); frac = 0; }
+    else if (st.paused) { label = st.pauseUntil ? T('ns.pausedUntil', { when: whenLabel(st.pauseUntil) }) : T('w.paused'); time = mmss(st.pausedLeft); frac = 0; small = !!st.pauseUntil; }
     else if (st.resting) { label = T('w.resting'); time = whenLabel(st.backAt) || '--'; frac = 0; small = true; }
     else if (st.quiet) { label = T('w.quiet'); time = T('w.waiting'); frac = 1; small = true; }
     else if (st.away) { label = T('w.away'); time = `${st.interval}:00`; frac = 0; }
@@ -750,6 +823,11 @@
         <div class="row center"><button class="btn" data-w="unlock-use" type="button">${T('un.use', { k: esc(k.name) })}</button><button class="btn ghost" data-w="notice-close" type="button">${T('un.keep', { k: esc(kuihName()) })}</button></div></div>`;
     }
     if (n.type === 'summary') return summaryHTML(n.week);
+    if (n.type === 'news') {
+      const items = NEWS.filter(x => newer(x.v, n.from)).flatMap(x => x.keys).slice(0, 6);
+      return `<div class="news"><div class="nc-row"><div class="nc-img">${lapis('cheer', kuihName())}</div><div class="nc-body"><p class="nc-tag">${T('news.tag', { v: n.v })}</p><h3>${T('news.title')}</h3></div></div>
+        <ul class="news-list">${items.map(k => `<li>${T(k)}</li>`).join('')}</ul><div class="row end"><button class="btn" data-w="news-close" type="button">${T('news.ok')}</button></div></div>`;
+    }
     if (n.type === 'teh') return `<div class="nc-row"><div class="nc-img teh">${lapis('tarik', kuihName())}</div><div class="nc-body"><p class="nc-tag teh">${T('teh.tag', { time: fmtMin(930) })}</p><h3>${T('teh.title')}</h3><p class="nc-sub">${T('teh.sub')}</p><div class="row"><button class="btn" data-w="notice-close" type="button">${T('teh.btn')}</button></div></div></div>`;
     if (n.type === 'night') return `<div class="nc-row"><div class="nc-img night">${lapis('yawn', kuihName())}</div><div class="nc-body"><p class="nc-tag night">${fmtTime(Date.now())}</p><h3>${T('night.title')}</h3><p class="nc-sub">${T('night.sub')} ${n.back ? T('night.see', { when: whenLabel(n.back) }) : T('night.seeTomorrow')}</p><div class="row"><button class="btn" data-w="notice-close" type="button">${T('night.ok')}</button><button class="btn ghost" data-w="night-more" type="button">${T('night.more')}</button></div></div></div>`;
     if (n.type === 'wrap') {
@@ -760,6 +838,13 @@
     }
     return '';
   }
+  // "What's new" items for each version (newest first); the card shows those after the version you last saw.
+  const NEWS = [
+    { v: '1.8.0', keys: ['news.1.8.0.a', 'news.1.8.0.b', 'news.1.8.0.c', 'news.1.8.0.d'] },
+    { v: '1.7.1', keys: ['news.1.7.1.a'] },
+    { v: '1.7.0', keys: ['news.1.7.0.a', 'news.1.7.0.b', 'news.1.7.0.c'] }
+  ];
+  const newer = (a, b) => { const pa = a.split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0); return false; };
   function summaryHTML(week) {
     const [y, m, d] = week.split('-').map(Number), mon = new Date(y, m - 1, d, 12);
     const workDays = st.workOn ? st.workDays : [1, 2, 3, 4, 5];
@@ -925,7 +1010,7 @@
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
       const remix = !!st.remix, t0 = ac.currentTime + 0.05, E = remix ? 0.21 : 0.25, END = 32 * E; // the remix code: a faster beat
-      const out = ac.createGain(); out.gain.value = { chinese: 0.45, indian: 0.6, borneo: 0.42, merdeka: 0.5 }[style] || 0.55; out.connect(ac.destination); eggMaster = out;
+      const out = ac.createGain(); out.gain.value = ({ chinese: 0.45, indian: 0.6, borneo: 0.42, merdeka: 0.5 }[style] || 0.55) * Math.min(1.43, vol()); out.connect(ac.destination); eggMaster = out;
       const hz = m => 440 * Math.pow(2, (m - 69) / 12);
       const env = (g, t, peak, a, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); };
       const at = i => t0 + i * E;

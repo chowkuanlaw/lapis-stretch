@@ -42,7 +42,7 @@
     'days': 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
     'set.title': 'Settings', 'set.reminders': 'Reminders', 'set.every': 'Remind me every', 'set.everySub': 'Minutes between nudges',
     'set.snooze': 'Snooze for', 'set.snoozeSub': 'How long Snooze waits',
-    'set.alerts': 'Alerts', 'set.sound': 'Chime', 'set.soundSub': 'A soft two-note bell when it is time',
+    'set.alerts': 'Alerts', 'set.sound': 'Chime', 'set.soundSub': 'Plays when it is time to stretch',
     'set.toast': 'Windows notification too', 'set.toastSub': 'Also shows in the Windows notification centre',
     'set.desktop': 'Desktop', 'set.widget': 'Desktop widget', 'set.widgetSub': 'Small countdown card on your desktop',
     'set.onTop': 'Keep widget on top', 'set.onTopSub': 'Stays above your other windows',
@@ -103,7 +103,7 @@
     'water.ramadan': 'reminders paused for Ramadan',
     'wrap.tag': '{time} · Balik kerja!', 'wrap.title': 'Time to go home!', 'wrap.met': 'You reached your goal today. Rest well!', 'wrap.notMet': 'Tomorrow is another day. Rest well!',
     'wrap.stretches': 'stretches', 'wrap.glasses': 'glasses', 'wrap.streak': 'day streak', 'wrap.bye': 'See you!',
-    'prog.prevMonth': 'Previous month', 'prog.nextMonth': 'Next month', 'prog.monthGoal': '{n} days at your goal', 'prog.monthWater': '{n} days at {g} glasses',
+    'prog.prevMonth': 'Previous month', 'prog.nextMonth': 'Next month',
     'prog.less': 'Less', 'prog.more': 'More', 'prog.atGoal': 'At goal',
     // 1.7.1 easter eggs
     'gold.tag': '✦ A golden kuih appeared!', 'gold.title': 'Golden kuih', 'gold.sub': '{n} of 20 found. They turn up by luck, about once in 200 reminders.', 'gold.found': 'Found {date}',
@@ -112,7 +112,28 @@
     'night.ok': 'Okay, goodnight', 'night.more': '5 more minutes',
     'code.flag': 'Merdeka! Every kuih waves the Jalur Gemilang for the rest of today.',
     'code.remixOn': 'Remix on! The dance songs get a faster beat, tabla drums and clinking teh cups. Enter the same code again to turn it off.',
-    'code.remixOff': 'Remix off. Back to the usual songs.'
+    'code.remixOff': 'Remix off. Back to the usual songs.',
+    // 1.8.0
+    'pause.m30': 'Pause for 30 minutes', 'pause.h1': 'Pause for 1 hour', 'pause.h2': 'Pause for 2 hours', 'pause.tomorrow': 'Pause until tomorrow', 'pause.forever': 'Pause until I resume',
+    'tray.pausedUntil': 'Paused until {when}', 'ns.pausedUntil': 'Back on at {when}', 'sub.pausedUntil': 'Reminders come back on at {when}',
+    'btn.anyway': 'Stretch anyway',
+    'set.chimeStyle': 'Chime sound', 'chime.bell': 'Bell', 'chime.marimba': 'Marimba', 'chime.soft': 'Soft', 'chime.pop': 'Pop', 'set.volume': 'Volume', 'set.test': 'Test',
+    'set.theme': 'Theme', 'theme.auto': 'Follow Windows', 'theme.light': 'Light', 'theme.dark': 'Dark',
+    'set.trayRing': 'Countdown on the tray icon', 'set.trayRingSub': 'A ring around your kuih fills up as the next stretch gets closer',
+    'set.hideFull': 'Hide the widget in full screen', 'set.hideFullSub': 'While an app is full screen or presenting, so it never shows on a projector',
+    'set.reset': 'Reset my data', 'set.resetSub': 'Clears your stretch and water history, collected kuih and badges on this PC. Your settings stay.',
+    'set.resetBtn': 'Reset', 'set.resetConfirm': 'Click again to reset', 'set.resetDone': 'All cleared. A fresh start!',
+    'news.tag': "What's new · Lapis {v}", 'news.title': 'New in this update', 'news.ok': 'Got it',
+    'news.1.8.0.a': 'Pause for 30 minutes, an hour or until tomorrow, from the tray, the widget or the sidebar.',
+    'news.1.8.0.b': 'Pick a chime sound and volume, and Light or Dark mode, in Settings.',
+    'news.1.8.0.c': 'A countdown ring on the tray icon, and the widget hides itself in full screen and presentations.',
+    'news.1.8.0.d': 'Progress shows each month with your total, best day and daily average.',
+    'news.1.7.1.a': 'A few hidden surprises. Keep an eye on your kuih!',
+    'news.1.7.0.a': 'Time away from your desk now counts as a break.',
+    'news.1.7.0.b': 'Ramadan mode pauses water reminders during the fasting month.',
+    'news.1.7.0.c': 'A "balik kerja" goodbye when your working hours end, and outfits for Merdeka, Malaysia Day and Christmas.',
+    'prog.mTotal': 'stretches this month', 'prog.mTotalW': 'glasses this month', 'prog.mGoal': 'days at your goal', 'prog.monthWaterShort': 'days at {g} glasses',
+    'prog.mAvg': 'a working day on average', 'prog.mBest': 'best day', 'prog.mBestOn': 'best day, {date}'
   };
   const ms = {
     'nav.today': 'Hari ini', 'nav.stretches': 'Regangan', 'nav.kuih': 'Kuih anda', 'nav.progress': 'Kemajuan', 'nav.settings': 'Tetapan',
@@ -153,7 +174,7 @@
     'days': 'Ahd,Isn,Sel,Rab,Kha,Jum,Sab',
     'set.title': 'Tetapan', 'set.reminders': 'Peringatan', 'set.every': 'Ingatkan saya setiap', 'set.everySub': 'Minit antara peringatan',
     'set.snooze': 'Tunda selama', 'set.snoozeSub': 'Berapa lama Tunda menunggu',
-    'set.alerts': 'Amaran', 'set.sound': 'Bunyi loceng', 'set.soundSub': 'Loceng lembut dua nada bila tiba masanya',
+    'set.alerts': 'Amaran', 'set.sound': 'Bunyi loceng', 'set.soundSub': 'Berbunyi bila tiba masa untuk meregang',
     'set.toast': 'Pemberitahuan Windows juga', 'set.toastSub': 'Turut dipaparkan di pusat pemberitahuan Windows',
     'set.desktop': 'Desktop', 'set.widget': 'Widget desktop', 'set.widgetSub': 'Kad kiraan detik kecil di desktop anda',
     'set.onTop': 'Kekalkan widget di atas', 'set.onTopSub': 'Kekal di atas tetingkap lain',
@@ -214,7 +235,7 @@
     'water.ramadan': 'peringatan dihentikan sepanjang Ramadan',
     'wrap.tag': '{time} · Balik kerja!', 'wrap.title': 'Jom balik!', 'wrap.met': 'Anda capai sasaran hari ini. Rehat secukupnya!', 'wrap.notMet': 'Esok masih ada. Rehat secukupnya!',
     'wrap.stretches': 'regangan', 'wrap.glasses': 'gelas', 'wrap.streak': 'hari berturut-turut', 'wrap.bye': 'Jumpa lagi!',
-    'prog.prevMonth': 'Bulan sebelumnya', 'prog.nextMonth': 'Bulan berikutnya', 'prog.monthGoal': '{n} hari capai sasaran', 'prog.monthWater': '{n} hari capai {g} gelas',
+    'prog.prevMonth': 'Bulan sebelumnya', 'prog.nextMonth': 'Bulan berikutnya',
     'prog.less': 'Kurang', 'prog.more': 'Lebih', 'prog.atGoal': 'Capai sasaran',
     // 1.7.1 easter eggs
     'gold.tag': '✦ Kuih emas muncul!', 'gold.title': 'Kuih emas', 'gold.sub': '{n} daripada 20 ditemui. Ia muncul secara tuah, kira-kira sekali dalam 200 peringatan.', 'gold.found': 'Ditemui {date}',
@@ -223,7 +244,28 @@
     'night.ok': 'Okey, selamat malam', 'night.more': '5 minit lagi',
     'code.flag': 'Merdeka! Semua kuih mengibarkan Jalur Gemilang sepanjang hari ini.',
     'code.remixOn': 'Remix dihidupkan! Lagu tarian kini lebih rancak, dengan tabla dan bunyi cawan teh. Masukkan kod yang sama sekali lagi untuk matikan.',
-    'code.remixOff': 'Remix dimatikan. Kembali ke lagu biasa.'
+    'code.remixOff': 'Remix dimatikan. Kembali ke lagu biasa.',
+    // 1.8.0
+    'pause.m30': 'Jeda selama 30 minit', 'pause.h1': 'Jeda selama 1 jam', 'pause.h2': 'Jeda selama 2 jam', 'pause.tomorrow': 'Jeda hingga esok', 'pause.forever': 'Jeda hingga saya sambung',
+    'tray.pausedUntil': 'Dijeda hingga {when}', 'ns.pausedUntil': 'Aktif semula {when}', 'sub.pausedUntil': 'Peringatan aktif semula pada {when}',
+    'btn.anyway': 'Regang juga',
+    'set.chimeStyle': 'Bunyi loceng', 'chime.bell': 'Loceng', 'chime.marimba': 'Marimba', 'chime.soft': 'Lembut', 'chime.pop': 'Pop', 'set.volume': 'Kelantangan', 'set.test': 'Cuba',
+    'set.theme': 'Tema', 'theme.auto': 'Ikut Windows', 'theme.light': 'Cerah', 'theme.dark': 'Gelap',
+    'set.trayRing': 'Kiraan detik pada ikon dulang', 'set.trayRingSub': 'Gelang di sekeliling kuih anda terisi apabila regangan seterusnya semakin hampir',
+    'set.hideFull': 'Sembunyi widget semasa skrin penuh', 'set.hideFullSub': 'Semasa aplikasi skrin penuh atau pembentangan, supaya ia tidak muncul pada projektor',
+    'set.reset': 'Set semula data saya', 'set.resetSub': 'Padam sejarah regangan dan air, kuih yang dikumpul dan lencana di PC ini. Tetapan anda kekal.',
+    'set.resetBtn': 'Set semula', 'set.resetConfirm': 'Klik sekali lagi untuk set semula', 'set.resetDone': 'Semua dipadam. Mula baharu!',
+    'news.tag': 'Apa yang baharu · Lapis {v}', 'news.title': 'Baharu dalam kemas kini ini', 'news.ok': 'Faham',
+    'news.1.8.0.a': 'Jeda selama 30 minit, sejam atau hingga esok, dari dulang, widget atau bar sisi.',
+    'news.1.8.0.b': 'Pilih bunyi loceng dan kelantangan, serta mod Cerah atau Gelap, dalam Tetapan.',
+    'news.1.8.0.c': 'Gelang kiraan detik pada ikon dulang, dan widget bersembunyi semasa skrin penuh dan pembentangan.',
+    'news.1.8.0.d': 'Kemajuan menunjukkan setiap bulan dengan jumlah, hari terbaik dan purata harian.',
+    'news.1.7.1.a': 'Beberapa kejutan tersembunyi. Perhatikan kuih anda!',
+    'news.1.7.0.a': 'Masa anda tiada di meja kini dikira sebagai rehat.',
+    'news.1.7.0.b': 'Mod Ramadan menghentikan peringatan air sepanjang bulan puasa.',
+    'news.1.7.0.c': 'Ucapan "balik kerja" bila waktu kerja tamat, dan pakaian untuk Hari Merdeka, Hari Malaysia dan Krismas.',
+    'prog.mTotal': 'regangan bulan ini', 'prog.mTotalW': 'gelas bulan ini', 'prog.mGoal': 'hari capai sasaran', 'prog.monthWaterShort': 'hari capai {g} gelas',
+    'prog.mAvg': 'purata setiap hari kerja', 'prog.mBest': 'hari terbaik', 'prog.mBestOn': 'hari terbaik, {date}'
   };
   const STR = { en, ms };
   const LANGS = ['en', 'ms'];

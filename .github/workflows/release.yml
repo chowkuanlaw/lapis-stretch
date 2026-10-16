@@ -38,6 +38,9 @@ jobs:
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null && [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             echo "::error::Tag $TAG already exists. Bump the version in package.json first."; exit 1
           fi
+      # Nothing is built or published unless every test passes.
+      - name: Automatic tests (dates, streaks, translations, settings, artwork)
+        run: node --test test/*.test.js
 
   installer:
     needs: check-version

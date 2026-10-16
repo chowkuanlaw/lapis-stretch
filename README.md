@@ -9,8 +9,9 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 ## What it does
 
 - **Pop-up reminder.** A card slides up in the bottom-right corner, above whatever app you're in, without stealing focus. Start, Snooze, Skip or pick a different stretch. It chimes, and for one-side-at-a-time stretches it chimes again when to switch sides.
-- **Desktop widget.** A small countdown card that stays on top of your windows. Drag it anywhere.
-- **Tray icon.** Left-click to open Lapis, right-click to pause or quit. Closing the window keeps reminders running.
+- **Desktop widget.** A small countdown card that stays on top of your windows. Drag it anywhere. It hides itself while an app is full screen or presenting.
+- **Tray icon.** Left-click to open Lapis, right-click to pause or quit. A ring around the kuih fills up as the next stretch gets closer. Closing the window keeps reminders running.
+- **Pause for a while.** Pause for 30 minutes, 1 or 2 hours, until tomorrow, or until you resume, from the tray, the widget or the sidebar.
 - **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Progress** (week chart, best day, streak, a month calendar, and water), **Stretches**, **Your kuih** and **Settings**.
 - **Quick setup on first launch.** Say hello, choose English or Bahasa Melayu, pick your kuih, choose how often, done.
 - **Working hours.** Reminds you only during your working days and hours (Monday to Friday, 9 to 6 by default) and skips lunch. Outside them Lapis rests, and the widget says when it's back.
@@ -25,7 +26,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **English or Bahasa Melayu.** Every screen, reminder and the tray menu.
 - **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide.
 - **Time away counts as a break.** After 5 minutes of no keyboard or mouse activity, or when you lock your PC for a minute or more or sleep it, the timer restarts and any reminder that was waiting is cleared, so you're not nagged the moment you sit back down.
-- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime on or off, widget on or off, optional Windows notification, start with Windows and language.
+- **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime sound and volume, Light or Dark mode, widget on or off, optional Windows notification, start with Windows, language, and **Reset my data**.
 - **Pick your kuih.** 20 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
 - **Keeps itself up to date.** New versions download in the background; click **Restart to update** when it suits you.
 
@@ -52,9 +53,11 @@ To uninstall, go to Windows **Settings → Apps → Installed apps → Lapis →
 
 Lapis has no analytics, no accounts and no tracking. Fonts and images are bundled, and every window runs under a content security policy that only allows the app's own files. The only thing it saves is your settings, your stretch and water counts per day, and which kuih you've collected, in `%APPDATA%\Lapis\state.json` on your own PC.
 
-To stay quiet in meetings, Lapis asks Windows two things when a reminder is due: whether an app is full screen or presenting, and whether Do not disturb is on (one read-only PowerShell command). It never uses your microphone or camera, and nothing leaves your PC. Turn off **Stay quiet in meetings and presentations** in Settings to skip these checks.
+To stay quiet in meetings, Lapis asks Windows two things when a reminder is due: whether an app is full screen or presenting, and whether Do not disturb is on (one read-only PowerShell command). It never uses your microphone or camera, and nothing leaves your PC. Turn off **Stay quiet in meetings and presentations** in Settings to skip these checks. To hide the desktop widget during full screen and presentations, Lapis asks Windows the first of these questions every few seconds; turn off **Hide the widget in full screen** to stop it.
 
 The only network traffic is the update check against this repository's GitHub releases: when Lapis starts, once a day, and when you click **Check now**. It sends nothing about you or your stretches, just the standard request any download makes. Turn off **Update automatically** in Settings and Lapis only goes online when you click **Check now**.
+
+**Reset my data** in Settings clears your history, collected kuih and badges from your PC (it asks you to click twice). Uninstalling Lapis leaves `state.json` behind; delete the `%APPDATA%\Lapis` folder to remove it.
 
 See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
 
@@ -89,17 +92,19 @@ Releases are built by GitHub Actions (`.github/workflows/release.yml`) from the 
 1. Bump `version` in `package.json` and add a line to `CHANGELOG.md`.
 2. Push a matching tag (`v1.1.1`), or open the Actions tab, pick **Release**, click **Run workflow** and enter the tag.
 
-The workflow refuses to run if the tag doesn't match `package.json`. It builds the installer on Windows and the portable zip on Linux, then publishes both. Installed copies of Lapis pick up the new release on their next check.
+The workflow refuses to run if the tag doesn't match `package.json` or if any automatic test fails. It builds the installer on Windows and the portable zip on Linux, then publishes both. Installed copies of Lapis pick up the new release on their next check.
 
 ## Project layout
 
 ```
 main.js            timer, state, tray, updates and the app windows (runs in the main process)
 quiet.js           the "quiet in meetings" checks (full screen, presenting, Do not disturb)
+state.js           the settings defaults, and reading state.json back safely
 preload.js         the small bridge the windows use to talk to main.js
 renderer/          the UI: index.html, app.css, app.js, the mascot drawing, stretches and kuih (data.js), English and Malay text (i18n.js), fonts
 assets/            app and tray icons
 scripts/           portable build script, exe icon and Electron fuses
+test/              automatic tests, run with `npm test` and before every release
 package.json       app details, plus the installer settings under "build"
 ```
 
