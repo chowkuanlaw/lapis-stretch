@@ -30,7 +30,7 @@ mv "$OUT/electron.exe" "$OUT/Lapis.exe"
 rm -f "$OUT/resources/default_app.asar"
 APP="$OUT/resources/app"
 mkdir -p "$APP"
-cp -r "$ROOT/main.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/renderer" "$ROOT/assets" "$APP/"
+cp -r "$ROOT/main.js" "$ROOT/preload.js" "$ROOT/package.json" "$ROOT/LICENSE" "$ROOT/renderer" "$ROOT/assets" "$APP/"
 cp "$ROOT/scripts/README.txt" "$OUT/README.txt"
 
 echo "Setting the Lapis icon and file details on Lapis.exe..."
@@ -38,7 +38,8 @@ if [ ! -d "$CACHE/node_modules/resedit" ]; then
   (cd "$CACHE" && echo '{"private":true}' > package.json && npm install --silent --no-audit --no-fund resedit@2.0.3)
 fi
 cp "$ROOT/scripts/set-exe-icon.mjs" "$CACHE/set-exe-icon.mjs"
-node "$CACHE/set-exe-icon.mjs" "$OUT/Lapis.exe" "$ROOT/assets/icon.ico"
+VERSION="$(node -p "require('$ROOT/package.json').version")"
+node "$CACHE/set-exe-icon.mjs" "$OUT/Lapis.exe" "$ROOT/assets/icon.ico" "$VERSION"
 
 echo "Zipping..."
 (cd "$DIST" && rm -f Lapis-win-x64.zip && zip -qr -9 Lapis-win-x64.zip Lapis)

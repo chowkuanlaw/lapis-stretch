@@ -1,9 +1,14 @@
 {
   "name": "lapis",
   "productName": "Lapis",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lapis stretch reminder: desk stretch nudges with a desktop widget and pop-up reminders",
   "main": "main.js",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chowkuanlaw/lapis-stretch.git"
+  },
+  "homepage": "https://github.com/chowkuanlaw/lapis-stretch#readme",
   "private": true
 }

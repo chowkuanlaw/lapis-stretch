@@ -1,5 +1,7 @@
 # Lapis
 
+[![Latest release](https://img.shields.io/github/v/release/chowkuanlaw/lapis-stretch?label=download)](https://github.com/chowkuanlaw/lapis-stretch/releases/latest) [![Release build](https://github.com/chowkuanlaw/lapis-stretch/actions/workflows/release.yml/badge.svg)](https://github.com/chowkuanlaw/lapis-stretch/actions/workflows/release.yml) [![MIT licence](https://img.shields.io/badge/licence-MIT-2A7F4F)](LICENSE) ![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-C92A62)
+
 A small Windows desktop app that reminds you to stretch while you work. Every 20 minutes, Lapis (a kuih lapis with arms and legs) pops up in the corner of your screen with one quick desk stretch, a timer, and a tally of how many you've done today.
 
 ![The Lapis desktop widget and pop-up reminder](docs/widget-and-reminder.png)
@@ -60,6 +62,10 @@ renderer/          the UI: index.html, app.css, app.js, the mascot drawing, the 
 assets/            app and tray icons
 scripts/           Windows build script
 ```
+
+## Licence
+
+Lapis is released under the [MIT licence](LICENSE): you're free to use, change and share it, including in your own projects, as long as you keep the copyright notice.
 
 ## Credits
 

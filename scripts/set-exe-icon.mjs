@@ -1,10 +1,11 @@
 // Replaces Electron's icon and file details in Lapis.exe.
-// Usage: node set-exe-icon.mjs <Lapis.exe> <icon.ico>   (needs the resedit package)
+// Usage: node set-exe-icon.mjs <Lapis.exe> <icon.ico> [version]   (needs the resedit package)
 import * as ResEdit from 'resedit';
 import * as PELibrary from 'pe-library';
 import fs from 'fs';
 
-const [exe, ico] = process.argv.slice(2);
+const [exe, ico, version = '1.0.0'] = process.argv.slice(2);
+const [ma, mi, pa] = version.split('.').map(n => parseInt(n, 10) || 0);
 if (!exe || !ico) { console.error('Usage: node set-exe-icon.mjs <exe> <ico>'); process.exit(1); }
 
 const exeObj = PELibrary.NtExecutable.from(fs.readFileSync(exe), { ignoreCert: true });
@@ -20,8 +21,8 @@ vi.setStringValues(lang, {
   ProductName: 'Lapis', FileDescription: 'Lapis stretch reminder', InternalName: 'Lapis',
   OriginalFilename: 'Lapis.exe', CompanyName: '', LegalCopyright: ''
 });
-vi.setFileVersion(1, 0, 0, 0, lang.lang);
-vi.setProductVersion(1, 0, 0, 0, lang.lang);
+vi.setFileVersion(ma, mi, pa, 0, lang.lang);
+vi.setProductVersion(ma, mi, pa, 0, lang.lang);
 vi.outputToResourceEntries(res.entries);
 
 res.outputResource(exeObj);
