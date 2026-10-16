@@ -140,6 +140,8 @@
     if (kt) { onKuihTap(kt); return; }
     const pg = e.target.closest('[data-page]');
     if (pg) { if (pg.dataset.ptab) ptab = pg.dataset.ptab; setPage(pg.dataset.page); return; }
+    const sb = e.target.closest('[data-stab]');
+    if (sb) { stab = sb.dataset.stab; if (st) renderMain(); const c = $('#content'); if (c) c.scrollTop = 0; return; }
     const mo = e.target.closest('[data-mon]');
     if (mo) { monthOff = Math.min(0, Math.max(-12, monthOff + Number(mo.dataset.mon))); if (st) renderMain(); return; }
     const pt = e.target.closest('[data-ptab]');
@@ -204,7 +206,7 @@
   }).join('');
   const obKuih = () => (st.collect && !st.codeUnlocked ? `<div class="ob-kuih ob-starters"><div class="kgrid small four">${STARTERS.map(id => { const k = KUIH_BY[id]; return `<button type="button" class="ktile" data-set="kuih" data-sval="${k.id}" data-kid="${k.id}" aria-pressed="false" title="${esc(tx(k, 'note'))}"><span class="kimg">${lapis('idle', k.name, false, k.id)}</span><b>${k.name}</b></button>`; }).join('')}</div></div>` : `<div class="ob-kuih">${kuihTiles('small')}</div>`);
 
-  let page = 'today', ptab = 'stretches', obForce = false, obStep = 0, monthOff = 0;
+  let page = 'today', ptab = 'stretches', stab = 'reminders', obForce = false, obStep = 0, monthOff = 0;
   function setPage(p) {
     if (!PAGES.some(x => x.id === p)) return;
     page = p;
@@ -329,9 +331,11 @@
         </section>
 
         <section class="page" id="page-settings" aria-labelledby="h-set" hidden>
-          <header class="page-head"><h1 id="h-set">${T('set.title')}</h1></header>
-          <div class="settings-cols">
-            <div class="settings-col">
+          <header class="page-head prog-head"><div><h1 id="h-set">${T('set.title')}</h1></div>
+            <div class="seg ptabs" role="tablist" aria-label="${esc(T('set.title'))}">${['reminders', 'health', 'display', 'about'].map(id => `<button type="button" role="tab" id="stabbtn-${id}" data-stab="${id}" aria-controls="stab-${id}">${T('stab.' + id)}</button>`).join('')}</div>
+          </header>
+          <div class="stab" id="stab-reminders" role="tabpanel" aria-labelledby="stabbtn-reminders">
+            <div class="stab-grid">
               <section class="panel settings"><h2>${T('set.reminders')}</h2>
                 <div class="set"><div class="lbl">${T('set.every')}<small>${T('set.everySub')}</small></div>${segGroup('interval', T('set.every'), [15, 20, 30, 45, 60], v => v)}</div>
                 <div class="set"><div class="lbl">${T('set.snooze')}<small>${T('set.snoozeSub')}</small></div>${segGroup('snooze', T('set.snooze'), [5, 10, 15], v => T('mins', { n: v }))}</div>
@@ -342,6 +346,10 @@
                 </div>
                 ${switchRow('toast', T('set.toast'), T('set.toastSub'))}
               </section>
+              <section class="panel settings"><h2>${T('set.meetBreaks')}</h2>
+                ${switchRow('quietMeetings', T('set.quiet'), T('set.quietSub') + ' ' + T('set.quietHow'))}
+                ${switchRow('awayReset', T('set.awayReset'), T('set.awayResetSub'))}
+              </section>
               <section class="panel settings"><h2>${T('set.work')}</h2>
                 ${switchRow('workOn', T('set.workOn'), T('set.workOnSub'))}
                 <div class="set stack"><div class="lbl">${T('set.days')}</div><div class="days" role="group" aria-label="${esc(T('set.days'))}">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" class="day" data-set="workDay" data-val="${d}" aria-pressed="false">${days[d]}</button>`).join('')}</div></div>
@@ -350,13 +358,10 @@
                 <div class="set tsels" id="lunchTimes">${timeSelect('lunchStart', T('set.from'), 660, 900)}${timeSelect('lunchEnd', T('set.to'), 690, 960)}</div>
                 ${switchRow('wrapOn', T('set.wrap'), T('set.wrapSub'))}
               </section>
-              <section class="panel settings"><h2>${T('set.meetBreaks')}</h2>
-                ${switchRow('quietMeetings', T('set.quiet'), T('set.quietSub') + ' ' + T('set.quietHow'))}
-                ${switchRow('awayReset', T('set.awayReset'), T('set.awayResetSub'))}
-                ${switchRow('ramadanOn', T('set.ramadan'), T('set.ramadanSub'))}
-              </section>
             </div>
-            <div class="settings-col">
+          </div>
+          <div class="stab" id="stab-health" role="tabpanel" aria-labelledby="stabbtn-health" hidden>
+            <div class="stab-grid">
               <section class="panel settings"><h2>${T('set.goal')}</h2>
                 <div class="set"><div class="lbl">${T('set.goalN')}<small>${T('set.goalSub')}</small></div><div class="stepper"><button type="button" class="stp" data-step="goal" data-d="-1" aria-label="${esc(T('set.fewer'))}">−</button><b id="goalVal">8</b><button type="button" class="stp" data-step="goal" data-d="1" aria-label="${esc(T('set.more'))}">+</button></div></div>
                 ${switchRow('streakSaver', T('set.saver'), T('set.saverSub'))}
@@ -366,18 +371,26 @@
                 ${switchRow('waterOn', T('set.waterOn'), T('set.waterOnSub'))}
                 <div class="set tsels">${numSelect('waterEvery', T('set.waterEvery'), [30, 45, 60, 90, 120], v => (v === 60 ? T('hour') : v === 120 ? T('hours', { n: 2 }) : v === 90 ? T('hours', { n: 1.5 }) : T('minsShort', { n: v })))}${numSelect('waterGoal', T('set.waterGoal'), [4, 5, 6, 7, 8, 9, 10, 11, 12], v => v)}</div>
               </section>
-              <section class="panel settings"><h2>${T('set.collect')}</h2>
-                ${switchRow('collect', T('set.collectOn'), T('set.collectOnSub'))}
-                <div class="set stack"><label class="lbl" for="codeIn2">${T('code.title')}</label><div class="code-row"><input id="codeIn2" data-code type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="${esc(T('code.ph'))}"><button class="btn" data-redeem="codeIn2" type="button">${T('code.btn')}</button></div><p class="code-msg" id="codeMsg2" aria-live="polite"></p></div>
+              <section class="panel settings"><h2>${T('set.ramadanH')}</h2>
+                ${switchRow('ramadanOn', T('set.ramadan'), T('set.ramadanSub'))}
               </section>
+            </div>
+          </div>
+          <div class="stab" id="stab-display" role="tabpanel" aria-labelledby="stabbtn-display" hidden>
+            <div class="stab-grid">
               <section class="panel settings"><h2>${T('set.display')}</h2>
                 <div class="set"><div class="lbl">${T('set.lang')}</div>${langSeg()}</div>
                 <div class="set"><div class="lbl">${T('set.textSize')}</div><div class="seg" role="group" aria-label="${esc(T('set.textSize'))}">${['normal', 'large', 'larger'].map(m => `<button type="button" data-set="textSize" data-sval="${m}">${T('text.' + m)}</button>`).join('')}</div></div>
                 <div class="set"><div class="lbl">${T('set.theme')}</div><div class="seg" role="group" aria-label="${esc(T('set.theme'))}">${['auto', 'light', 'dark'].map(m => `<button type="button" data-set="theme" data-sval="${m}">${T('theme.' + m)}</button>`).join('')}</div></div>
                 ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('widgetHideFull', T('set.hideFull'), T('set.hideFullSub'))}${switchRow('trayRing', T('set.trayRing'), T('set.trayRingSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
               </section>
+              <section class="panel settings"><h2>${T('set.collect')}</h2>
+                ${switchRow('collect', T('set.collectOn'), T('set.collectOnSub'))}
+                <div class="set stack"><label class="lbl" for="codeIn2">${T('code.title')}</label><div class="code-row"><input id="codeIn2" data-code type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="${esc(T('code.ph'))}"><button class="btn" data-redeem="codeIn2" type="button">${T('code.btn')}</button></div><p class="code-msg" id="codeMsg2" aria-live="polite"></p></div>
+              </section>
             </div>
           </div>
+          <div class="stab" id="stab-about" role="tabpanel" aria-labelledby="stabbtn-about" hidden>
           <section class="panel settings about-card"><h2>${T('set.aboutUpd')}</h2>
             <div class="about-grid">
               <div>
@@ -388,13 +401,14 @@
               <div class="about-text"><p class="note-p">${T('set.aboutText')}</p><button class="btn ghost" data-ob="open" type="button">${T('set.welcome')}</button></div>
             </div>
           </section>
+          </div>
         </section>
       </div>
     </div>
 
     <div class="onboard" id="onboard" role="dialog" aria-modal="true" aria-labelledby="obTitle0" hidden>
       <div class="ob-card">
-        <div class="ob-steps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="ob-steps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
         <div class="ob-body ob-center" data-step="0">
           <div class="ob-hero" id="obWave"></div>
           <h2 id="obTitle0">${T('ob.hi')}</h2>
@@ -403,7 +417,7 @@
         </div>
         <div class="ob-body" data-step="1" hidden>
           <h2>${T('ob.who')}</h2>
-          <p>${st.collect && !st.codeUnlocked ? T('ob.whoCollect') : T('ob.whoText')}</p>
+          <p>${st.collect && !st.codeUnlocked ? T('ob.whoCollect', { more: KUIH.length - STARTERS.length }) : T('ob.whoText')}</p>
           ${obKuih()}
         </div>
         <div class="ob-body" data-step="2" hidden>
@@ -415,7 +429,17 @@
             ${switchRow('widget', T('set.widget'), T('set.widgetSub'), 'ob-')}
           </div>
         </div>
-        <div class="ob-body ob-center" data-step="3" hidden>
+        <div class="ob-body" data-step="3" hidden>
+          <h2>${T('ob.day')}</h2>
+          <p>${T('ob.dayText')}</p>
+          <div class="panel settings ob-settings">
+            ${switchRow('workOn', T('set.workOn'), T('set.workOnSub'), 'ob-')}
+            <div class="set tsels ob-hours">${timeSelect('workStart', T('set.from'), 300, 780)}${timeSelect('workEnd', T('set.to'), 720, 1410)}</div>
+            ${switchRow('lunchOn', T('set.lunch'), T('set.lunchSub'), 'ob-')}
+            ${switchRow('waterOn', T('set.waterOn'), T('set.waterOnSub'), 'ob-')}
+          </div>
+        </div>
+        <div class="ob-body ob-center" data-step="4" hidden>
           <div class="ob-hero" id="obCheer"></div>
           <h2 id="obDoneTitle"></h2>
           <p>${T('ob.doneText')}</p>
@@ -615,14 +639,15 @@
     document.querySelectorAll('.ob-body').forEach(b => { b.hidden = +b.dataset.step !== obStep; });
     document.querySelectorAll('.ob-steps i').forEach((d, i) => d.classList.toggle('on', i <= obStep));
     $('#obBack').hidden = obStep === 0;
-    $('#obSkip').hidden = obStep === 3;
-    $('#obNext').textContent = [T('ob.go'), T('ob.next'), T('ob.next'), T('ob.finish')][obStep];
+    $('#obSkip').hidden = obStep === 4;
+    document.querySelectorAll('.ob-hours select').forEach(sel => { sel.disabled = !st.workOn; });
+    $('#obNext').textContent = [T('ob.go'), T('ob.next'), T('ob.next'), T('ob.next'), T('ob.finish')][obStep];
     $('#obDoneTitle').textContent = T('ob.seeYou', { n: st.interval });
   }
   function obAction(what) {
     if (what === 'open') { obForce = true; obStep = 0; }
     else if (what === 'back') obStep = Math.max(0, obStep - 1);
-    else if (what === 'next' && obStep < 3) obStep++;
+    else if (what === 'next' && obStep < 4) obStep++;
     else if (what === 'next' || what === 'skip') { obForce = false; obStep = 0; api.act('set', { key: 'onboarded', value: true }); }
     renderMain();
     const n = $('#obNext'); if (n && !$('#onboard').hidden) n.focus();
@@ -666,6 +691,7 @@
     document.querySelectorAll('.day[data-set]').forEach(b => b.setAttribute('aria-pressed', String((st.workDays || []).includes(+b.dataset.val))));
     document.querySelectorAll('select[data-set]').forEach(sel => { if (document.activeElement !== sel) sel.value = String(st[sel.dataset.set]); });
     document.querySelectorAll('#page-settings .tsels select').forEach(sel => { sel.disabled = (sel.dataset.set.startsWith('work') && !st.workOn) || (sel.dataset.set.startsWith('lunch') && (!st.lunchOn || !st.workOn)) || (sel.dataset.set.startsWith('water') && !st.waterOn); });
+    ['reminders', 'health', 'display', 'about'].forEach(id => { $('#stab-' + id).hidden = stab !== id; $('#stabbtn-' + id).setAttribute('aria-selected', String(stab === id)); $('#stabbtn-' + id).setAttribute('aria-pressed', String(stab === id)); });
     $('#goalVal').textContent = st.goal;
     if (document.activeElement !== $('#volIn')) $('#volIn').value = String(st.volume);
     $('#chimeRows').classList.toggle('off', !st.sound);
@@ -830,8 +856,9 @@
         <div class="row center"><button class="btn" data-w="unlock-use" type="button">${T('un.use', { k: esc(k.name) })}</button><button class="btn ghost" data-w="notice-close" type="button">${T('un.keep', { k: esc(kuihName()) })}</button></div></div>`;
     }
     if (n.type === 'summary') return summaryHTML(n.week);
+    if (n.type === 'restored') return `<div class="nc-row"><div class="nc-img">${lapis('drowsy', kuihName())}</div><div class="nc-body"><p class="nc-tag">Lapis</p><h3>${T('restored.title')}</h3><p class="nc-sub">${T('restored.sub')}</p><div class="row"><button class="btn" data-w="notice-close" type="button">${T('news.ok')}</button></div></div></div>`;
     if (n.type === 'news') {
-      const items = NEWS.filter(x => newer(x.v, n.from)).flatMap(x => x.keys).slice(0, 6);
+      const items = NEWS.filter(x => newer(x.v, n.from) && !newer(x.v, n.v)).flatMap(x => x.keys).slice(0, 6);
       return `<div class="news"><div class="nc-row"><div class="nc-img">${lapis('cheer', kuihName())}</div><div class="nc-body"><p class="nc-tag">${T('news.tag', { v: n.v })}</p><h3>${T('news.title')}</h3></div></div>
         <ul class="news-list">${items.map(k => `<li>${T(k)}</li>`).join('')}</ul><div class="row end"><button class="btn" data-w="news-close" type="button">${T('news.ok')}</button></div></div>`;
     }
@@ -845,15 +872,7 @@
     }
     return '';
   }
-  // "What's new" items for each version (newest first); the card shows those after the version you last saw.
-  const NEWS = [
-    { v: '1.10.0', keys: ['news.1.10.0.a', 'news.1.10.0.b'] },
-    { v: '1.9.0', keys: ['news.1.9.0.a', 'news.1.9.0.b', 'news.1.9.0.c'] },
-    { v: '1.8.0', keys: ['news.1.8.0.a', 'news.1.8.0.b', 'news.1.8.0.c', 'news.1.8.0.d'] },
-    { v: '1.7.1', keys: ['news.1.7.1.a'] },
-    { v: '1.7.0', keys: ['news.1.7.0.a', 'news.1.7.0.b', 'news.1.7.0.c'] }
-  ];
-  const newer = (a, b) => { const pa = a.split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0); return false; };
+  const { NEWS, newer } = D; // "What's new" items for each version (data.js)
   function summaryHTML(week) {
     const [y, m, d] = week.split('-').map(Number), mon = new Date(y, m - 1, d, 12);
     const workDays = st.workOn ? st.workDays : [1, 2, 3, 4, 5];

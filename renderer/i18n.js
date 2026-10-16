@@ -63,8 +63,8 @@
     'set.lang': 'Language', 'set.collect': 'Kuih collection', 'set.collectOn': 'Collect kuih', 'set.collectOnSub': 'Unlock new kuih as you stretch. Turn off to have all {all} now.',
     'ob.hi': "Hi, I'm Lapis", 'ob.hiText': "Every 20 minutes I'll pop up with one quick desk stretch: chin tucks, neck stretches, a walk to refill your water. Two minutes of setup and we're off.",
     'ob.who': "Who's stretching with you?", 'ob.whoText': 'Pick a kuih. It shows up on reminders, the desktop widget and the tray. You can change it any time.',
-    'ob.whoCollect': "Pick one of these four to start. You'll collect the other 16 as you stretch.",
-    'ob.often': 'How often?', 'ob.oftenText': "Most people like every 20 minutes. Lapis only reminds you during working hours (Monday to Friday, 9 to 6) and restarts the timer when you've been away. You can change all of this in Settings.",
+    'ob.whoCollect': "Pick one of these four to start. You'll collect the other {more} as you stretch.",
+    'ob.often': 'How often?', 'ob.oftenText': "Most people like every 20 minutes. Lapis restarts the timer when you've been away from your desk, so you're not nagged the moment you sit down.",
     'ob.seeYou': 'See you in {n} minutes', 'ob.doneText': 'Lapis lives in your tray, near the clock. Click it any time to open this window, or right-click it to pause.',
     'ob.skip': 'Skip', 'ob.back': 'Back', 'ob.go': 'Get started', 'ob.next': 'Next', 'ob.finish': 'Start stretching',
     'upd.readyBar': 'Lapis {v} is ready. Restart to update; your stretch history stays.', 'upd.restart': 'Restart to update',
@@ -143,7 +143,14 @@
     'news.1.9.0.b': 'Your kuih has moods: proud at your goal, sleepy after a snooze, a little sad after a few skips.',
     'news.1.9.0.c': 'Bigger text: choose Large or Larger in Settings.',
     'news.1.10.0.a': '8 new kuih to collect: Kuih Koci, Putu Piring, Tepung Pelita, Kuih Ketayap, Apam Balik, Kuih Talam, Mysore Pak and Kuih Jala. Any your history already earns are unlocked for you.',
-    'news.1.10.0.b': 'A new way to unlock: reach your water goal on 5 days for Apam Balik.'
+    'news.1.10.0.b': 'A new way to unlock: reach your water goal on 5 days for Apam Balik.',
+    // 1.11.0
+    'ob.day': 'Your working day', 'ob.dayText': 'Lapis only reminds you during your working hours and skips lunch. It can also nudge you to drink water. You can change all of this later in Settings.',
+    'stab.reminders': 'Reminders', 'stab.health': 'Health', 'stab.display': 'Display', 'stab.about': 'About', 'set.ramadanH': 'Ramadan',
+    'news.1.11.0.a': 'Settings now has four tabs: Reminders, Health, Display and About.',
+    'news.1.11.0.b': 'Safer saving: Lapis keeps a daily backup of your progress and restores it if anything goes wrong.',
+    'news.1.11.0.c': 'Lighter: closing the window now frees its memory; reminders keep running in the tray.',
+    'restored.title': 'Restored from your backup', 'restored.sub': "Lapis couldn't read its settings file, so it picked up from yesterday's backup. Today's latest counts may be missing."
   };
   const ms = {
     'nav.today': 'Hari ini', 'nav.stretches': 'Regangan', 'nav.kuih': 'Kuih anda', 'nav.progress': 'Kemajuan', 'nav.settings': 'Tetapan',
@@ -205,8 +212,8 @@
     'set.lang': 'Bahasa', 'set.collect': 'Koleksi kuih', 'set.collectOn': 'Kumpul kuih', 'set.collectOnSub': 'Buka kuih baharu sambil anda meregang. Matikan untuk dapat kesemua {all} sekarang.',
     'ob.hi': 'Hai, saya Lapis', 'ob.hiText': 'Setiap 20 minit saya akan muncul dengan satu regangan meja yang cepat: tarik dagu, regangan leher, jalan sekejap untuk isi semula air. Dua minit untuk sediakan, kemudian kita mula.',
     'ob.who': 'Siapa meregang bersama anda?', 'ob.whoText': 'Pilih satu kuih. Ia muncul pada peringatan, widget desktop dan dulang sistem. Anda boleh tukar bila-bila masa.',
-    'ob.whoCollect': 'Pilih satu daripada empat ini untuk bermula. Anda akan kumpul 16 lagi sambil meregang.',
-    'ob.often': 'Berapa kerap?', 'ob.oftenText': 'Kebanyakan orang suka setiap 20 minit. Lapis hanya mengingatkan anda dalam waktu kerja (Isnin hingga Jumaat, 9 hingga 6) dan memulakan semula pemasa bila anda tiada di meja. Semua ini boleh ditukar dalam Tetapan.',
+    'ob.whoCollect': 'Pilih satu daripada empat ini untuk bermula. Anda akan kumpul {more} lagi sambil meregang.',
+    'ob.often': 'Berapa kerap?', 'ob.oftenText': 'Kebanyakan orang suka setiap 20 minit. Lapis memulakan semula pemasa bila anda tiada di meja, supaya anda tidak diganggu sebaik sahaja duduk.',
     'ob.seeYou': 'Jumpa lagi dalam {n} minit', 'ob.doneText': 'Lapis tinggal di dulang sistem, berhampiran jam. Klik untuk buka tetingkap ini, atau klik kanan untuk jeda.',
     'ob.skip': 'Langkau', 'ob.back': 'Kembali', 'ob.go': 'Mula', 'ob.next': 'Seterusnya', 'ob.finish': 'Mula meregang',
     'upd.readyBar': 'Lapis {v} sudah sedia. Mulakan semula untuk kemas kini; sejarah regangan anda kekal.', 'upd.restart': 'Mula semula untuk kemas kini',
@@ -285,7 +292,14 @@
     'news.1.9.0.b': 'Kuih anda ada perasaan: bangga bila capai sasaran, mengantuk selepas tunda, sedikit sedih selepas beberapa kali langkau.',
     'news.1.9.0.c': 'Teks lebih besar: pilih Besar atau Lebih besar dalam Tetapan.',
     'news.1.10.0.a': '8 kuih baharu untuk dikumpul: Kuih Koci, Putu Piring, Tepung Pelita, Kuih Ketayap, Apam Balik, Kuih Talam, Mysore Pak dan Kuih Jala. Yang sudah layak berdasarkan sejarah anda terus dibuka.',
-    'news.1.10.0.b': 'Cara baharu untuk membuka: capai sasaran air pada 5 hari untuk Apam Balik.'
+    'news.1.10.0.b': 'Cara baharu untuk membuka: capai sasaran air pada 5 hari untuk Apam Balik.',
+    // 1.11.0
+    'ob.day': 'Hari kerja anda', 'ob.dayText': 'Lapis hanya mengingatkan anda dalam waktu kerja dan melangkau waktu makan tengah hari. Ia juga boleh mengingatkan anda minum air. Semua ini boleh ditukar kemudian dalam Tetapan.',
+    'stab.reminders': 'Peringatan', 'stab.health': 'Kesihatan', 'stab.display': 'Paparan', 'stab.about': 'Perihal', 'set.ramadanH': 'Ramadan',
+    'news.1.11.0.a': 'Tetapan kini ada empat tab: Peringatan, Kesihatan, Paparan dan Perihal.',
+    'news.1.11.0.b': 'Simpanan lebih selamat: Lapis menyimpan sandaran harian kemajuan anda dan memulihkannya jika berlaku masalah.',
+    'news.1.11.0.c': 'Lebih ringan: menutup tetingkap kini membebaskan memorinya; peringatan terus berjalan di dulang.',
+    'restored.title': 'Dipulihkan daripada sandaran', 'restored.sub': 'Lapis tidak dapat membaca fail tetapannya, jadi ia menyambung daripada sandaran semalam. Kiraan terkini hari ini mungkin tiada.'
   };
   const STR = { en, ms };
   const LANGS = ['en', 'ms'];

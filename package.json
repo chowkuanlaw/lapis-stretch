@@ -1,7 +1,7 @@
 {
   "name": "lapis",
   "productName": "Lapis",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Lapis stretch reminder: desk stretch nudges with a desktop widget and pop-up reminders",
   "main": "main.js",
   "license": "MIT",
@@ -28,6 +28,7 @@
   "build": {
     "appId": "app.lapis.stretch",
     "productName": "Lapis",
+    "electronLanguages": ["en-US", "ms"],
     "copyright": "Copyright (c) 2026 chowkuanlaw",
     "directories": {
       "output": "dist/installer"
@@ -74,6 +75,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Lapis",
       "deleteAppDataOnUninstall": false,
+      "include": "installer/uninstall.nsh",
       "artifactName": "Lapis-Setup-${version}.${ext}"
     },
     "publish": [

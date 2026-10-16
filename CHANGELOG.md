@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.11.0 (2026-10-16)
+
+- **Safer saving.** Lapis now writes your progress to a temporary file and swaps it in, so a power cut mid-save can't break it. It also keeps a daily backup (`state.bak.json`) and, if the main file ever can't be read, picks up from the backup and tells you.
+- **The uninstaller asks** whether to remove your Lapis data as well (No keeps it for a reinstall). It never asks during updates.
+- **Lighter.** Closing the Lapis window now unloads it to free memory; reminders, the widget and the tray keep running, and the window reopens from the tray. When Lapis starts with Windows, the window isn't loaded until you open it.
+- **Smaller install.** Only the English and Malay interface files from Chromium are included.
+- **Settings in four tabs:** Reminders, Health (daily goal, water, Ramadan), Display (language, text size, theme, widget, kuih collection) and About.
+- **Fresher welcome.** First-time setup now has a "Your working day" step for working hours, lunch and water reminders.
+- Fixed: the "What's new" card could show an empty list after an update that had nothing new to list.
+
 ## 1.10.0 (2026-10-16)
 
 - **8 new kuih, 28 in all.** Malay: Kuih Koci, Putu Piring, Tepung Pelita and Kuih Ketayap. Chinese & Nyonya: Apam Balik and Kuih Talam. Indian: Mysore Pak. Sabah & Sarawak: Kuih Jala. Each has its own unlock rule, and any your history already earns are unlocked straight away.

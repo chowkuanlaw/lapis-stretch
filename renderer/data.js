@@ -209,7 +209,21 @@
     return null;
   }
 
-  const api = { EX, CYCLE, BY, KUIH, KUIH_GROUPS, KUIH_BY, STARTERS, RULES, RULE_BY, computeStats, ruleProgress, festivalOn, ramadanOn, FESTIVAL_DAYS, dayKey };
+  /* ---------- "What's new" (1.8.0) ----------
+     Text keys (i18n.js) for each version, newest first. The card after an update lists
+     the items between the version you last saw and the one you're on now. */
+  const NEWS = [
+    { v: '1.11.0', keys: ['news.1.11.0.a', 'news.1.11.0.b', 'news.1.11.0.c'] },
+    { v: '1.10.0', keys: ['news.1.10.0.a', 'news.1.10.0.b'] },
+    { v: '1.9.0', keys: ['news.1.9.0.a', 'news.1.9.0.b', 'news.1.9.0.c'] },
+    { v: '1.8.0', keys: ['news.1.8.0.a', 'news.1.8.0.b', 'news.1.8.0.c', 'news.1.8.0.d'] },
+    { v: '1.7.1', keys: ['news.1.7.1.a'] },
+    { v: '1.7.0', keys: ['news.1.7.0.a', 'news.1.7.0.b', 'news.1.7.0.c'] }
+  ];
+  // Is version a newer than version b? ("1.10.0" is newer than "1.9.0")
+  const newer = (a, b) => { const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0); return false; };
+
+  const api = { NEWS, newer, EX, CYCLE, BY, KUIH, KUIH_GROUPS, KUIH_BY, STARTERS, RULES, RULE_BY, computeStats, ruleProgress, festivalOn, ramadanOn, FESTIVAL_DAYS, dayKey };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.LapisData = api;
 })(typeof self !== 'undefined' ? self : this);

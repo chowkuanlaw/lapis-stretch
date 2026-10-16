@@ -13,7 +13,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. A ring around the kuih fills up as the next stretch gets closer. Closing the window keeps reminders running.
 - **Pause for a while.** Pause for 30 minutes, 1 or 2 hours, until tomorrow, or until you resume, from the tray, the widget or the sidebar.
 - **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Progress** (week chart, best day, streak, a month calendar, and water), **Stretches**, **Your kuih** and **Settings**.
-- **Quick setup on first launch.** Say hello, choose English or Bahasa Melayu, pick your kuih, choose how often, done.
+- **Quick setup on first launch.** Say hello, choose English or Bahasa Melayu, pick your kuih, choose how often, set your working day and water reminders, done.
 - **Working hours.** Reminds you only during your working days and hours (Monday to Friday, 9 to 6 by default) and skips lunch. Outside them Lapis rests, and the widget says when it's back.
 - **Quiet in meetings.** While an app is full screen or presenting, or Windows Do not disturb is on, reminders wait and come 2 minutes after you're done.
 - **Water reminders.** Every hour your kuih holds up a glass of water. Tap **Done, I drank** to count it toward your 8 glasses a day.
@@ -59,7 +59,7 @@ To stay quiet in meetings, Lapis asks Windows two things when a reminder is due:
 
 The only network traffic is the update check against this repository's GitHub releases: when Lapis starts, once a day, and when you click **Check now**. It sends nothing about you or your stretches, just the standard request any download makes. Turn off **Update automatically** in Settings and Lapis only goes online when you click **Check now**.
 
-**Reset my data** in Settings clears your history, collected kuih and badges from your PC (it asks you to click twice). Uninstalling Lapis leaves `state.json` behind; delete the `%APPDATA%\Lapis` folder to remove it.
+**Reset my data** in Settings clears your history, collected kuih and badges from your PC (it asks you to click twice). When you uninstall Lapis, it asks whether to remove your data too; choose No to keep it for a reinstall. It's all in the `%APPDATA%\Lapis` folder.
 
 See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
 
@@ -106,6 +106,7 @@ preload.js         the small bridge the windows use to talk to main.js
 renderer/          the UI: index.html, app.css, app.js, the mascot drawing, stretches and kuih (data.js), English and Malay text (i18n.js), fonts
 assets/            app and tray icons
 scripts/           portable build script, exe icon and Electron fuses
+installer/         the uninstaller's "also remove my data?" question
 test/              automatic tests, run with `npm test` and before every release
 package.json       app details, plus the installer settings under "build"
 ```

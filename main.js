@@ -12,10 +12,10 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
-const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn } = require('./renderer/data.js');
+const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn, NEWS, newer } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
 const QUIET = require('./quiet.js');
-const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState } = require('./state.js');
+const { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState, readStateFile, writeStateFile } = require('./state.js');
 
 const AUMID = 'app.lapis.stretch';
 const AWAY_SECS = 300;          // 5 min without keyboard/mouse = away from desk
@@ -51,7 +51,6 @@ function run() {
   Menu.setApplicationMenu(null);
 
   /* ---------- state ---------- */
-  const stateFile = () => path.join(app.getPath('userData'), 'state.json');
   let S = JSON.parse(JSON.stringify(DEFAULTS));
   const R = {
     mode: 'waiting', cur: null, activeEnd: 0, activeSecs: 0, switched: false, dueAt: 0, rechimes: 0, msgUntil: 0, awaySince: null,
@@ -68,9 +67,9 @@ function run() {
   const t = (key, vars) => I18N.t(S.lang, key, vars);
 
   function loadState() {
-    let saved = null;
-    try { saved = JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { saved = null; }
+    const { saved, from } = readStateFile(app.getPath('userData'));
     S = cleanState(saved);
+    if (from === 'state.bak.json') R.notices.push({ type: 'restored' }); // state.json was unreadable
     if (!saved || !I18N.LANGS.includes(saved.lang)) S.lang = /^ms/i.test(app.getLocale()) ? 'ms' : 'en';
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
     // Back within a few minutes (an update restart, or quit and reopen): carry on with the same countdown.
@@ -86,7 +85,11 @@ function run() {
     // "What's new" (1.8.0): once after each update. New users just start on this version.
     const v = app.getVersion();
     if (!S.onboarded || S.firstRun) S.seenVersion = v;
-    else if (S.seenVersion !== v) R.notices.push({ type: 'news', from: S.seenVersion || '1.6.2', v });
+    else if (S.seenVersion !== v) {
+      const from = S.seenVersion || '1.6.2';
+      if (NEWS.some(x => newer(x.v, from) && !newer(x.v, v))) R.notices.push({ type: 'news', from, v });
+      else S.seenVersion = v; // nothing new to list (a small fix release)
+    }
     applyTheme();
   }
   function applyTheme() { nativeTheme.themeSource = S.theme === 'auto' ? 'system' : S.theme; }
@@ -101,7 +104,7 @@ function run() {
     }
     if (popupWin && !popupWin.isDestroyed()) { if (popupWin.isVisible()) positionPopup(); else popupWin.setSize(popupW(), popupH); }
   }
-  function writeNow() { try { fs.writeFileSync(stateFile(), JSON.stringify(S)); } catch (e) { /* best effort */ } }
+  function writeNow() { writeStateFile(app.getPath('userData'), S); }
   function writeOnQuit() { clearTimeout(saveTimer); S.closedAt = Date.now(); writeNow(); }
   function save() { clearTimeout(saveTimer); saveTimer = setTimeout(writeNow, 300); }
 
@@ -612,7 +615,8 @@ function run() {
     });
     loadView(mainWin, 'main');
     mainWin.once('ready-to-show', () => { if (show) mainWin.show(); });
-    mainWin.on('close', e => { if (!quitting) { e.preventDefault(); mainWin.hide(); } });
+    // Closing the window unloads it (1.11.0) to save memory; reminders keep running in the tray.
+    mainWin.on('closed', () => { mainWin = null; });
   }
   function showMain() {
     if (!mainWin || mainWin.isDestroyed()) createMain(true);
@@ -749,7 +753,7 @@ function run() {
     if (img.isEmpty()) img = nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 });
     tray = new Tray(img);
     tray.setToolTip('Lapis');
-    tray.on('click', () => { if (mainWin && mainWin.isVisible() && mainWin.isFocused()) mainWin.hide(); else showMain(); });
+    tray.on('click', () => { if (mainWin && !mainWin.isDestroyed() && mainWin.isVisible() && mainWin.isFocused()) mainWin.close(); else showMain(); });
     tray.on('right-click', () => tray.popUpContextMenu(buildMenu()));
   }
   // The widget window draws the chosen kuih at tray sizes and sends PNGs here.
@@ -859,7 +863,7 @@ function run() {
     const startHidden = (process.argv.includes('--hidden') || resumeHidden) && !S.firstRun && S.onboarded; // the first-launch setup always shows
     createPopup();
     createWidget();
-    createMain(!startHidden);
+    if (!startHidden) createMain(true); // otherwise the window is only loaded when you open it
     createTray();
     if (S.firstRun) { S.firstRun = false; save(); }
     applyAutostart();

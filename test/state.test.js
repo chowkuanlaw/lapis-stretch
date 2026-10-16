@@ -72,3 +72,39 @@ test('people upgrading from 1.2 or earlier skip the welcome screen', () => {
   assert.equal(cleanState({ interval: 20 }).onboarded, true);
   assert.equal(cleanState({ onboarded: false }).onboarded, false);
 });
+
+// ---------- safe saving (1.11.0) ----------
+const fs = require('fs'), os = require('os'), path = require('path');
+const { readStateFile, writeStateFile } = require('../state.js');
+const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'lapis-test-'));
+
+test('saving writes a readable file and leaves no temporary file behind', () => {
+  const dir = tmpDir();
+  assert.equal(writeStateFile(dir, { goal: 9 }), true);
+  assert.deepEqual(readStateFile(dir), { saved: { goal: 9 }, from: 'state.json' });
+  assert.equal(fs.existsSync(path.join(dir, 'state.json.tmp')), false);
+});
+
+test('a broken state.json falls back to the backup', () => {
+  const dir = tmpDir();
+  writeStateFile(dir, { goal: 9 });
+  writeStateFile(dir, { goal: 10 }); // the first save of the day keeps the previous good file as the backup
+  fs.writeFileSync(path.join(dir, 'state.json'), '{"goal": 1'); // cut off mid-write
+  assert.deepEqual(readStateFile(dir), { saved: { goal: 9 }, from: 'state.bak.json' });
+});
+
+test('the backup is refreshed once a day, not on every save', () => {
+  const dir = tmpDir();
+  writeStateFile(dir, { v: 1 });
+  writeStateFile(dir, { v: 2 });
+  writeStateFile(dir, { v: 3 }); // same day: backup still holds v1
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'state.bak.json'), 'utf8')), { v: 1 });
+  const old = new Date(Date.now() - 2 * 864e5);
+  fs.utimesSync(path.join(dir, 'state.bak.json'), old, old);
+  writeStateFile(dir, { v: 4 }); // a new day: back up the last good file (v3)
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'state.bak.json'), 'utf8')), { v: 3 });
+});
+
+test('nothing saved and no backup gives nothing', () => {
+  assert.deepEqual(readStateFile(tmpDir()), { saved: null, from: null });
+});

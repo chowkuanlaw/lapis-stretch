@@ -26,6 +26,8 @@ if [ -z "$want" ] || [ "$want" != "$have" ]; then echo "Checksum mismatch for $Z
 echo "Assembling dist/Lapis..."
 rm -rf "$OUT" && mkdir -p "$OUT"
 unzip -q "$CACHE/$ZIP" -d "$OUT"
+# Lapis speaks English and Bahasa Melayu: drop Chromium's other ~50 interface languages (1.11.0).
+find "$OUT/locales" -name '*.pak' ! -name 'en-US.pak' ! -name 'ms.pak' -delete
 mv "$OUT/electron.exe" "$OUT/Lapis.exe"
 rm -f "$OUT/resources/default_app.asar"
 APP="$OUT/resources/app"

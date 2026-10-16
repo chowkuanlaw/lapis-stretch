@@ -4,7 +4,9 @@
  * Only known settings with the right types are kept; anything else falls back to the default.
  * Kept separate from main.js so the automatic tests can check it (test/state.test.js).
  */
-const { BY, KUIH_BY } = require('./renderer/data.js');
+const fs = require('fs');
+const path = require('path');
+const { BY, KUIH_BY, dayKey } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
 const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 
@@ -102,4 +104,34 @@ function cleanState(saved) {
   return out;
 }
 
-module.exports = { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState };
+/* ---------- safe saving (1.11.0) ----------
+   state.json is written to a temporary file first and then swapped in, so a power cut mid-save
+   can't leave a half-written file. Once a day the last good copy is kept as state.bak.json,
+   and if state.json can't be read, Lapis starts from that backup instead of from nothing. */
+const MAIN = 'state.json', BAK = 'state.bak.json', TMP = 'state.json.tmp';
+const parseFile = f => { const v = JSON.parse(fs.readFileSync(f, 'utf8')); return v && typeof v === 'object' && !Array.isArray(v) ? v : null; };
+function readStateFile(dir) {
+  for (const name of [MAIN, BAK]) {
+    try { const saved = parseFile(path.join(dir, name)); if (saved) return { saved, from: name }; } catch (e) { /* try the next one */ }
+  }
+  return { saved: null, from: null };
+}
+function writeStateFile(dir, state, now) {
+  const main = path.join(dir, MAIN), tmp = path.join(dir, TMP), bak = path.join(dir, BAK);
+  const today = dayKey(now ? new Date(now) : new Date());
+  try {
+    let bakDay = '';
+    try { bakDay = dayKey(fs.statSync(bak).mtime); } catch (e) { /* no backup yet */ }
+    if (bakDay !== today) {
+      try {
+        if (parseFile(main)) { fs.copyFileSync(main, bak); const t = new Date(); fs.utimesSync(bak, t, t); } // Windows keeps the old date on copies
+      } catch (e) { /* nothing good to back up */ }
+    }
+    const fd = fs.openSync(tmp, 'w');
+    try { fs.writeSync(fd, JSON.stringify(state)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+    try { fs.renameSync(tmp, main); } catch (e) { fs.writeFileSync(main, JSON.stringify(state)); try { fs.unlinkSync(tmp); } catch (e2) { /* ignore */ } }
+    return true;
+  } catch (e) { return false; }
+}
+
+module.exports = { DEFAULTS, WATER_EVERY, THEMES, CHIMES, TEXT_SIZES, cleanState, readStateFile, writeStateFile };

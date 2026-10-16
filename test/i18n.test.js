@@ -45,3 +45,15 @@ test('t() fills placeholders and falls back to English', () => {
   assert.equal(I.t('xx', 'water.title'), 'Water');
   assert.equal(I.t('ms', 'no.such.key'), 'no.such.key');
 });
+
+test("every What's new item has text in both languages, and versions are newest first", () => {
+  for (const x of D.NEWS) for (const k of x.keys) for (const lang of I.LANGS) assert.ok(I.STR[lang][k], lang + ' ' + k);
+  for (let i = 1; i < D.NEWS.length; i++) assert.ok(D.newer(D.NEWS[i - 1].v, D.NEWS[i].v), D.NEWS[i - 1].v + ' before ' + D.NEWS[i].v);
+  assert.equal(D.newer('1.10.0', '1.9.0'), true);
+  assert.equal(D.newer('1.9.0', '1.9.0'), false);
+});
+
+test("the current version has a What's new entry", () => {
+  const v = require('../package.json').version;
+  assert.ok(D.NEWS.some(x => x.v === v) || /\.\d*[1-9]$/.test(v), 'add NEWS items for ' + v + ' (patch releases may skip)');
+});
