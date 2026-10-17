@@ -1,15 +1,27 @@
 name: Store package
 
 # Builds the Microsoft Store package (Lapis-Store-<version>.appx) from this repository and keeps it
-# as a workflow artifact for uploading to Partner Center. Nothing is published or released.
-# The Store signs the package itself, so no certificate is involved.
-# The Partner Center identity (Product management > Product identity) is given when the run starts,
-# or kept as repository variables, so it never sits in the source code.
+# as a workflow artifact. The Store signs the package itself, so no certificate is involved.
+#
+# The Partner Center identity (Product management > Product identity) comes from repository
+# variables, or is typed in when the run is started by hand, so it never sits in the source code:
+#   STORE_IDENTITY_NAME, STORE_PUBLISHER, STORE_PUBLISHER_NAME, STORE_DISPLAY_NAME
+#
+# Sending it to the Store (optional) needs four repository secrets from a Partner Center
+# Microsoft Entra application with the Manager role:
+#   STORE_TENANT_ID, STORE_CLIENT_ID, STORE_CLIENT_SECRET, STORE_SELLER_ID
+# "draft" uploads the package into a new submission and stops, for a person to press Submit.
+# "submit" also submits it for certification. Microsoft still certifies every update.
 on:
   workflow_dispatch:
     inputs:
+      send:
+        description: Send to the Microsoft Store
+        type: choice
+        options: [none, draft, submit]
+        default: none
       identity_name:
-        description: Package/Identity/Name
+        description: Package/Identity/Name (leave empty to use the repository variable)
         required: false
       publisher:
         description: Package/Identity/Publisher (CN=...)
@@ -20,6 +32,20 @@ on:
       display_name:
         description: The reserved product name
         required: false
+  workflow_call:
+    inputs:
+      send:
+        type: string
+        default: none
+    secrets:
+      STORE_TENANT_ID:
+        required: false
+      STORE_CLIENT_ID:
+        required: false
+      STORE_CLIENT_SECRET:
+        required: false
+      STORE_SELLER_ID:
+        required: false
 
 permissions:
   contents: read
@@ -27,6 +53,11 @@ permissions:
 jobs:
   appx:
     runs-on: windows-2025
+    env:
+      ID_NAME: ${{ inputs.identity_name || vars.STORE_IDENTITY_NAME }}
+      ID_PUB: ${{ inputs.publisher || vars.STORE_PUBLISHER }}
+      ID_PUB_NAME: ${{ inputs.publisher_name || vars.STORE_PUBLISHER_NAME }}
+      ID_DISPLAY: ${{ inputs.display_name || vars.STORE_DISPLAY_NAME }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -39,19 +70,11 @@ jobs:
       - name: Automatic tests
         run: node --test test/*.test.js
       - name: Fill in the Partner Center identity
-        env:
-          ID_NAME: ${{ inputs.identity_name || vars.STORE_IDENTITY_NAME }}
-          ID_PUB: ${{ inputs.publisher || vars.STORE_PUBLISHER }}
-          ID_PUB_NAME: ${{ inputs.publisher_name || vars.STORE_PUBLISHER_NAME }}
-          ID_DISPLAY: ${{ inputs.display_name || vars.STORE_DISPLAY_NAME }}
         run: node scripts/store-identity.js
       - name: Build the Store package
         run: npx electron-builder --win appx --x64 --publish never
       - name: Check the package contents
         shell: pwsh
-        env:
-          ID_NAME: ${{ inputs.identity_name || vars.STORE_IDENTITY_NAME }}
-          ID_PUB: ${{ inputs.publisher || vars.STORE_PUBLISHER }}
         run: |
           $p = Get-ChildItem dist/installer/Lapis-Store-*.appx | Select-Object -First 1
           if (-not $p) { throw "no .appx was built" }
@@ -75,3 +98,52 @@ jobs:
           path: dist/installer/Lapis-Store-*.appx
           if-no-files-found: error
           retention-days: 30
+
+      # ---- Optional: send the package to the Microsoft Store ----
+      - name: Check the Partner Center key is set up
+        if: inputs.send == 'draft' || inputs.send == 'submit'
+        shell: pwsh
+        env:
+          T: ${{ secrets.STORE_TENANT_ID }}
+          C: ${{ secrets.STORE_CLIENT_ID }}
+          CS: ${{ secrets.STORE_CLIENT_SECRET }}
+          S: ${{ secrets.STORE_SELLER_ID }}
+        run: |
+          $missing = @()
+          if (-not $env:T) { $missing += 'STORE_TENANT_ID' }
+          if (-not $env:C) { $missing += 'STORE_CLIENT_ID' }
+          if (-not $env:CS) { $missing += 'STORE_CLIENT_SECRET' }
+          if (-not $env:S) { $missing += 'STORE_SELLER_ID' }
+          if ($missing.Count) { throw "Add these repository secrets first: $($missing -join ', ')" }
+      - name: Install the Microsoft Store Developer CLI
+        if: inputs.send == 'draft' || inputs.send == 'submit'
+        uses: microsoft/microsoft-store-apppublisher@cc9910a8d59f2eb55cbb83df0a3800cf3b5300e0 # v1.4
+        with:
+          version: v0.4.3
+      - name: Send to the Microsoft Store (${{ inputs.send }})
+        if: inputs.send == 'draft' || inputs.send == 'submit'
+        shell: pwsh
+        env:
+          T: ${{ secrets.STORE_TENANT_ID }}
+          C: ${{ secrets.STORE_CLIENT_ID }}
+          CS: ${{ secrets.STORE_CLIENT_SECRET }}
+          S: ${{ secrets.STORE_SELLER_ID }}
+          PRODUCT_ID: ${{ vars.STORE_PRODUCT_ID || '9NWMHW1373T4' }}
+          SEND: ${{ inputs.send }}
+        run: |
+          msstore reconfigure --tenantId $env:T --sellerId $env:S --clientId $env:C --clientSecret $env:CS
+          if ($LASTEXITCODE) { throw "Partner Center sign-in failed. If the key has expired, add a new one and update STORE_CLIENT_SECRET." }
+          # The CLI takes .msix files; .appx is the same package format, so the upload copy is renamed.
+          $p = Get-ChildItem dist/installer/Lapis-Store-*.appx | Select-Object -First 1
+          New-Item -ItemType Directory -Force store-upload | Out-Null
+          $msix = Join-Path (Resolve-Path store-upload) ($p.BaseName + '.msix')
+          Copy-Item $p.FullName $msix
+          $a = @('publish', $msix, '-id', $env:PRODUCT_ID, '--priceId', 'Free')
+          if ($env:SEND -eq 'draft') { $a += '--noCommit' }
+          & msstore @a
+          if ($LASTEXITCODE) { throw "The Store upload failed; see the messages above." }
+          if ($env:SEND -eq 'draft') {
+            Write-Host "Uploaded as a draft. Open Partner Center > Apps and games > Lapis Stretch to review and press Submit."
+          } else {
+            Write-Host "Submitted for certification. Microsoft emails the account owner when it's live."
+          }

@@ -140,3 +140,19 @@ jobs:
             echo '```'
           } > notes.md
           gh release create "$TAG" out/* --target "$GITHUB_SHA" --title "Lapis ${TAG#v}" --notes-file notes.md
+
+  # Optional: send the same version to the Microsoft Store. Off unless the repository variable
+  # STORE_AUTO_SEND is "draft" (upload and wait for a person to press Submit) or "submit".
+  store:
+    needs: publish
+    if: vars.STORE_AUTO_SEND == 'draft' || vars.STORE_AUTO_SEND == 'submit'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/store.yml
+    with:
+      send: ${{ vars.STORE_AUTO_SEND }}
+    secrets:
+      STORE_TENANT_ID: ${{ secrets.STORE_TENANT_ID }}
+      STORE_CLIENT_ID: ${{ secrets.STORE_CLIENT_ID }}
+      STORE_CLIENT_SECRET: ${{ secrets.STORE_CLIENT_SECRET }}
+      STORE_SELLER_ID: ${{ secrets.STORE_SELLER_ID }}
