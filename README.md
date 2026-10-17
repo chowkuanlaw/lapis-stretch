@@ -102,6 +102,14 @@ Releases are built by GitHub Actions (`.github/workflows/release.yml`) from the 
 
 The workflow refuses to run if the tag doesn't match `package.json` or if any automatic test fails. It builds the installer on Windows and the portable zip on Linux, then publishes both. Installed copies of Lapis pick up the new release on their next check.
 
+**Microsoft Store.** `.github/workflows/store.yml` builds the Store package (`.appx`), which Microsoft signs on upload. The Partner Center identity is kept in repository variables (`STORE_IDENTITY_NAME`, `STORE_PUBLISHER`, `STORE_PUBLISHER_NAME`, `STORE_DISPLAY_NAME`), not in the code. Set the variable `STORE_AUTO_SEND` to have each release also:
+
+- `build`: build the Store package, for uploading by hand in Partner Center
+- `draft`: upload it as a draft submission, for someone to review and press Submit
+- `submit`: upload it and submit it for certification
+
+`draft` and `submit` use the Microsoft Store Developer CLI with a Partner Center Microsoft Entra application (Manager role), whose details live only in repository secrets: `STORE_TENANT_ID`, `STORE_CLIENT_ID`, `STORE_CLIENT_SECRET`, `STORE_SELLER_ID`. Microsoft certifies every update before it reaches users.
+
 ## Project layout
 
 ```
