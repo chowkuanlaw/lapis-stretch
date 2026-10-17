@@ -3,8 +3,23 @@ name: Store package
 # Builds the Microsoft Store package (Lapis-Store-<version>.appx) from this repository and keeps it
 # as a workflow artifact for uploading to Partner Center. Nothing is published or released.
 # The Store signs the package itself, so no certificate is involved.
+# The Partner Center identity (Product management > Product identity) is given when the run starts,
+# or kept as repository variables, so it never sits in the source code.
 on:
   workflow_dispatch:
+    inputs:
+      identity_name:
+        description: Package/Identity/Name
+        required: false
+      publisher:
+        description: Package/Identity/Publisher (CN=...)
+        required: false
+      publisher_name:
+        description: Package/Properties/PublisherDisplayName
+        required: false
+      display_name:
+        description: The reserved product name
+        required: false
 
 permissions:
   contents: read
@@ -23,17 +38,32 @@ jobs:
       - run: npm ci
       - name: Automatic tests
         run: node --test test/*.test.js
+      - name: Fill in the Partner Center identity
+        env:
+          ID_NAME: ${{ inputs.identity_name || vars.STORE_IDENTITY_NAME }}
+          ID_PUB: ${{ inputs.publisher || vars.STORE_PUBLISHER }}
+          ID_PUB_NAME: ${{ inputs.publisher_name || vars.STORE_PUBLISHER_NAME }}
+          ID_DISPLAY: ${{ inputs.display_name || vars.STORE_DISPLAY_NAME }}
+        run: node scripts/store-identity.js
       - name: Build the Store package
         run: npx electron-builder --win appx --x64 --publish never
       - name: Check the package contents
         shell: pwsh
+        env:
+          ID_NAME: ${{ inputs.identity_name || vars.STORE_IDENTITY_NAME }}
+          ID_PUB: ${{ inputs.publisher || vars.STORE_PUBLISHER }}
         run: |
           $p = Get-ChildItem dist/installer/Lapis-Store-*.appx | Select-Object -First 1
           if (-not $p) { throw "no .appx was built" }
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $z = [IO.Compression.ZipFile]::OpenRead($p.FullName)
           $names = $z.Entries.FullName
+          $r = New-Object IO.StreamReader(($z.Entries | Where-Object FullName -eq 'AppxManifest.xml').Open())
+          [xml]$m = $r.ReadToEnd(); $r.Dispose()
           $z.Dispose()
+          if ($m.Package.Identity.Name -ne $env:ID_NAME.Trim()) { throw "identity name in the manifest doesn't match" }
+          if ($m.Package.Identity.Publisher -ne $env:ID_PUB.Trim()) { throw "publisher in the manifest doesn't match" }
+          Write-Host "Identity: $($m.Package.Identity.Name) $($m.Package.Identity.Version)"
           foreach ($want in @('AppxManifest.xml', 'app/Lapis.exe', 'app/resources/app.asar', 'assets/StoreLogo.png')) {
             if (-not ($names -contains $want)) { throw "missing $want" }
           }
