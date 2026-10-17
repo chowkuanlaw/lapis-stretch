@@ -61,7 +61,7 @@ The only network traffic is the update check against this repository's GitHub re
 
 **Reset my data** in Settings clears your history, collected kuih and badges from your PC, including the daily backup copy (it asks you to click twice). When you uninstall Lapis, it asks whether to remove your data too; choose No to keep it for a reinstall. It's all in the `%APPDATA%\Lapis` folder.
 
-See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
+The full privacy policy is in [PRIVACY.md](PRIVACY.md). See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
 
 ## Build from source
 
