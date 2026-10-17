@@ -146,6 +146,7 @@
     'news.1.10.0.b': 'A new way to unlock: reach your water goal on 5 days for Apam Balik.',
     // 1.11.0
     'ob.day': 'Your working day', 'ob.dayText': 'Lapis only reminds you during your working hours and skips lunch. It can also nudge you to drink water. You can change all of this later in Settings.',
+    'set.storeUpd': 'Installed from the Microsoft Store, which keeps Lapis up to date.', 'set.storeStart': 'Lapis starts with Windows. To change this, open Windows Settings, then Apps, then Startup.',
     'stab.reminders': 'Reminders', 'stab.health': 'Health', 'stab.display': 'Display', 'stab.about': 'About', 'set.ramadanH': 'Ramadan',
     'news.1.11.0.a': 'Settings now has four tabs: Reminders, Health, Display and About.',
     'news.1.11.0.b': 'Safer saving: Lapis keeps a daily backup of your progress and restores it if anything goes wrong.',
@@ -295,6 +296,7 @@
     'news.1.10.0.b': 'Cara baharu untuk membuka: capai sasaran air pada 5 hari untuk Apam Balik.',
     // 1.11.0
     'ob.day': 'Hari kerja anda', 'ob.dayText': 'Lapis hanya mengingatkan anda dalam waktu kerja dan melangkau waktu makan tengah hari. Ia juga boleh mengingatkan anda minum air. Semua ini boleh ditukar kemudian dalam Tetapan.',
+    'set.storeUpd': 'Dipasang dari Microsoft Store, yang memastikan Lapis sentiasa terkini.', 'set.storeStart': 'Lapis bermula bersama Windows. Untuk menukarnya, buka Tetapan Windows, kemudian Apl, kemudian Permulaan.',
     'stab.reminders': 'Peringatan', 'stab.health': 'Kesihatan', 'stab.display': 'Paparan', 'stab.about': 'Perihal', 'set.ramadanH': 'Ramadan',
     'news.1.11.0.a': 'Tetapan kini ada empat tab: Peringatan, Kesihatan, Paparan dan Perihal.',
     'news.1.11.0.b': 'Simpanan lebih selamat: Lapis menyimpan sandaran harian kemajuan anda dan memulihkannya jika berlaku masalah.',

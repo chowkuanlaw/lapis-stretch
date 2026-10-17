@@ -11,6 +11,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, screen, Notification, nativeIma
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 const { pathToFileURL } = require('url');
 const { CYCLE, BY, KUIH_BY, STARTERS, RULES, computeStats, ruleProgress, ramadanOn, NEWS, newer } = require('./renderer/data.js');
 const I18N = require('./renderer/i18n.js');
@@ -37,6 +38,9 @@ const CODE_HASH = '236baef63139445e4254071641f6555ecb509cfa7fe905a4e8955812e7b71
 const CODE2_HASH = '79003147ddebca62535fbb1a7ad83d015c54f5f1d3b6a5a78d8a473d111ca984';
 const CODE3_HASH = 'b2b506c1bc85f6c8b9c9137ce42e7cdf29f1f7f09a74c93b907eae9925184d52';
 const GOLD_CHANCE = 1 / 200;
+// Microsoft Store copy (1.12.0): the Store installs updates and starts Lapis at sign-in, so Lapis never
+// checks for updates itself and makes no network requests at all.
+const STORE = process.windowsStore === true || (!require('electron').app.isPackaged && !!process.env.LAPIS_TEST_STORE);
 const MEETING_RECHECK = 60e3, AFTER_MEETING = 120e3, WATER_LATER = 15 * 60e3;
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true } }]);
 
@@ -47,7 +51,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function run() {
-  app.setAppUserModelId(AUMID);
+  if (!STORE) app.setAppUserModelId(AUMID); // a Store app already has its own identity
   Menu.setApplicationMenu(null);
 
   /* ---------- state ---------- */
@@ -292,7 +296,7 @@ function run() {
       mood: R.skips >= 3 ? 'sad' : R.snoozed ? 'drowsy' : today().total >= S.goal ? 'proud' : '',
       codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
       eggMsg: Date.now() < eggMsgUntil,
-      version: app.getVersion(), installed: INSTALLED, update: R.update, updateMsg: R.updateMsg, checking: R.checking
+      version: app.getVersion(), installed: INSTALLED, store: STORE, update: R.update, updateMsg: R.updateMsg, checking: R.checking
     });
   }
   function broadcast() {
@@ -412,7 +416,7 @@ function run() {
   // Installed copies (from Lapis-Setup.exe) update themselves with electron-updater:
   // check, download in the background, then "Restart to update" (or install on quit).
   // The portable zip can't replace itself, so it only checks and offers a Download link.
-  const INSTALLED = app.isPackaged && fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'));
+  const INSTALLED = app.isPackaged && !STORE && fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'));
   const msg = (k, v) => ({ k, v: v || {} });
   let autoUpdater = null, readyNotified = false;
   if (INSTALLED) {
@@ -448,6 +452,7 @@ function run() {
     return false;
   }
   async function checkForUpdate(manual) {
+    if (STORE) return; // the Microsoft Store handles updates
     if (R.checking) return;
     if (R.update && (R.update.state === 'downloading' || R.update.state === 'ready')) { if (manual) broadcast(); return; }
     R.checking = true; if (manual) R.updateMsg = msg('upd.checking');
@@ -581,7 +586,7 @@ function run() {
 
     const dk = dayKey(new Date());
     if (dk !== lastDay) { lastDay = dk; broadcast(); }
-    if (S.autoUpdate && !R.checking && now - (S.lastUpdateCheck || 0) > UPDATE_EVERY) checkForUpdate(false);
+    if (S.autoUpdate && !STORE && !R.checking && now - (S.lastUpdateCheck || 0) > UPDATE_EVERY) checkForUpdate(false);
     if (tray) tray.setToolTip(`Lapis · ${statusLabel()}`);
   }
 
@@ -778,10 +783,12 @@ function run() {
 
   /* ---------- Windows integration ---------- */
   function applyAutostart() {
+    if (STORE) return; // the Store copy starts with Windows through its startup task (Windows Settings > Apps > Startup)
     if (!app.isPackaged) return;
     try { app.setLoginItemSettings({ openAtLogin: S.autostart, path: process.execPath, args: ['--hidden'] }); } catch (e) { /* ignore */ }
   }
   function ensureStartMenuShortcut() {
+    if (STORE) return;
     // A Start Menu shortcut carrying the AppUserModelID is what lets Windows show toast notifications.
     if (process.platform !== 'win32' || !app.isPackaged || INSTALLED) return; // the installer makes its own
     try {
@@ -866,7 +873,9 @@ function run() {
     loadState();
     // Development only (never in the installed app): show a corner notice on start, for testing.
     if (!app.isPackaged && process.env.LAPIS_TEST_NOTICE) { try { R.notices.push(JSON.parse(process.env.LAPIS_TEST_NOTICE)); } catch (e) { /* ignore */ } }
-    const startHidden = (process.argv.includes('--hidden') || resumeHidden) && !S.firstRun && S.onboarded; // the first-launch setup always shows
+    // The Store's startup task can't pass --hidden, so a Store copy opening in the first minutes after Windows starts goes to the tray.
+    const atSignIn = process.argv.includes('--hidden') || (STORE && os.uptime() < 240);
+    const startHidden = (atSignIn || resumeHidden) && !S.firstRun && S.onboarded; // the first-launch setup always shows
     createPopup();
     createWidget();
     if (!startHidden) createMain(true); // otherwise the window is only loaded when you open it
@@ -880,6 +889,6 @@ function run() {
     screen.on('display-removed', () => { if (widgetWin && !onSomeDisplay(S.widgetPos)) { S.widgetPos = null; const wa = screen.getPrimaryDisplay().workArea; widgetWin.setPosition(wa.x + wa.width - WIDGET_W - 12, wa.y + 12); } });
     setInterval(tick, 1000);
     broadcast();
-    if (S.autoUpdate) setTimeout(() => checkForUpdate(false), 8000); // check shortly after launch
+    if (S.autoUpdate && !STORE) setTimeout(() => checkForUpdate(false), 8000); // check shortly after launch
   });
 }

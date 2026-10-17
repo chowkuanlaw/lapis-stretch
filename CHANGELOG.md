@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.3 (2026-10-17)
+
+- Groundwork for a Microsoft Store version. A copy installed from the Store gets its updates from the Store and starts with Windows through Windows' own Startup settings, so it never checks GitHub for updates and makes no internet connections at all. Nothing changes for the regular download.
+
 ## 1.11.2 (2026-10-17)
 
 Security and privacy review of everything added since 1.5.1.

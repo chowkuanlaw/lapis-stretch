@@ -1,0 +1,47 @@
+name: Store package
+
+# Builds the Microsoft Store package (Lapis-Store-<version>.appx) from this repository and keeps it
+# as a workflow artifact for uploading to Partner Center. Nothing is published or released.
+# The Store signs the package itself, so no certificate is involved.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  appx:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Automatic tests
+        run: node --test test/*.test.js
+      - name: Build the Store package
+        run: npx electron-builder --win appx --x64 --publish never
+      - name: Check the package contents
+        shell: pwsh
+        run: |
+          $p = Get-ChildItem dist/installer/Lapis-Store-*.appx | Select-Object -First 1
+          if (-not $p) { throw "no .appx was built" }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $z = [IO.Compression.ZipFile]::OpenRead($p.FullName)
+          $names = $z.Entries.FullName
+          $z.Dispose()
+          foreach ($want in @('AppxManifest.xml', 'app/Lapis.exe', 'app/resources/app.asar', 'assets/StoreLogo.png')) {
+            if (-not ($names -contains $want)) { throw "missing $want" }
+          }
+          if ($names -match 'app-update.yml') { throw "the Store package must not contain the self-updater settings" }
+          Write-Host "$($p.Name): $([math]::Round($p.Length / 1MB, 1)) MB, $($names.Count) files"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: store-package
+          path: dist/installer/Lapis-Store-*.appx
+          if-no-files-found: error
+          retention-days: 30

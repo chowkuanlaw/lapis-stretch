@@ -383,6 +383,7 @@
                 <div class="set"><div class="lbl">${T('set.textSize')}</div><div class="seg" role="group" aria-label="${esc(T('set.textSize'))}">${['normal', 'large', 'larger'].map(m => `<button type="button" data-set="textSize" data-sval="${m}">${T('text.' + m)}</button>`).join('')}</div></div>
                 <div class="set"><div class="lbl">${T('set.theme')}</div><div class="seg" role="group" aria-label="${esc(T('set.theme'))}">${['auto', 'light', 'dark'].map(m => `<button type="button" data-set="theme" data-sval="${m}">${T('theme.' + m)}</button>`).join('')}</div></div>
                 ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('widgetHideFull', T('set.hideFull'), T('set.hideFullSub'))}${switchRow('trayRing', T('set.trayRing'), T('set.trayRingSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
+                <div class="set store-start" hidden><div class="lbl">${T('set.autostart')}<small>${T('set.storeStart')}</small></div></div>
               </section>
               <section class="panel settings"><h2>${T('set.collect')}</h2>
                 ${switchRow('collect', T('set.collectOn'), T('set.collectOnSub'))}
@@ -698,7 +699,11 @@
     $('#resetMsg').textContent = st.resetDone ? T('set.resetDone') : T('set.resetSub');
     $('#resetMsg').classList.toggle('ok', !!st.resetDone);
     $('#version').textContent = st.version || '';
-    $('#updateMsg').textContent = st.updateMsg ? T(st.updateMsg.k, st.updateMsg.v) : (st.autoUpdate ? T('set.checksAuto') : T('set.checksManual'));
+    $('#updateMsg').textContent = st.store ? T('set.storeUpd') : st.updateMsg ? T(st.updateMsg.k, st.updateMsg.v) : (st.autoUpdate ? T('set.checksAuto') : T('set.checksManual'));
+    // Microsoft Store copy (1.12.0): the Store handles updates and starting with Windows
+    $('#checkBtn').hidden = !!st.store;
+    document.querySelectorAll('.switch[data-set="autoUpdate"], .switch[data-set="autostart"]').forEach(b => { b.closest('.set').hidden = !!st.store; });
+    document.querySelectorAll('.store-start').forEach(el => { el.hidden = !st.store; });
     $('#checkBtn').disabled = !!st.checking || !!(st.update && st.update.state !== 'available');
     renderUpdateBar();
     renderOnboarding();

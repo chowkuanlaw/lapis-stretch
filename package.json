@@ -1,7 +1,7 @@
 {
   "name": "lapis",
   "productName": "Lapis",
-  "version": "1.11.2",
+  "version": "1.11.3",
   "description": "Lapis stretch reminder: desk stretch nudges with a desktop widget and pop-up reminders",
   "main": "main.js",
   "license": "MIT",
@@ -31,7 +31,8 @@
     "electronLanguages": ["en-US", "ms"],
     "copyright": "Copyright (c) 2026 chowkuanlaw",
     "directories": {
-      "output": "dist/installer"
+      "output": "dist/installer",
+      "buildResources": "installer"
     },
     "files": [
       "main.js",
@@ -65,6 +66,17 @@
       ],
       "icon": "assets/icon.ico",
       "executableName": "Lapis"
+    },
+    "appx": {
+      "identityName": "PLACEHOLDER.Lapis",
+      "publisher": "CN=00000000-0000-0000-0000-000000000000",
+      "publisherDisplayName": "PLACEHOLDER",
+      "applicationId": "Lapis",
+      "displayName": "Lapis",
+      "backgroundColor": "#F2F5EE",
+      "languages": ["en-US", "ms-MY"],
+      "addAutoLaunchExtension": true,
+      "artifactName": "Lapis-Store-${version}.${ext}"
     },
     "nsis": {
       "oneClick": true,
