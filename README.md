@@ -2,7 +2,9 @@
 
 [![Latest release](https://img.shields.io/github/v/release/chowkuanlaw/lapis-stretch?label=download)](https://github.com/chowkuanlaw/lapis-stretch/releases/latest) [![Release build](https://github.com/chowkuanlaw/lapis-stretch/actions/workflows/release.yml/badge.svg)](https://github.com/chowkuanlaw/lapis-stretch/actions/workflows/release.yml) [![MIT licence](https://img.shields.io/badge/licence-MIT-2A7F4F)](LICENSE) ![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-C92A62)
 
-A small Windows desktop app that reminds you to stretch while you work. Every 20 minutes, Lapis (a kuih lapis with arms and legs, or any of 19 other Malaysian kuih you pick) pops up in the corner of your screen with one quick desk stretch, a timer, and a tally of how many you've done today.
+A small Windows desktop app that reminds you to stretch while you work. Every 20 minutes, Lapis (a kuih lapis with arms and legs, or any of 27 other Malaysian kuih you pick) pops up in the corner of your screen with one quick desk stretch, a timer, and a tally of how many you've done today.
+
+<a href="https://apps.microsoft.com/detail/9nwmhw1373t4?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft"/></a>
 
 ![The Lapis desktop widget and pop-up reminder](docs/widget-and-reminder.png)
 
@@ -39,6 +41,10 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 ![The 28 kuih you can choose from](docs/kuih-friends.png)
 
 ## Install
+
+**Easiest: get [Lapis Stretch from the Microsoft Store](https://apps.microsoft.com/detail/9nwmhw1373t4).** It's free, signed by Microsoft (so no "Windows protected your PC" warning), updates through the Store, and starts with Windows (you can turn that off in Windows **Settings → Apps → Startup**). The Store copy never connects to the internet.
+
+**Or install from GitHub:**
 
 1. Download **`Lapis-Setup-<version>.exe`** from the [latest release](../../releases/latest).
 2. Run it. Lapis installs just for you (no admin rights needed), adds itself to the Start menu and opens.
