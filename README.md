@@ -22,7 +22,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Daily goal and Friday summary.** Aim for 8 stretches a day, and get a look back at your week before you head home on Friday.
 - **Streak saver.** One missed working day a week doesn't break your streak.
 - **Kuih moods.** Your kuih looks proud at your goal, sleepy after a snooze, and a little sad after a few skips.
-- **Balik kerja wrap-up.** When your working hours end, your kuih waves goodbye with your stretches, glasses and streak for the day.
+- **Balik rumah wrap-up.** When your working hours end, your kuih waves goodbye with your stretches, glasses and streak for the day.
 - **Month calendar.** Progress shows each month as a calendar, shaded by how close each day got to your stretch or water goal.
 - **Ramadan mode.** During the fasting month, water reminders pause and the walkaround (which ends with a drink) is left out until Raya.
 - **Collect the kuih.** Start with four kuih and meet the other 24 as you stretch, from your first 5 stretches to a 1,000-stretch milestone.
