@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased (planned as 1.12.0)
+
+Fixes from testing, collected for the next release.
+
+- **Malay:** the end-of-day goodbye now says "Balik rumah!" (time to go home) instead of "Balik kerja!", which could read as "back to work".
+
 ## 1.11.3 (2026-10-17)
 
 - Groundwork for a Microsoft Store version. A copy installed from the Store gets its updates from the Store and starts with Windows through Windows' own Startup settings, so it never checks GitHub for updates and makes no internet connections at all. Nothing changes for the regular download.
