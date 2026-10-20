@@ -4,6 +4,7 @@
 
 Fixes from testing, collected for the next release.
 
+- **Welcome screen:** the language, kuih and settings choices on the first-launch welcome screen can be clicked again. They had stopped responding, so every new user started with the defaults. A new automatic test guards against this coming back.
 - **Malay:** the end-of-day goodbye now says "Balik rumah!" (time to go home) instead of "Balik kerja!", which could read as "back to work".
 
 ## 1.11.3 (2026-10-17)

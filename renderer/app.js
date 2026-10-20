@@ -152,7 +152,7 @@
     if (a) { api.act(a.dataset.act); return; }
     const x = e.target.closest('[data-ex]');
     if (x) { api.act('now', { ex: x.dataset.ex }); if (view === 'main') setPage('today'); return; }
-    const sp = e.target.closest('[data-step]');
+    const sp = e.target.closest('button[data-step][data-d]');
     if (sp) { api.act('set', { key: sp.dataset.step, value: (st[sp.dataset.step] || 0) + Number(sp.dataset.d) }); return; }
     const rd = e.target.closest('[data-redeem]');
     if (rd) { redeemFrom(rd.dataset.redeem); return; }
@@ -410,18 +410,18 @@
     <div class="onboard" id="onboard" role="dialog" aria-modal="true" aria-labelledby="obTitle0" hidden>
       <div class="ob-card">
         <div class="ob-steps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="ob-body ob-center" data-step="0">
+        <div class="ob-body ob-center" data-obstep="0">
           <div class="ob-hero" id="obWave"></div>
           <h2 id="obTitle0">${T('ob.hi')}</h2>
           <p>${T('ob.hiText')}</p>
           ${langSeg()}
         </div>
-        <div class="ob-body" data-step="1" hidden>
+        <div class="ob-body" data-obstep="1" hidden>
           <h2>${T('ob.who')}</h2>
           <p>${st.collect && !st.codeUnlocked ? T('ob.whoCollect', { more: KUIH.length - STARTERS.length }) : T('ob.whoText')}</p>
           ${obKuih()}
         </div>
-        <div class="ob-body" data-step="2" hidden>
+        <div class="ob-body" data-obstep="2" hidden>
           <h2>${T('ob.often')}</h2>
           <p>${T('ob.oftenText')}</p>
           <div class="panel settings ob-settings">
@@ -430,7 +430,7 @@
             ${switchRow('widget', T('set.widget'), T('set.widgetSub'), 'ob-')}
           </div>
         </div>
-        <div class="ob-body" data-step="3" hidden>
+        <div class="ob-body" data-obstep="3" hidden>
           <h2>${T('ob.day')}</h2>
           <p>${T('ob.dayText')}</p>
           <div class="panel settings ob-settings">
@@ -440,7 +440,7 @@
             ${switchRow('waterOn', T('set.waterOn'), T('set.waterOnSub'), 'ob-')}
           </div>
         </div>
-        <div class="ob-body ob-center" data-step="4" hidden>
+        <div class="ob-body ob-center" data-obstep="4" hidden>
           <div class="ob-hero" id="obCheer"></div>
           <h2 id="obDoneTitle"></h2>
           <p>${T('ob.doneText')}</p>
@@ -637,7 +637,7 @@
     const show = st.onboarded === false || obForce;
     $('#onboard').hidden = !show;
     if (!show) return;
-    document.querySelectorAll('.ob-body').forEach(b => { b.hidden = +b.dataset.step !== obStep; });
+    document.querySelectorAll('.ob-body').forEach(b => { b.hidden = +b.dataset.obstep !== obStep; });
     document.querySelectorAll('.ob-steps i').forEach((d, i) => d.classList.toggle('on', i <= obStep));
     $('#obBack').hidden = obStep === 0;
     $('#obSkip').hidden = obStep === 4;
