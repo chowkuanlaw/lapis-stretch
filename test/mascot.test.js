@@ -31,3 +31,23 @@ test('unknown kuih or pose fall back safely', () => {
   assert.ok(W.lapisSVG('nope', '', false, 'pizza').includes('Kuih Lapis'));
   assert.ok(W.lapisBodySVG('pizza').startsWith('<svg'));
 });
+
+test('1.12.0: the animated stretches draw cleanly at every moment, for every kuih', () => {
+  const MOVING = ['shoulders', 'reach', 'walk', 'eyes'];
+  for (const id of MOVING) {
+    assert.ok(D.EX.some(e => e.id === id), id + ' is a real stretch');
+    const mv = W.lapisMove(id);
+    assert.ok(mv && mv.period > 0, id + ' has a loop');
+    for (let t = 0; t <= mv.period * 2; t += mv.period / 13) {
+      const p = mv.at(t);
+      assert.equal(p.arms.length, 2); assert.equal(p.legs.length, 2);
+      for (const k of W.LAPIS_KUIH) {
+        const svg = W.lapisSVG(p, '', false, k.id);
+        assert.ok(!/undefined|NaN/.test(svg), `${id} at ${t.toFixed(2)}s, ${k.id}`);
+      }
+    }
+  }
+  // a kuih has no neck, spine or wrists, so these stay as still pictures with text
+  for (const id of ['chin', 'neck', 'thoracic', 'twist', 'wrist']) assert.equal(W.lapisMove(id), null, id + ' is not animated');
+  assert.equal(W.lapisMove('constructor'), null);
+});

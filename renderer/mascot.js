@@ -459,9 +459,53 @@
   const SPARKLES = sparkle(10, 20, 8) + sparkle(114, 70, 7) + sparkle(18, 96, 5) + sparkle(104, 8, 5);
   window.lapisSVG = function (pose, label, bob, skin, outfit, golden) {
     const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid], id = ++uid;
-    const p0 = POSES[pose] || POSES.idle, p = typeof p0 === 'function' ? p0(K) : p0;
+    // a pose is a name from POSES, or (1.12.0) a frame from lapisMove() below
+    const p0 = pose && typeof pose === 'object' ? pose : Object.prototype.hasOwnProperty.call(POSES, pose) ? POSES[pose] : POSES.idle;
+    const p = typeof p0 === 'function' ? p0(K) : p0;
     const o = Object.prototype.hasOwnProperty.call(OUTFITS, outfit) ? outfit : null;
     const g = !!golden;
     return `<svg class="lapis${g ? ' golden' : ''}" viewBox="-8 -${o ? 30 : 14} 136 ${o ? 182 : 166}" role="img" aria-label="${label || K.name}">${g ? GOLD(id) : ''}<g class="${bob ? 'bob' : ''}"><g class="stk">${figure(p, true, id, K, sid, o)}</g><g>${figure(p, false, id, K, sid, o, g)}</g></g>${g ? `<g class="sparkles">${SPARKLES}</g>` : ''}</svg>`;
+  };
+
+  /* ---------- 1.12.0: the kuih acts out the stretch ----------
+     Only stretches a kuih body can show honestly are animated (no neck, spine or wrists to show
+     chin tucks, neck, thoracic, twist or wrist stretches). Each is a loop of key poses; frames
+     in between are eased. lapisMove(id) gives { period, at(seconds) } or null. */
+  const IL = IDLE_ARMS[0], IR = IDLE_ARMS[1], LL = IDLE_LEGS[0], LR = IDLE_LEGS[1];
+  const UPL = [[33, 58], [28, 30], [38, 4]], UPR = [[87, 58], [92, 30], [82, 4]];
+  const key = (t, o) => Object.assign({ t, L: IL, R: IR, legs: [LL, LR], tx: 0, ty: 0, rot: 0, s: 1, face: '', extra: '' }, o || {});
+  const EYE_LINE = '<path class="fx dash" d="M100 44 L126 34"/>', EYE_ARM = [[87, 60], [98, 50], [80, 38]];
+  const MOVES = {
+    shoulders: { period: 2.6, keys: [key(0),
+      key(0.7, { ty: -7, L: [[33, 60], [22, 71], [21, 84]], R: [[87, 60], [98, 71], [99, 84]] }),
+      key(1.3, { ty: -4, s: 0.965, L: [[33, 60], [17, 72], [19, 86]], R: [[87, 60], [103, 72], [101, 86]] }),
+      key(1.9, { ty: 2 }), key(2.6)] },
+    reach: { period: 6.6, keys: [key(0),
+      key(0.8, { L: UPL, R: UPR, face: 'happy' }), key(1.8, { L: UPL, R: UPR, rot: -12, face: 'happy' }), key(2.8, { L: UPL, R: UPR, rot: -12, face: 'happy' }),
+      key(3.6, { L: UPL, R: UPR, face: 'happy' }), key(4.6, { L: UPL, R: UPR, rot: 12, face: 'happy' }), key(5.6, { L: UPL, R: UPR, rot: 12, face: 'happy' }), key(6.6)] },
+    walk: { period: 1.2, keys: [
+      key(0, { legs: [LL, [[70, 100], [76, 127]]], L: [[33, 60], [21, 70], [15, 80]], R: [[87, 60], [96, 75], [95, 89]], rot: 2 }),
+      key(0.3, { ty: -2 }),
+      key(0.6, { legs: [[[50, 100], [44, 127]], LR], L: [[33, 60], [24, 75], [25, 89]], R: [[87, 60], [99, 70], [105, 80]], rot: -2 }),
+      key(0.9, { ty: -2 }),
+      key(1.2, { legs: [LL, [[70, 100], [76, 127]]], L: [[33, 60], [21, 70], [15, 80]], R: [[87, 60], [96, 75], [95, 89]], rot: 2 })] },
+    eyes: { period: 5, keys: [key(0, { R: EYE_ARM, extra: EYE_LINE, rot: -2 }), key(2.0, { R: EYE_ARM, extra: EYE_LINE, rot: 2 }),
+      key(2.15, { R: EYE_ARM, extra: EYE_LINE, rot: 2, face: 'closed' }), key(2.3, { R: EYE_ARM, extra: EYE_LINE, rot: 2 }), key(5, { R: EYE_ARM, extra: EYE_LINE, rot: -2 })] }
+  };
+  const ease = x => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+  const mix = (a, b, f) => a + (b - a) * f;
+  const mixPts = (a, b, f) => a.map((p, i) => [mix(p[0], b[i][0], f), mix(p[1], b[i][1], f)]);
+  window.lapisMove = function (id) {
+    const m = Object.prototype.hasOwnProperty.call(MOVES, id) ? MOVES[id] : null;
+    if (!m) return null;
+    return { period: m.period, at: secs => {
+      const t = ((secs % m.period) + m.period) % m.period, ks = m.keys;
+      let i = 0; while (i < ks.length - 2 && t >= ks[i + 1].t) i++;
+      const a = ks[i], b = ks[i + 1], f = ease(Math.min(1, Math.max(0, (t - a.t) / ((b.t - a.t) || 1)))), near = f < 0.5 ? a : b;
+      const tx = mix(a.tx, b.tx, f), ty = mix(a.ty, b.ty, f), rot = mix(a.rot, b.rot, f), s = mix(a.s, b.s, f);
+      return { arms: [mixPts(a.L, b.L, f), mixPts(a.R, b.R, f)], legs: [mixPts(a.legs[0], b.legs[0], f), mixPts(a.legs[1], b.legs[1], f)],
+        face: near.face, extra: near.extra,
+        body: `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) rotate(${rot.toFixed(2)} 60 100) translate(60 100) scale(${s.toFixed(3)}) translate(-60 -100)` };
+    } };
   };
 })();

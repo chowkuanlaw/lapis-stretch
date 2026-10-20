@@ -1,9 +1,8 @@
 # Changelog
 
-## Unreleased (planned as 1.12.0)
+## 1.12.0 (2026-10-21)
 
-Fixes from testing, collected for the next release.
-
+- **Watch and copy.** On the reminder card, your kuih now acts out shoulder rolls, stand and reach, the walkaround and the 20-20-20 eye break, and the shoulder roll and stand-and-reach instructions are shorter. Stretches a kuih body can't show accurately (chin tucks, neck, thoracic, twist, wrist) keep their picture and text. The kuih stays still if Windows is set to show fewer animations.
 - **Welcome screen:** the language, kuih and settings choices on the first-launch welcome screen can be clicked again. They had stopped responding, so every new user started with the defaults. A new automatic test guards against this coming back.
 - **Malay:** the end-of-day goodbye now says "Balik rumah!" (time to go home) instead of "Balik kerja!", which could read as "back to work".
 

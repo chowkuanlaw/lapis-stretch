@@ -16,9 +16,9 @@
       steps: ['Sit so the top of the chair back meets your mid-back.', 'Lace your fingers behind your head, elbows wide.', 'Breathe out and lean back over the chair, then return. Keep your neck relaxed.'],
       ms: { name: 'Lentur belakang atas', cue: 'Tangan di belakang kepala, lentur ke belakang di atas kerusi.', dose: '10 kali',
         steps: ['Duduk supaya bahagian atas penyandar kerusi berada di tengah belakang anda.', 'Silangkan jari di belakang kepala, siku dibuka luas.', 'Hembus nafas dan sandar ke belakang di atas kerusi, kemudian kembali. Biarkan leher santai.'] } },
-    { id: 'shoulders', name: 'Shoulder rolls', pose: 'shoulders', cue: 'Big slow circles: up, back and down.', dose: '10 backwards', secs: 30,
+    { id: 'shoulders', name: 'Shoulder rolls', pose: 'shoulders', cue: 'Up, back, down. Slow circles.', dose: '10 backwards', secs: 30,
       steps: ['Let your arms hang loose.', 'Lift your shoulders to your ears, squeeze them back, then drop them down.', 'Keep the circles slow and large.'],
-      ms: { name: 'Putar bahu', cue: 'Bulatan besar dan perlahan: ke atas, ke belakang dan ke bawah.', dose: '10 kali ke belakang',
+      ms: { name: 'Putar bahu', cue: 'Naik, ke belakang, turun. Bulatan perlahan.', dose: '10 kali ke belakang',
         steps: ['Biarkan lengan tergantung longgar.', 'Angkat bahu ke telinga, rapatkan ke belakang, kemudian turunkan.', 'Buat bulatan yang perlahan dan besar.'] } },
     { id: 'twist', name: 'Seated twist', pose: 'twist', cue: 'Turn your chest toward the chair back. Hips face forward.', dose: '15 sec each side', secs: 30, sides: true,
       steps: ['Sit tall, feet flat on the floor.', 'Hold the chair back or armrest and turn from your ribs, not your neck.', 'Breathe out to turn a little further. Switch sides halfway.'],
@@ -32,9 +32,9 @@
       steps: ['Look away from your screen.', 'Find something far away: a window, the end of the office.', 'Blink slowly a few times while you look.'],
       ms: { name: 'Rehat mata 20-20-20', cue: 'Pandang sesuatu kira-kira 6 meter jauhnya.', dose: '20 saat',
         steps: ['Alihkan pandangan dari skrin.', 'Cari sesuatu yang jauh: tingkap, atau hujung pejabat.', 'Kelip mata perlahan beberapa kali sambil memandang.'] } },
-    { id: 'reach', name: 'Stand and reach', pose: 'reach', cue: 'Stand up, reach both arms overhead, lean side to side.', dose: '5 each side', secs: 30,
+    { id: 'reach', name: 'Stand and reach', pose: 'reach', cue: 'Stand up. Arms up, lean left, then right.', dose: '5 each side', secs: 30,
       steps: ['Stand with feet hip-width apart.', 'Reach both arms up and lace your fingers.', 'Lean gently left, then right. Breathe out on each lean.'],
-      ms: { name: 'Berdiri dan capai', cue: 'Berdiri, angkat kedua-dua lengan ke atas, condong ke kiri dan kanan.', dose: '5 kali setiap sisi',
+      ms: { name: 'Berdiri dan capai', cue: 'Berdiri. Tangan ke atas, condong ke kiri, kemudian kanan.', dose: '5 kali setiap sisi',
         steps: ['Berdiri dengan kaki selebar pinggul.', 'Angkat kedua-dua lengan dan silangkan jari.', 'Condong perlahan ke kiri, kemudian ke kanan. Hembus nafas setiap kali condong.'] } },
     { id: 'walk', name: 'Walkaround', pose: 'walk', cue: 'Get up and walk. Refill your water, rest your eyes.', dose: '2 min', secs: 120,
       steps: ['Stand up and leave your desk.', 'Walk a lap of the office or to the pantry.', 'Drink some water before you sit back down.'],
@@ -213,6 +213,7 @@
      Text keys (i18n.js) for each version, newest first. The card after an update lists
      the items between the version you last saw and the one you're on now. */
   const NEWS = [
+    { v: '1.12.0', keys: ['news.1.12.0.a', 'news.1.12.0.b'] },
     { v: '1.11.0', keys: ['news.1.11.0.a', 'news.1.11.0.b', 'news.1.11.0.c'] },
     { v: '1.10.0', keys: ['news.1.10.0.a', 'news.1.10.0.b'] },
     { v: '1.9.0', keys: ['news.1.9.0.a', 'news.1.9.0.b', 'news.1.9.0.c'] },

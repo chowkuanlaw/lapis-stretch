@@ -108,7 +108,8 @@
     }
     const showHow = m !== 'done' && m !== 'snoozed';
     if (st.golden && m !== 'waiting') top = `<p class="tag gold">${T('gold.tag')}</p>` + (compact === true ? '' : top);
-    return `<div class="tile${st.golden ? ' gold' : ''}">${lapis(pose, doing(ex), m !== 'active', null, st.golden)}</div>
+    const move = (m === 'due' || m === 'active') && !reduceMotion() && window.lapisMove && window.lapisMove(ex.id) ? ex.id : '';
+    return `<div class="tile${st.golden ? ' gold' : ''}"${move ? ` data-move="${move}"` : ''}>${lapis(pose, doing(ex), m !== 'active' && !move, null, st.golden)}</div>
       <div class="body">${top}<div class="head"><h3>${exName(ex)}</h3><span class="count">${T('card.count', { n })}</span></div>
       <p class="cue">${tx(ex, 'cue')}</p><p class="dose">${tx(ex, 'dose')}</p>${extra}${showHow ? howto : ''}
       <div class="row">${actions}</div>${links}</div>
@@ -124,6 +125,28 @@
     const d = el.querySelector('#howto');
     if (d) d.addEventListener('toggle', () => { howOpen = d.open; });
     tickCard(el);
+    startMoves();
+  }
+  /* 1.12.0: the kuih acts out the stretch on the reminder card (see lapisMove in mascot.js).
+     About 15 frames a second, only while a moving tile is on screen and the window is visible. */
+  function reduceMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  let moveRaf = 0, moveT0 = 0, moveLast = 0;
+  function startMoves() {
+    if (moveRaf || !document.querySelector('.tile[data-move]')) return;
+    moveT0 = performance.now(); moveLast = 0;
+    const frame = now => {
+      const tiles = document.querySelectorAll('.tile[data-move]');
+      if (!tiles.length || !st) { moveRaf = 0; return; }
+      if (now - moveLast >= 66) {
+        moveLast = now;
+        tiles.forEach(t => {
+          const mv = window.lapisMove(t.dataset.move);
+          if (mv) t.innerHTML = lapis(mv.at((now - moveT0) / 1000), doing(curEx()), false, null, st.golden);
+        });
+      }
+      moveRaf = requestAnimationFrame(frame);
+    };
+    moveRaf = requestAnimationFrame(frame);
   }
   function tickCard(el) {
     if (!st || st.mode !== 'active' || !el) return;
