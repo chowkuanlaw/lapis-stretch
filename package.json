@@ -22,7 +22,7 @@
     "koffi": "3.3.2"
   },
   "devDependencies": {
-    "electron": "44.8.0",
+    "electron": "44.9.0",
     "electron-builder": "26.17.0"
   },
   "build": {
