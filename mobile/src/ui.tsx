@@ -45,10 +45,10 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   return <UiContext.Provider value={{ palette, styles, isIos, dark, glass, reduceTransparency }}>{children}</UiContext.Provider>;
 }
 
-function GlassSurface({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+function GlassSurface({ children, style, fallbackStyle }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; fallbackStyle?: StyleProp<ViewStyle> }) {
   const { palette, dark, glass, reduceTransparency } = useUi();
   if (glass) return <GlassView glassEffectStyle="regular" isInteractive colorScheme={dark ? 'dark' : 'light'} style={style}>{children}</GlassView>;
-  return <View style={[{ backgroundColor: reduceTransparency ? palette.card : palette.nav }, style]}>{children}</View>;
+  return <View style={[{ backgroundColor: reduceTransparency ? palette.card : palette.nav }, style, fallbackStyle]}>{children}</View>;
 }
 
 export function Button({ title, onPress, quiet = false }: { title: string; onPress: () => void; quiet?: boolean }) {
@@ -84,7 +84,7 @@ export function PlatformTabBar({ tab, titles, onChange, bottomInset }: { tab: Ta
       {fontScale <= 1.4 && <Text numberOfLines={1} style={[styles.tabText, selected && styles.activeTab]}>{titles[name]}</Text>}
     </Pressable>;
   });
-  if (isIos) return <View pointerEvents="box-none" style={[styles.iosTabDock, { bottom: Math.max(bottomInset, 10) + 6 }]}><GlassSurface style={styles.iosTabBar}>{items}</GlassSurface></View>;
+  if (isIos) return <View pointerEvents="box-none" style={[styles.iosTabDock, { bottom: Math.max(bottomInset, 10) + 6 }]}><GlassSurface style={styles.iosTabBar} fallbackStyle={styles.iosTabFallback}>{items}</GlassSurface></View>;
   return <View style={[styles.androidNav, { paddingBottom: Math.max(bottomInset, 8) }]}>{items}</View>;
 }
 
@@ -118,7 +118,8 @@ function makeStyles(p: Palette, ios: boolean) { return StyleSheet.create({
   settingLabel: { color: p.ink, fontSize: 15, fontWeight: '700', flex: 1 }, time: { minWidth: 82, textAlign: 'center', color: p.ink, fontWeight: '700' },
   notice: { backgroundColor: p.primaryContainer, paddingHorizontal: 18, paddingVertical: 10 }, noticeText: { color: p.primary, fontWeight: '700' },
   iosTabDock: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
-  iosTabBar: { width: '100%', maxWidth: 560, flexDirection: 'row', borderRadius: 30, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: p.line, paddingVertical: 5, paddingHorizontal: 4 },
+  iosTabBar: { width: '100%', maxWidth: 560, flexDirection: 'row', borderRadius: 30, paddingVertical: 5, paddingHorizontal: 4 },
+  iosTabFallback: { overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: p.line },
   androidNav: { flexDirection: 'row', backgroundColor: p.nav, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderColor: p.line },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 56, paddingHorizontal: 2, gap: 1 },
   tabIconWrap: { width: 62, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 100 },

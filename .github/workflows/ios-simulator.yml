@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   simulator:
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,12 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: mobile/package-lock.json
+      - name: Select the Liquid Glass SDK
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          test "$(xcodebuild -version | sed -n 's/^Xcode //p' | cut -d. -f1)" -ge 26
       - name: Install JavaScript dependencies
         working-directory: mobile
         run: npm ci
@@ -44,11 +50,11 @@ jobs:
       - name: Package for Appetize
         run: |
           tar -C "$RUNNER_TEMP/lapis-derived/Build/Products/Release-iphonesimulator" \
-            -czf "$RUNNER_TEMP/lapis-ios-simulator.tar.gz" LapisStretch.app
-          tar -tzf "$RUNNER_TEMP/lapis-ios-simulator.tar.gz" >/dev/null
+            -czf "$RUNNER_TEMP/lapis-ios-liquid-glass.tar.gz" LapisStretch.app
+          tar -tzf "$RUNNER_TEMP/lapis-ios-liquid-glass.tar.gz" >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: lapis-ios-simulator
-          path: ${{ runner.temp }}/lapis-ios-simulator.tar.gz
+          name: lapis-ios-liquid-glass-xcode26
+          path: ${{ runner.temp }}/lapis-ios-liquid-glass.tar.gz
           if-no-files-found: error
           retention-days: 14
