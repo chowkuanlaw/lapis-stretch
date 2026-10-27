@@ -1,0 +1,19 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "appetize-ios": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "appetize-android": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}

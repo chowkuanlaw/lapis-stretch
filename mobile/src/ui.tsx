@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Image, Platform, Pressable, StyleProp, StyleSheet, Text, useColorScheme, useWindowDimensions, View, ViewStyle } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { SymbolView } from 'expo-symbols';
@@ -49,8 +48,7 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
 function GlassSurface({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   const { palette, dark, glass, reduceTransparency } = useUi();
   if (glass) return <GlassView glassEffectStyle="regular" isInteractive colorScheme={dark ? 'dark' : 'light'} style={style}>{children}</GlassView>;
-  if (!reduceTransparency) return <BlurView intensity={85} tint={dark ? 'dark' : 'light'} style={[{ backgroundColor: palette.nav }, style]}>{children}</BlurView>;
-  return <View style={[{ backgroundColor: palette.nav }, style]}>{children}</View>;
+  return <View style={[{ backgroundColor: reduceTransparency ? palette.card : palette.nav }, style]}>{children}</View>;
 }
 
 export function Button({ title, onPress, quiet = false }: { title: string; onPress: () => void; quiet?: boolean }) {

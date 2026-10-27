@@ -17,11 +17,22 @@ Scan the Expo QR code with a compatible iOS or Android device. A development bui
 
 ## Platform design
 
-On iOS, the app uses a large page title, SF Symbols, and a floating navigation surface. On iOS 26 and later, that surface uses Apple's native Liquid Glass effect through `expo-glass-effect`. Earlier iOS versions use a blurred surface; reduced transparency uses an opaque surface. Content and controls keep solid, legible backgrounds. On Android, the app uses Material style color roles, Material Symbols, a bottom navigation bar with an active indicator, rounded filled controls, and touch ripples. Both layouts follow the system light or dark theme, honor safe areas, and provide accessible tab labels and touch targets.
+On iOS, the app uses a large page title, SF Symbols, and a floating navigation surface. On iOS 26 and later, that surface uses Apple's native Liquid Glass effect through `expo-glass-effect`. Earlier iOS versions use a translucent surface; reduced transparency uses an opaque surface. Content and controls keep solid, legible backgrounds. On Android, the app uses Material style color roles, Material Symbols, a bottom navigation bar with an active indicator, rounded filled controls, and touch ripples. Both layouts follow the system light or dark theme, honor safe areas, and provide accessible tab labels and touch targets.
 
 The Liquid Glass implementation should be reviewed against the current [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/liquid-glass/) on a physical iOS 26 device. The native appearance cannot be fully evaluated from a web preview or a Linux build.
 
-Browser previews of the platform layouts: [iOS](docs/ios-layout-preview.png) · [Android](docs/android-layout-preview.png). The iOS browser preview shows the blur fallback; native Liquid Glass appears only on a supported iPhone.
+Browser previews of the platform layouts: [iOS](docs/ios-layout-preview.png) · [Android](docs/android-layout-preview.png). The iOS browser preview shows the translucent fallback; native Liquid Glass appears only on a supported iPhone.
+
+## Appetize builds
+
+Appetize requires an Android `.apk` and an iOS simulator `.app` compressed as `.tar.gz` or `.zip`; an App Store `.ipa` is not the simulator build. The `eas.json` profiles request those formats. With an Expo account and an EAS project linked to this app, run from `mobile/`:
+
+```bash
+npx eas-cli build -p ios --profile appetize-ios
+npx eas-cli build -p android --profile appetize-android
+```
+
+If prompted on the first run, sign in to Expo and let EAS create and link the project. Download the iOS simulator archive and Android APK from the completed build pages. Upload them at [Appetize](https://appetize.io/apps). Keep Appetize credentials out of this repository.
 
 The app uses the local time zone. Turn on phone reminders in the first-run card or Settings and grant notification permission. The app schedules up to 60 upcoming local alerts to stay below iOS's pending notification limit. At the default interval this covers roughly two working days, so open Lapis each workday to refill them. The phone's power, Focus, and notification settings can delay or silence alerts. Working hours, workdays, lunch, interval, water reminders, snooze, and a 30-minute pause affect the schedule. The mobile app does not run a continuous background timer.
 
