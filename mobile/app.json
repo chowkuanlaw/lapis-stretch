@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Lapis Stretch",
+    "slug": "lapis-stretch-mobile",
+    "scheme": "lapis",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      ["expo-notifications", { "icon": "./assets/android-icon-monochrome.png", "color": "#C9184A" }]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.lapis.stretch.mobile"
+    },
+    "android": {
+      "package": "app.lapis.stretch.mobile",
+      "permissions": ["POST_NOTIFICATIONS"],
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F5EC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    }
+  }
+}

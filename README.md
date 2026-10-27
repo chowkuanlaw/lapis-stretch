@@ -71,6 +71,12 @@ The full privacy policy is in [PRIVACY.md](PRIVACY.md). See [SECURITY.md](SECURI
 
 ## Build from source
 
+### iOS and Android
+
+The mobile app lives in [`mobile/`](mobile/README.md). It reuses Lapis's stretch, translation, and progress data with a phone interface and local reminders. See its README for setup, build requirements, and mobile-specific behavior.
+
+### Windows desktop
+
 Run it in development (any OS, Node 22):
 
 ```bash
