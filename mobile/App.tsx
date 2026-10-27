@@ -1,18 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Platform, Pressable, SafeAreaView, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, AppState, Linking, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Core from './src/core';
 import { copy } from './src/copy';
-import { Art, Button, Card, Chip, palette, styles } from './src/ui';
+import { Art, Button, Card, Chip, PlatformTabBar, UiProvider, useUi } from './src/ui';
 import { requestReminderPermission, syncReminders } from './src/reminders';
 
 type Tab = 'today' | 'stretches' | 'progress' | 'kuih' | 'settings';
 const KEY = 'lapis-mobile-v1';
 let saveQueue = Promise.resolve();
 
-export default function App() {
+export default function App() { return <SafeAreaProvider><UiProvider><LapisApp /></UiProvider></SafeAreaProvider>; }
+
+function LapisApp() {
+  const { palette, styles, isIos, dark } = useUi();
+  const insets = useSafeAreaInsets();
   const [state, setState] = useState<Core.MobileState>(() => Core.cleanState(null));
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState<Tab>('today');
@@ -112,12 +117,12 @@ export default function App() {
         <Chip title="+" selected={false} onPress={() => changeTime(key, 30)} /></View>
     </View>;
 
-  if (!loaded) return <SafeAreaView style={styles.safe}><Text style={styles.brand}>Lapis</Text></SafeAreaView>;
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar style="dark" />
-    <View style={styles.header}><Text style={styles.brand}>Lapis</Text><Text style={styles.headerSub}>{tabTitle[tab]}</Text></View>
+  if (!loaded) return <View style={[styles.safe, { paddingTop: insets.top + 12 }]}><Text style={styles.brand}>Lapis</Text></View>;
+  return <View style={styles.safe}>
+    <StatusBar style={dark ? 'light' : 'dark'} />
+    <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.brand}>Lapis</Text><Text style={styles.headerSub}>{tabTitle[tab]}</Text></View>
     {!!notice && <Pressable onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}  ×</Text></Pressable>}
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: isIos ? Math.max(insets.bottom, 10) + 105 : 30 }]}>
       {tab === 'today' && <>
         {!state.onboarded && <Card><Text style={styles.title}>{w.intro}</Text><Text style={styles.body}>{w.introText}</Text>
           <View style={styles.row}><Chip title="English" selected={state.lang === 'en'} onPress={() => update({ lang: 'en' })} /><Chip title="Bahasa Melayu" selected={state.lang === 'ms'} onPress={() => update({ lang: 'ms' })} /></View>
@@ -161,24 +166,23 @@ export default function App() {
           })}</View></View>)}</>}
       {tab === 'settings' && <>
         <Card><Text style={styles.section}>{w.language}</Text><View style={styles.row}><Chip title="English" selected={state.lang === 'en'} onPress={() => update({ lang: 'en' })} /><Chip title="Bahasa Melayu" selected={state.lang === 'ms'} onPress={() => update({ lang: 'ms' })} /></View></Card>
-        <Card><View style={styles.settingRow}><Text style={styles.section}>{w.reminders}</Text><Switch value={state.notificationsOn} onValueChange={v => v ? enableNotifications() : update({ notificationsOn: false })} trackColor={{ true: palette.green }} /></View><Text style={styles.hint}>{w.refresh}</Text></Card>
+        <Card><View style={styles.settingRow}><Text style={styles.section}>{w.reminders}</Text><Switch value={state.notificationsOn} onValueChange={v => v ? enableNotifications() : update({ notificationsOn: false })} trackColor={{ true: palette.primary }} /></View><Text style={styles.hint}>{w.refresh}</Text></Card>
         <Card><Text style={styles.section}>{w.interval}</Text>{select([15, 20, 30, 45, 60], state.interval, 'interval', 'm')}
           <Text style={styles.section}>{w.goal}</Text>{select([4, 6, 8, 10, 12], state.goal, 'goal')}</Card>
-        <Card><View style={styles.settingRow}><Text style={styles.section}>{w.water}</Text><Switch value={state.waterOn} onValueChange={waterOn => update({ waterOn })} trackColor={{ true: palette.green }} /></View>
+        <Card><View style={styles.settingRow}><Text style={styles.section}>{w.water}</Text><Switch value={state.waterOn} onValueChange={waterOn => update({ waterOn })} trackColor={{ true: palette.primary }} /></View>
           {state.waterOn && <><Text style={styles.settingLabel}>{w.waterEvery}</Text>{select([30, 45, 60, 90, 120], state.waterEvery, 'waterEvery', 'm')}
             <Text style={styles.settingLabel}>{w.waterGoal}</Text>{select([4, 6, 8, 10, 12], state.waterGoal, 'waterGoal')}</>}</Card>
-        <Card><View style={styles.settingRow}><Text style={styles.section}>{w.workOn}</Text><Switch value={state.workOn} onValueChange={workOn => update({ workOn })} trackColor={{ true: palette.green }} /></View>
+        <Card><View style={styles.settingRow}><Text style={styles.section}>{w.workOn}</Text><Switch value={state.workOn} onValueChange={workOn => update({ workOn })} trackColor={{ true: palette.primary }} /></View>
           {state.workOn && <><Text style={styles.settingLabel}>{w.workdays}</Text><View style={styles.row}>{[1, 2, 3, 4, 5, 6, 0].map(day => <Chip key={day} title={w.weekdays[day]}
             selected={state.workDays.includes(day)} onPress={() => { const days = state.workDays.includes(day) ? state.workDays.filter(d => d !== day) : [...state.workDays, day].sort(); if (days.length) update({ workDays: days }); }} />)}</View>
             {timeControl(w.workStart, 'workStart')}{timeControl(w.workEnd, 'workEnd')}
-            <View style={styles.settingRow}><Text style={styles.settingLabel}>{w.lunch}</Text><Switch value={state.lunchOn} onValueChange={lunchOn => update({ lunchOn })} trackColor={{ true: palette.green }} /></View>
+            <View style={styles.settingRow}><Text style={styles.settingLabel}>{w.lunch}</Text><Switch value={state.lunchOn} onValueChange={lunchOn => update({ lunchOn })} trackColor={{ true: palette.primary }} /></View>
             {state.lunchOn && <>{timeControl(w.lunchStart, 'lunchStart')}{timeControl(w.lunchEnd, 'lunchEnd')}</>}</>}</Card>
-        <Card><View style={styles.settingRow}><Text style={styles.settingLabel}>{w.collect}</Text><Switch value={state.collect} onValueChange={collect => update({ collect })} trackColor={{ true: palette.green }} /></View>
-          <View style={styles.settingRow}><Text style={styles.settingLabel}>{w.ramadan}</Text><Switch value={state.ramadanOn} onValueChange={ramadanOn => update({ ramadanOn })} trackColor={{ true: palette.green }} /></View></Card>
+        <Card><View style={styles.settingRow}><Text style={styles.settingLabel}>{w.collect}</Text><Switch value={state.collect} onValueChange={collect => update({ collect })} trackColor={{ true: palette.primary }} /></View>
+          <View style={styles.settingRow}><Text style={styles.settingLabel}>{w.ramadan}</Text><Switch value={state.ramadanOn} onValueChange={ramadanOn => update({ ramadanOn })} trackColor={{ true: palette.primary }} /></View></Card>
         <Button title={w.reset} quiet onPress={resetHistory} />
       </>}
     </ScrollView>
-    <View style={styles.tabs}>{(['today', 'stretches', 'progress', 'kuih', 'settings'] as Tab[]).map(name => <Pressable key={name} accessibilityRole="tab" accessibilityState={{ selected: tab === name }} onPress={() => setTab(name)} style={styles.tab}>
-      <Text style={[styles.tabText, tab === name && styles.activeTab]}>{tabTitle[name]}</Text></Pressable>)}</View>
-  </SafeAreaView>;
+    <PlatformTabBar tab={tab} titles={tabTitle} onChange={setTab} bottomInset={insets.bottom} />
+  </View>;
 }

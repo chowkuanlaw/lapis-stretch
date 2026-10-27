@@ -15,6 +15,14 @@ npm start
 
 Scan the Expo QR code with a compatible iOS or Android device. A development build is recommended for testing notifications. Native builds require Xcode on macOS for iOS or an Android SDK for Android; Expo's EAS Build can build both platforms after you configure your own Apple and Google accounts and signing credentials. No signing credentials are stored here.
 
+## Platform design
+
+On iOS, the app uses a large page title, SF Symbols, and a floating navigation surface. On iOS 26 and later, that surface uses Apple's native Liquid Glass effect through `expo-glass-effect`. Earlier iOS versions use a blurred surface; reduced transparency uses an opaque surface. Content and controls keep solid, legible backgrounds. On Android, the app uses Material style color roles, Material Symbols, a bottom navigation bar with an active indicator, rounded filled controls, and touch ripples. Both layouts follow the system light or dark theme, honor safe areas, and provide accessible tab labels and touch targets.
+
+The Liquid Glass implementation should be reviewed against the current [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/liquid-glass/) on a physical iOS 26 device. The native appearance cannot be fully evaluated from a web preview or a Linux build.
+
+Browser previews of the platform layouts: [iOS](docs/ios-layout-preview.png) · [Android](docs/android-layout-preview.png). The iOS browser preview shows the blur fallback; native Liquid Glass appears only on a supported iPhone.
+
 The app uses the local time zone. Turn on phone reminders in the first-run card or Settings and grant notification permission. The app schedules up to 60 upcoming local alerts to stay below iOS's pending notification limit. At the default interval this covers roughly two working days, so open Lapis each workday to refill them. The phone's power, Focus, and notification settings can delay or silence alerts. Working hours, workdays, lunch, interval, water reminders, snooze, and a 30-minute pause affect the schedule. The mobile app does not run a continuous background timer.
 
 The mobile app starts with its own local history. It does not read the Windows `%APPDATA%\Lapis` file or sync data between devices. Desktop-only tray, always-on-top widget, meeting/full-screen detection, away detection, and Windows installer/Store behavior are outside this mobile version.
