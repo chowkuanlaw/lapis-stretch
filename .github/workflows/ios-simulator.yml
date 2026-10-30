@@ -52,7 +52,7 @@ jobs:
           tar -C "$RUNNER_TEMP/lapis-derived/Build/Products/Release-iphonesimulator" \
             -czf "$RUNNER_TEMP/lapis-ios-liquid-glass.tar.gz" LapisStretch.app
           tar -tzf "$RUNNER_TEMP/lapis-ios-liquid-glass.tar.gz" >/dev/null
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lapis-ios-liquid-glass-xcode26
           path: ${{ runner.temp }}/lapis-ios-liquid-glass.tar.gz
