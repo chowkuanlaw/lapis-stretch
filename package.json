@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "electron-updater": "6.8.10",
-    "koffi": "3.3.2"
+    "koffi": "3.3.4"
   },
   "devDependencies": {
     "electron": "44.8.0",
