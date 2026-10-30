@@ -18,12 +18,12 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "electron-updater": "6.8.10",
+    "electron-updater": "6.8.11",
     "koffi": "3.3.2"
   },
   "devDependencies": {
-    "electron": "44.8.0",
-    "electron-builder": "26.17.0"
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0"
   },
   "build": {
     "appId": "app.lapis.stretch",
