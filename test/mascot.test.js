@@ -32,8 +32,8 @@ test('unknown kuih or pose fall back safely', () => {
   assert.ok(W.lapisBodySVG('pizza').startsWith('<svg'));
 });
 
-test('1.12.0: the animated stretches draw cleanly at every moment, for every kuih', () => {
-  const MOVING = ['shoulders', 'reach', 'walk', 'eyes'];
+test('1.12.0 and 1.13.0: the animated stretches draw cleanly at every moment, for every kuih', () => {
+  const MOVING = ['shoulders', 'reach', 'walk', 'eyes', 'breathe', 'arms', 'legs', 'calf']; // the last four are 1.13.0
   for (const id of MOVING) {
     assert.ok(D.EX.some(e => e.id === id), id + ' is a real stretch');
     const mv = W.lapisMove(id);
@@ -50,4 +50,12 @@ test('1.12.0: the animated stretches draw cleanly at every moment, for every kui
   // a kuih has no neck, spine or wrists, so these stay as still pictures with text
   for (const id of ['chin', 'neck', 'thoracic', 'twist', 'wrist']) assert.equal(W.lapisMove(id), null, id + ' is not animated');
   assert.equal(W.lapisMove('constructor'), null);
+});
+
+test('1.13.0: every stretch has a still pose that draws cleanly for every kuih', () => {
+  for (const e of D.EX) for (const k of W.LAPIS_KUIH) {
+    const svg = W.lapisSVG(e.pose, '', false, k.id);
+    assert.ok(!/undefined|NaN/.test(svg), `${e.id}, ${k.id}`);
+    assert.ok(svg.startsWith('<svg'), e.id);
+  }
 });

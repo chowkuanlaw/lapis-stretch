@@ -18,6 +18,11 @@
     eyes: { arms: [IDLE_ARMS[0], [[87, 60], [98, 50], [80, 38]]], extra: '<path class="fx dash" d="M100 44 L126 34"/>' },
     reach: { arms: [[[33, 58], [28, 30], [38, 4]], [[87, 58], [92, 30], [82, 4]]], face: 'happy' },
     walk: { body: 'rotate(4 60 100)', arms: [[[33, 60], [22, 70], [18, 82]], [[87, 60], [98, 72], [106, 80]]], legs: [[[50, 100], [38, 136]], [[70, 100], [82, 136]]], extra: '<path class="fx" d="M8 62 H-4"/><path class="fx" d="M10 78 H-2"/><path class="fx" d="M8 94 H-2"/>' },
+    // 1.13.0
+    breathe: { arms: [[[33, 60], [24, 74], [44, 92]], [[87, 60], [96, 74], [76, 92]]], face: 'closed', extra: '<path class="fx" d="M104 30 q10 -6 16 2"/><path class="fx" d="M104 40 q12 -6 18 3"/>' },
+    arms: { arms: [[[33, 60], [16, 60], [0, 60]], [[87, 60], [104, 60], [120, 60]]], extra: '<path class="fx" d="M-4 44 A10 10 0 0 1 10 38"/><polyline class="fx" points="5,34 11,38 6,43"/><path class="fx" d="M124 44 A10 10 0 0 0 110 38"/><polyline class="fx" points="115,34 109,38 114,43"/>' },
+    legs: { legs: [[[50, 100], [49, 138]], [[70, 100], [86, 112]]], extra: '<path class="fx" d="M104 134 V118"/><polyline class="fx" points="99,123 104,117 109,123"/>' },
+    calf: { body: 'translate(0 -6)', legs: [[[50, 94], [49, 133]], [[70, 94], [71, 133]]], extra: '<path class="fx" d="M104 140 V120"/><polyline class="fx" points="99,126 104,120 109,126"/>' },
     cheer: { arms: [[[33, 58], [22, 40], [14, 22]], [[87, 58], [98, 40], [106, 22]]], face: 'happy' },
     sleep: { face: 'closed', extra: '<text class="zz" x="98" y="12">z</text><text class="zz" x="110" y="0" style="font-size:13px">z</text>' },
     // dance moves (easter egg)
@@ -469,7 +474,7 @@
 
   /* ---------- 1.12.0: the kuih acts out the stretch ----------
      Only stretches a kuih body can show honestly are animated (no neck, spine or wrists to show
-     chin tucks, neck, thoracic, twist or wrist stretches). Each is a loop of key poses; frames
+     chin tucks, neck, thoracic, twist or wrist stretches; 1.13.0 adds breathing, arm circles, leg and calf raises). Each is a loop of key poses; frames
      in between are eased. lapisMove(id) gives { period, at(seconds) } or null. */
   const IL = IDLE_ARMS[0], IR = IDLE_ARMS[1], LL = IDLE_LEGS[0], LR = IDLE_LEGS[1];
   const UPL = [[33, 58], [28, 30], [38, 4]], UPR = [[87, 58], [92, 30], [82, 4]];
@@ -489,6 +494,20 @@
       key(0.6, { legs: [[[50, 100], [44, 127]], LR], L: [[33, 60], [24, 75], [25, 89]], R: [[87, 60], [99, 70], [105, 80]], rot: -2 }),
       key(0.9, { ty: -2 }),
       key(1.2, { legs: [LL, [[70, 100], [76, 127]]], L: [[33, 60], [21, 70], [15, 80]], R: [[87, 60], [96, 75], [95, 89]], rot: 2 })] },
+    breathe: { period: 10, keys: [key(0, { face: 'closed' }),
+      key(4, { face: 'closed', ty: -3, s: 1.06, L: [[33, 60], [22, 72], [42, 90]], R: [[87, 60], [98, 72], [78, 90]] }),
+      key(10, { face: 'closed' })] },
+    arms: { period: 2.4, keys: [key(0),
+      key(0.6, { L: [[33, 60], [16, 60], [0, 60]], R: [[87, 60], [104, 60], [120, 60]] }),
+      key(1.2, { L: UPL, R: UPR }),
+      key(1.8, { L: [[33, 60], [16, 60], [0, 60]], R: [[87, 60], [104, 60], [120, 60]] }), key(2.4)] },
+    legs: { period: 6, keys: [key(0),
+      key(0.7, { legs: [[[50, 100], [34, 112]], LR], rot: 1 }), key(2.0, { legs: [[[50, 100], [34, 112]], LR], rot: 1 }), key(2.8),
+      key(3.0),
+      key(3.7, { legs: [LL, [[70, 100], [86, 112]]], rot: -1 }), key(5.0, { legs: [LL, [[70, 100], [86, 112]]], rot: -1 }), key(5.8), key(6)] },
+    calf: { period: 2.8, keys: [key(0, { legs: [LL, LR] }),
+      key(0.9, { ty: -6, legs: [[[50, 94], [49, 133]], [[70, 94], [71, 133]]] }), key(1.5, { ty: -6, legs: [[[50, 94], [49, 133]], [[70, 94], [71, 133]]] }),
+      key(2.4, { legs: [LL, LR] }), key(2.8, { legs: [LL, LR] })] },
     eyes: { period: 5, keys: [key(0, { R: EYE_ARM, extra: EYE_LINE, rot: -2 }), key(2.0, { R: EYE_ARM, extra: EYE_LINE, rot: 2 }),
       key(2.15, { R: EYE_ARM, extra: EYE_LINE, rot: 2, face: 'closed' }), key(2.3, { R: EYE_ARM, extra: EYE_LINE, rot: 2 }), key(5, { R: EYE_ARM, extra: EYE_LINE, rot: -2 })] }
   };

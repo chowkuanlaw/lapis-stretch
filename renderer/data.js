@@ -36,12 +36,28 @@
       steps: ['Stand with feet hip-width apart.', 'Reach both arms up and lace your fingers.', 'Lean gently left, then right. Breathe out on each lean.'],
       ms: { name: 'Berdiri dan capai', cue: 'Berdiri. Tangan ke atas, condong ke kiri, kemudian kanan.', dose: '5 kali setiap sisi',
         steps: ['Berdiri dengan kaki selebar pinggul.', 'Angkat kedua-dua lengan dan silangkan jari.', 'Condong perlahan ke kiri, kemudian ke kanan. Hembus nafas setiap kali condong.'] } },
+    { id: 'breathe', name: 'Deep breathing', pose: 'breathe', cue: 'In through your nose for 4, out slowly for 6.', dose: '5 slow breaths', secs: 45,
+      steps: ['Sit tall and rest your hands in your lap.', 'Breathe in through your nose for 4 counts, letting your belly rise.', 'Breathe out slowly for 6 counts. Repeat 5 times.'],
+      ms: { name: 'Pernafasan dalam', cue: 'Tarik nafas melalui hidung 4 kiraan, hembus perlahan 6 kiraan.', dose: '5 nafas perlahan',
+        steps: ['Duduk tegak dan letakkan tangan di atas riba.', 'Tarik nafas melalui hidung selama 4 kiraan, biarkan perut mengembang.', 'Hembus nafas perlahan selama 6 kiraan. Ulang 5 kali.'] } },
+    { id: 'arms', name: 'Arm circles', pose: 'arms', cue: 'Big, slow circles with both arms.', dose: '10 each way', secs: 30,
+      steps: ['Sit or stand tall and lift both arms out to the sides.', 'Make big, slow circles forward, 10 times.', 'Reverse and circle backward, 10 times.'],
+      ms: { name: 'Pusingan lengan', cue: 'Bulatan besar yang perlahan dengan kedua-dua lengan.', dose: '10 kali setiap arah',
+        steps: ['Duduk atau berdiri tegak dan angkat kedua-dua lengan ke sisi.', 'Buat bulatan besar yang perlahan ke depan, 10 kali.', 'Terbalikkan dan buat bulatan ke belakang, 10 kali.'] } },
+    { id: 'legs', name: 'Seated leg raise', pose: 'legs', cue: 'Straighten one knee and hold it up.', dose: '10 each leg', secs: 40, sides: true,
+      steps: ['Sit tall with both feet flat on the floor.', 'Straighten one knee and lift the foot until your leg is level. Hold for 3 seconds.', 'Lower slowly. Switch legs halfway.'],
+      ms: { name: 'Angkat kaki duduk', cue: 'Luruskan satu lutut dan tahan ke atas.', dose: '10 kali setiap kaki',
+        steps: ['Duduk tegak dengan kedua-dua tapak kaki rata di lantai.', 'Luruskan satu lutut dan angkat kaki hingga sama paras. Tahan 3 saat.', 'Turunkan perlahan. Tukar kaki di pertengahan.'] } },
+    { id: 'calf', name: 'Calf raises', pose: 'calf', cue: 'Stand up. Rise onto your toes, then lower.', dose: '15 slow reps', secs: 30,
+      steps: ['Stand behind your chair with one hand on it for balance.', 'Rise slowly onto your toes. Hold for a second.', 'Lower with control. Repeat 15 times.'],
+      ms: { name: 'Angkat betis', cue: 'Berdiri. Naik atas hujung kaki, kemudian turun.', dose: '15 kali perlahan',
+        steps: ['Berdiri di belakang kerusi, sebelah tangan berpegang untuk imbangan.', 'Naik perlahan ke atas hujung kaki. Tahan sebentar.', 'Turun dengan terkawal. Ulang 15 kali.'] } },
     { id: 'walk', name: 'Walkaround', pose: 'walk', cue: 'Get up and walk. Refill your water, rest your eyes.', dose: '2 min', secs: 120,
       steps: ['Stand up and leave your desk.', 'Walk a lap of the office or to the pantry.', 'Drink some water before you sit back down.'],
       ms: { name: 'Jalan sekejap', cue: 'Bangun dan berjalan. Isi semula air, rehatkan mata.', dose: '2 min',
         steps: ['Bangun dan tinggalkan meja anda.', 'Jalan satu pusingan pejabat atau ke pantri.', 'Minum air sebelum duduk semula.'] } }
   ];
-  const CYCLE = ['chin', 'neck', 'thoracic', 'eyes', 'walk', 'shoulders', 'twist', 'wrist', 'eyes', 'reach', 'chin', 'walk'];
+  const CYCLE = ['chin', 'neck', 'breathe', 'thoracic', 'eyes', 'walk', 'shoulders', 'arms', 'twist', 'wrist', 'legs', 'eyes', 'reach', 'calf', 'chin', 'walk'];
   const BY = Object.fromEntries(EX.map(e => [e.id, e]));
   const KUIH_GROUPS = [
     { id: 'malay', title: 'Malay', sub: 'From the Malay kitchen', ms: { title: 'Melayu', sub: 'Dari dapur Melayu' } },
