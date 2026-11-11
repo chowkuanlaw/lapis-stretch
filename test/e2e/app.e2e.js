@@ -1,0 +1,118 @@
+'use strict';
+// Click-through tests: start the real Lapis app (Electron, from this folder) and use it the way
+// a person would. They catch what the unit tests can't, such as the 1.6.0-1.11.3 welcome screen
+// bug where every choice looked fine but did nothing when clicked.
+//
+// Run: npm run test:e2e   (Linux needs a display; CI uses xvfb-run)
+// Each test gets its own empty settings folder (XDG_CONFIG_HOME), so nothing touches a real install.
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { _electron: electron } = require('playwright');
+
+const ROOT = path.join(__dirname, '..', '..');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+async function launch(state) {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'lapis-e2e-'));
+  const dir = path.join(home, 'Lapis');
+  fs.mkdirSync(dir, { recursive: true });
+  if (state) fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify(state));
+  const env = Object.assign({}, process.env, { XDG_CONFIG_HOME: home });
+  delete env.NODE_OPTIONS; // Electron refuses some Node options (e.g. --use-openssl-ca)
+  const app = await electron.launch({ args: [ROOT, '--no-sandbox'], env, timeout: 60000 });
+  const errors = [];
+  const watch = page => {
+    page.on('pageerror', e => errors.push(String(e && e.message || e)));
+    page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  };
+  app.windows().forEach(watch);
+  app.on('window', watch);
+  const view = async name => {
+    for (let i = 0; i < 100; i++) {
+      const w = app.windows().find(p => p.url().includes('view=' + name));
+      if (w) { await w.waitForLoadState('domcontentloaded'); return w; }
+      await wait(150);
+    }
+    throw new Error('no ' + name + ' window');
+  };
+  const saved = async () => {
+    await wait(900); // saves are written straight after each change
+    return JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'));
+  };
+  const close = async () => { await app.close().catch(() => {}); fs.rmSync(home, { recursive: true, force: true }); };
+  return { app, view, saved, errors, close };
+}
+
+const settled = { onboarded: true, firstRun: false, seenVersion: require('../../package.json').version };
+
+test('welcome screen: every choice can be clicked and is saved', async () => {
+  const L = await launch(null); // a brand-new user
+  try {
+    const w = await L.view('main');
+    const ob = w.locator('#onboard');
+    await ob.waitFor({ state: 'visible' });
+
+    await ob.locator('[data-set="lang"][data-sval="ms"]').click();
+    await assert.doesNotReject(w.locator('#obTitle0', { hasText: 'Hai' }).waitFor({ timeout: 3000 }), 'language switches to Malay');
+    await ob.locator('[data-set="lang"][data-sval="en"]').click();
+
+    await w.locator('#obNext').click();
+    const tile = ob.locator('.ktile:visible').nth(1);
+    const kid = await tile.getAttribute('data-kid');
+    await tile.click();
+    await assert.doesNotReject(ob.locator(`.ktile[data-kid="${kid}"][aria-pressed="true"]`).waitFor({ timeout: 3000 }), 'kuih can be picked');
+
+    await w.locator('#obNext').click();
+    await ob.locator('[data-set="interval"][data-val="45"]').click();
+    await w.locator('#obNext').click();
+    await ob.locator('select[data-set="workStart"]').selectOption('480');
+    await ob.locator('.switch[data-set="lunchOn"]').click();
+    await w.locator('#obNext').click();
+    await w.locator('#obNext').click();
+    await ob.waitFor({ state: 'hidden' });
+
+    const s = await L.saved();
+    assert.equal(s.onboarded, true);
+    assert.equal(s.kuih, kid);
+    assert.equal(s.interval, 45);
+    assert.equal(s.workStart, 480);
+    assert.equal(s.lunchOn, false);
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+test('every page opens, and Settings changes are saved', async () => {
+  const L = await launch(settled);
+  try {
+    const w = await L.view('main');
+    for (const page of ['progress', 'stretches', 'kuih', 'settings', 'today']) {
+      await w.locator(`.nav-item[data-page="${page}"]`).click();
+      await assert.doesNotReject(w.locator(`.nav-item[data-page="${page}"][aria-current="page"]`).waitFor({ timeout: 3000 }), page + ' opens');
+    }
+    await w.locator('.nav-item[data-page="settings"]').click();
+    const health = w.locator('[data-stab="health"]');
+    if (await health.count()) await health.click();
+    await w.locator('button[data-step="goal"][data-d="1"]').click();
+    assert.equal((await L.saved()).goal, 9, 'daily goal + works');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+test('a stretch can be started and finished, from the main window and the pop-up', async () => {
+  const L = await launch(settled);
+  try {
+    const w = await L.view('main');
+    await w.locator('#card [data-act="now"], [data-act="now"]').first().click();
+    const pop = await L.view('popup');
+    await pop.locator('#card [data-act="start"]').waitFor({ timeout: 5000 });
+    await pop.locator('#card [data-act="start"]').click();
+    await pop.locator('#card [data-act="done"]').click();
+    const s = await L.saved();
+    const today = Object.values(s.history || {}).reduce((n, d) => n + (d.total || 0), 0);
+    assert.equal(today, 1, 'one stretch counted');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});

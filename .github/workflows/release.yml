@@ -41,6 +41,17 @@ jobs:
       # Nothing is built or published unless every test passes.
       - name: Automatic tests (dates, streaks, translations, settings, artwork)
         run: node --test test/*.test.js
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install (for the click-through tests)
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      # Starts the real app and clicks through the welcome screen, every page, Settings and a stretch.
+      - name: Click-through tests in the real app
+        run: xvfb-run -a npm run test:e2e
 
   installer:
     needs: check-version

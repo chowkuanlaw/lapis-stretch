@@ -1,0 +1,32 @@
+name: Tests
+
+# Runs the unit tests and the click-through tests (the real app, driven by Playwright) on every
+# push and pull request, so a broken button shows up the day it breaks, not at release time.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['mobile/**', '**.md']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - name: Unit tests
+        run: npm test
+      - name: Click-through tests in the real app
+        run: xvfb-run -a npm run test:e2e

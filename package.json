@@ -15,7 +15,8 @@
     "start": "electron .",
     "dist:installer": "electron-builder --win nsis --x64 --publish never",
     "dist:portable": "bash scripts/build-win.sh",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:e2e": "node --test --test-concurrency=1 test/e2e/*.e2e.js"
   },
   "dependencies": {
     "electron-updater": "6.8.12",
@@ -23,12 +24,16 @@
   },
   "devDependencies": {
     "electron": "45.1.0",
-    "electron-builder": "26.18.1"
+    "electron-builder": "26.18.1",
+    "playwright": "1.64.1"
   },
   "build": {
     "appId": "app.lapis.stretch",
     "productName": "Lapis",
-    "electronLanguages": ["en-US", "ms"],
+    "electronLanguages": [
+      "en-US",
+      "ms"
+    ],
     "copyright": "Copyright (c) 2026 chowkuanlaw",
     "directories": {
       "output": "dist/installer",
@@ -74,7 +79,10 @@
       "applicationId": "Lapis",
       "displayName": "Lapis",
       "backgroundColor": "#F2F5EE",
-      "languages": ["en-US", "ms-MY"],
+      "languages": [
+        "en-US",
+        "ms-MY"
+      ],
       "addAutoLaunchExtension": true,
       "artifactName": "Lapis-Store-${version}.${ext}"
     },

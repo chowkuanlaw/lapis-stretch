@@ -84,6 +84,8 @@ npm ci
 npm start
 ```
 
+Run the tests: `npm test` for the unit tests, and `npm run test:e2e` for the click-through tests, which start the real app and use it the way a person would (on Linux they need a display, for example `xvfb-run -a npm run test:e2e`).
+
 Build the installer (on Windows):
 
 ```bash
