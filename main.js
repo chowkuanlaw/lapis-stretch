@@ -74,7 +74,7 @@ function run() {
     const { saved, from } = readStateFile(app.getPath('userData'));
     S = cleanState(saved);
     if (from === 'state.bak.json') R.notices.push({ type: 'restored' }); // state.json was unreadable
-    if (!saved || !I18N.LANGS.includes(saved.lang)) S.lang = /^ms/i.test(app.getLocale()) ? 'ms' : 'en';
+    if (!saved || !I18N.LANGS.includes(saved.lang)) S.lang = /^ms/i.test(app.getLocale()) ? 'ms' : /^zh/i.test(app.getLocale()) && I18N.LANGS.includes('zh') ? 'zh' : /^ta/i.test(app.getLocale()) && I18N.LANGS.includes('ta') ? 'ta' : 'en';
     if (S.paused) S.pausedLeft = Math.max(S.pausedLeft || 0, 0);
     // Back within a few minutes (an update restart, or quit and reopen): carry on with the same countdown.
     // A launch after a longer break (e.g. first thing in the morning) starts a fresh countdown instead of firing at once.

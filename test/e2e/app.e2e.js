@@ -171,3 +171,21 @@ test('GitHub copy: never asks for a Store rating', async () => {
     for (const p of L.app.windows()) assert.equal(await p.locator('[data-w="rate-go"]').count(), 0, 'no rating question');
   } finally { await L.close(); }
 });
+
+test('language can be switched between English, Malay, Chinese and Tamil', async () => {
+  const L = await launch(settled);
+  try {
+    const w = await L.view('main');
+    await w.locator('.nav-item[data-page="settings"]').click();
+    const tab = w.locator('[data-stab="display"]');
+    if (await tab.count()) await tab.click();
+    const want = { ms: 'Hari Ini', zh: '今天', ta: 'இன்று', en: 'Today' };
+    for (const [lang, today] of Object.entries(want)) {
+      await w.locator(`[data-set="lang"][data-sval="${lang}"]:visible`).click();
+      await assert.doesNotReject(w.locator('.nav-item[data-page="today"]', { hasText: today }).waitFor({ timeout: 3000 }), lang + ' shows in the sidebar');
+      assert.equal(await w.evaluate(() => document.documentElement.lang), { en: 'en', ms: 'ms', zh: 'zh-Hans', ta: 'ta' }[lang]);
+    }
+    assert.equal((await L.saved()).lang, 'en');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});

@@ -1,6 +1,6 @@
 /* English and Bahasa Melayu text for every screen, the tray menu and notifications.
    Shared by the main process (require) and the windows (script tag).
-   t(lang, key, vars) fills {name} placeholders; a missing Malay string falls back to English. */
+   t(lang, key, vars) fills {name} placeholders; a missing string falls back to English. */
 (function (root) {
   'use strict';
   const en = {
@@ -311,18 +311,35 @@
     'news.1.11.0.c': 'Lebih ringan: menutup tetingkap kini membebaskan memorinya; peringatan terus berjalan di dulang.',
     'restored.title': 'Dipulihkan daripada sandaran', 'restored.sub': 'Lapis tidak dapat membaca fail tetapannya, jadi ia menyambung daripada sandaran semalam. Kiraan terkini hari ini mungkin tiada.'
   };
+  /* 1.13.0: Chinese (Simplified) and Tamil live in their own files (lang-zh.js, lang-ta.js), each with
+     the screen text plus the stretch, kuih and group text, which is attached to the shared data here. */
+  const LANG_NAMES = { en: 'English', ms: 'Bahasa Melayu', zh: '中文', ta: 'தமிழ்' };
+  const LANG_TAGS = { en: 'en', ms: 'ms', zh: 'zh-Hans', ta: 'ta' }; // for the HTML lang attribute
+  const LOCALES = { en: 'en-GB', ms: 'ms-MY', zh: 'zh-CN', ta: 'ta-MY' };
+  const isNode = typeof module === 'object' && module.exports;
   const STR = { en, ms };
   const LANGS = ['en', 'ms'];
+  const Data = isNode ? require('./data.js') : root.LapisData;
+  ['zh', 'ta'].forEach(l => {
+    let pack = null;
+    try { pack = isNode ? require('./lang-' + l + '.js') : (root.LapisLang || {})[l]; } catch (e) { pack = null; }
+    if (!pack || !pack.STR) return;
+    STR[l] = pack.STR; LANGS.push(l);
+    if (!Data) return;
+    Data.EX.forEach(x => { if (pack.EX && pack.EX[x.id]) x[l] = pack.EX[x.id]; });
+    Data.KUIH.forEach(x => { if (pack.KUIH && pack.KUIH[x.id]) x[l] = pack.KUIH[x.id]; });
+    Data.KUIH_GROUPS.forEach(x => { if (pack.GROUPS && pack.GROUPS[x.id]) x[l] = pack.GROUPS[x.id]; });
+  });
   function t(lang, key, vars) {
     const table = STR[lang] || en;
     let s = Object.prototype.hasOwnProperty.call(table, key) ? table[key] : Object.prototype.hasOwnProperty.call(en, key) ? en[key] : key;
     if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m));
     return s;
   }
-  // Text of a stretch, kuih or group in the chosen language.
-  const tx = (lang, item, field) => (lang === 'ms' && item.ms && item.ms[field] !== undefined ? item.ms[field] : item[field]);
-  const locale = lang => (lang === 'ms' ? 'ms-MY' : 'en-GB');
-  const api = { t, tx, locale, LANGS, STR };
+  // Text of a stretch, kuih or group in the chosen language (English when a translation is missing).
+  const tx = (lang, item, field) => (lang !== 'en' && Object.prototype.hasOwnProperty.call(LANG_NAMES, lang) && item[lang] && item[lang][field] !== undefined ? item[lang][field] : item[field]);
+  const locale = lang => LOCALES[lang] || LOCALES.en;
+  const api = { t, tx, locale, LANGS, STR, LANG_NAMES, LANG_TAGS };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.LapisI18n = api;
 })(typeof self !== 'undefined' ? self : this);

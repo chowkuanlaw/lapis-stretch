@@ -227,7 +227,7 @@
   const svgIcon = body => `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
   const switchRow = (k, title, sub, pre) => `<div class="set"><div class="lbl" id="${pre || ''}lbl-${k}">${title}<small>${sub}</small></div><button class="switch" role="switch" aria-labelledby="${pre || ''}lbl-${k}" data-set="${k}" type="button"></button></div>`;
   const segGroup = (key, label, vals, fmt) => `<div class="seg" role="group" aria-label="${esc(label)}">${vals.map(v => `<button type="button" data-set="${key}" data-val="${v}">${fmt(v)}</button>`).join('')}</div>`;
-  const langSeg = () => `<div class="seg" role="group" aria-label="${esc(T('set.lang'))}"><button type="button" data-set="lang" data-sval="en" lang="en">English</button><button type="button" data-set="lang" data-sval="ms" lang="ms">Bahasa Melayu</button></div>`;
+  const langSeg = () => `<div class="seg" role="group" aria-label="${esc(T('set.lang'))}">${I.LANGS.map(l => `<button type="button" data-set="lang" data-sval="${l}" lang="${I.LANG_TAGS[l]}">${I.LANG_NAMES[l]}</button>`).join('')}</div>`;
   const timeSelect = (key, label, from, to) => {
     const opts = []; for (let m = from; m <= to; m += 30) opts.push(`<option value="${m}">${fmtMin(m)}</option>`);
     return `<label class="tsel">${label}<select data-set="${key}">${opts.join('')}</select></label>`;
@@ -1217,7 +1217,7 @@
     if (!s) return;
     const relang = !st || st.lang !== s.lang;
     st = s;
-    document.documentElement.lang = L();
+    document.documentElement.lang = I.LANG_TAGS[L()] || L();
     if (!built || (relang && view !== 'egg')) {
       cardKey = ''; heroKey = ''; kuihKey = ''; comingKey = ''; wPoseKey = ''; noticeKey = '';
       B[0](); built = true;
