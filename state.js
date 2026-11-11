@@ -21,7 +21,7 @@ const DEFAULTS = {
   quietMeetings: true, waterOn: true, waterEvery: 60, waterGoal: 8, summaryOn: true, lastSummary: '',
   collect: true, unlocked: {}, codeUnlocked: false, collectInit: false,
   // 1.7.0
-  ramadanOn: true, wrapOn: true, lastWrap: '', exOff: [],
+  ramadanOn: true, wrapOn: true, lastWrap: '', exOff: [], rateAsked: false,
   // 1.7.1 easter eggs
   goldFound: {}, flagDay: '', remix: false, lastTeh: '', lastNight: '',
   // 1.8.0
@@ -57,6 +57,7 @@ function cleanState(saved) {
   pick('idx', int(saved.idx, 0, 1e9));
   // stretches turned off by the user (1.13.0): known-looking ids only, no repeats
   if (Array.isArray(saved.exOff)) out.exOff = [...new Set(saved.exOff.filter(x => typeof x === 'string' && /^[a-z]{2,20}$/.test(x)))].slice(0, 40);
+  out.rateAsked = saved.rateAsked === true; // the Store rating question (1.13.0) is asked once, ever
   pick('lastUpdateCheck', num(saved.lastUpdateCheck, 0, 1e15));
   pick('nextDue', num(saved.nextDue, 0, 1e15));
   pick('closedAt', num(saved.closedAt, 0, 1e15));

@@ -15,12 +15,12 @@ const { _electron: electron } = require('playwright');
 const ROOT = path.join(__dirname, '..', '..');
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-async function launch(state) {
+async function launch(state, extraEnv) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'lapis-e2e-'));
   const dir = path.join(home, 'Lapis');
   fs.mkdirSync(dir, { recursive: true });
   if (state) fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify(state));
-  const env = Object.assign({}, process.env, { XDG_CONFIG_HOME: home });
+  const env = Object.assign({}, process.env, { XDG_CONFIG_HOME: home }, extraEnv || {});
   delete env.NODE_OPTIONS; // Electron refuses some Node options (e.g. --use-openssl-ca)
   const app = await electron.launch({ args: [ROOT, '--no-sandbox'], env, timeout: 60000 });
   const errors = [];
@@ -140,5 +140,34 @@ test('a stretch can be switched off for reminders, and the last one stays on', a
     const s = await L.saved();
     assert.ok(!s.exOff.includes(ids[0]), 'the last stretch stays on');
     assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+// 1.13.0: the Store copy asks for a rating once, after 50 stretches and a 5-day streak. Other copies never ask.
+const keen = () => {
+  const history = {};
+  for (let i = 0; i < 8; i++) { const d = new Date(); d.setDate(d.getDate() - i); const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; history[k] = { total: 8, by: { chin: 8 }, water: 8 }; }
+  return Object.assign({}, settled, { history });
+};
+
+test('Store copy: asks for a rating once, and Rate or No thanks ends it', async () => {
+  const L = await launch(keen(), { LAPIS_TEST_STORE: '1' });
+  try {
+    const pop = await L.view('popup');
+    await pop.locator('[data-w="rate-go"]').waitFor({ timeout: 20000 });
+    await pop.locator('[data-w="notice-close"]').click();
+    assert.equal((await L.saved()).rateAsked, true, 'remembered, so it is never asked again');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+test('GitHub copy: never asks for a Store rating', async () => {
+  const L = await launch(keen());
+  try {
+    await L.view('main');
+    await wait(5000);
+    const s = await L.saved();
+    assert.ok(!s.rateAsked, 'not asked');
+    for (const p of L.app.windows()) assert.equal(await p.locator('[data-w="rate-go"]').count(), 0, 'no rating question');
   } finally { await L.close(); }
 });

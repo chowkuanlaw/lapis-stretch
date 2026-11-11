@@ -242,6 +242,11 @@ function run() {
   }
   /* Easter eggs (1.7.1): teh tarik on Friday at 3:30 pm, and "go to sleep" late at night.
      Each shows once (a week, a night), only while you're at the PC and not in a meeting. */
+  /* Store rating question (1.13.0): Store copy only, asked once ever, after 50 stretches and a 5-day streak.
+     "Rate" opens the Store's review page for Lapis; nothing is sent from here. */
+  const STORE_REVIEW_URL = 'ms-windows-store://review/?ProductId=9NWMHW1373T4';
+  const ratingStats = () => computeStats(S.history, S.goal, workDaysForStreak(), new Date(), { saver: S.streakSaver, waterGoal: S.waterGoal });
+  function ratingReady() { const st = ratingStats(); return st.total >= 50 && st.streak >= 5; }
   const isNight = d => d.getHours() >= 23 || d.getHours() < 5;
   const nightKey = d => dayKey(new Date(d.getTime() - 5 * 3600e3)); // 1 am still belongs to the evening before
   function eggNotices(now) {
@@ -250,6 +255,7 @@ function run() {
     let want = null;
     if (d.getDay() === 5 && m >= 930 && m < 960 && !R.resting && !S.paused && S.lastTeh !== dayKey(mondayOf(d))) want = 'teh';
     else if (isNight(d) && (S.lastNight !== nightKey(d) || (R.nightAgain && now >= R.nightAgain))) want = 'night';
+    else if (STORE && !S.rateAsked && !R.resting && !S.paused && ratingReady()) want = 'rate';
     if (!want || R.notices.some(n => n.type === want)) return;
     let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
     if (idle >= 60 || R.locked) { R.nextEggCheck = now + 30e3; return; } // only while you're using the PC
@@ -257,10 +263,10 @@ function run() {
     (S.quietMeetings ? isQuietTime() : Promise.resolve(false)).then(quiet => {
       R.eggCheck = false;
       if (quiet) { R.nextEggCheck = Date.now() + MEETING_RECHECK; return; }
-      if (want === 'teh') S.lastTeh = dayKey(mondayOf(d)); else { S.lastNight = nightKey(d); R.nightAgain = 0; }
+      if (want === 'teh') S.lastTeh = dayKey(mondayOf(d)); else if (want === 'rate') S.rateAsked = true; else { S.lastNight = nightKey(d); R.nightAgain = 0; }
       save();
-      pushNotice(want === 'teh' ? { type: 'teh' } : { type: 'night', back: S.workOn ? nextWorkStart(Date.now()) : 0 });
-      chime(want === 'teh' ? 'done' : 'water');
+      pushNotice(want === 'teh' ? { type: 'teh' } : want === 'rate' ? { type: 'rate', n: ratingStats().total } : { type: 'night', back: S.workOn ? nextWorkStart(Date.now()) : 0 });
+      chime(want === 'teh' || want === 'rate' ? 'done' : 'water');
     });
   }
 
@@ -843,6 +849,7 @@ function run() {
       case 'water-add': drankWater(false); break;
       case 'water-later': if (top && top.type === 'water') { R.nextWater = Date.now() + WATER_LATER; closeNotice(); } break;
       case 'notice-close': if (top) closeNotice(); break;
+      case 'rate-go': if (top && top.type === 'rate') { shell.openExternal(STORE_REVIEW_URL); closeNotice(); } break;
       case 'news-close': if (top && top.type === 'news') { S.seenVersion = app.getVersion(); save(); closeNotice(); } break;
       case 'pause-menu': pauseMenu(BrowserWindow.fromWebContents(evt.sender)); break;
       case 'reset-data': if (BrowserWindow.fromWebContents(evt.sender) === mainWin) resetData(); break;

@@ -108,6 +108,7 @@
     'prog.less': 'Less', 'prog.more': 'More', 'prog.atGoal': 'At goal',
     // 1.7.1 easter eggs
     'gold.tag': '✦ A golden kuih appeared!', 'gold.title': 'Golden kuih', 'gold.sub': '{n} of {all} found. They turn up by luck, about once in 200 reminders.', 'gold.found': 'Found {date}',
+    'rate.tag': 'Thank you', 'rate.title': 'Enjoying Lapis?', 'rate.sub': "That's {n} stretches so far. A quick rating in the Microsoft Store helps other people find Lapis. We only ask once.", 'rate.go': 'Rate in the Store', 'rate.no': 'No thanks',
     'teh.tag': 'Friday · {time}', 'teh.title': 'Teh tarik time!', 'teh.sub': 'Almost the weekend. Stand up, pull a long stretch, then go pull a teh.', 'teh.btn': 'Jom!',
     'night.title': 'Dah lewat, tidur lah.', 'night.sub': "It's late. Save your work and get some rest.", 'night.see': 'See you {when}.', 'night.seeTomorrow': 'See you tomorrow.',
     'night.ok': 'Okay, goodnight', 'night.more': '5 more minutes',
@@ -261,6 +262,7 @@
     'prog.less': 'Kurang', 'prog.more': 'Lebih', 'prog.atGoal': 'Capai sasaran',
     // 1.7.1 easter eggs
     'gold.tag': '✦ Kuih emas muncul!', 'gold.title': 'Kuih emas', 'gold.sub': '{n} daripada {all} ditemui. Ia muncul secara tuah, kira-kira sekali dalam 200 peringatan.', 'gold.found': 'Ditemui {date}',
+    'rate.tag': 'Terima kasih', 'rate.title': 'Suka Lapis?', 'rate.sub': 'Sudah {n} regangan setakat ini. Penilaian ringkas di Microsoft Store membantu orang lain menemui Lapis. Kami tanya sekali sahaja.', 'rate.go': 'Nilai di Store', 'rate.no': 'Tidak, terima kasih',
     'teh.tag': 'Jumaat · {time}', 'teh.title': 'Masa teh tarik!', 'teh.sub': 'Hujung minggu dah dekat. Bangun, regang panjang-panjang, kemudian pergi tarik teh.', 'teh.btn': 'Jom!',
     'night.title': 'Dah lewat, tidur lah.', 'night.sub': 'Dah lewat malam. Simpan kerja anda dan berehat.', 'night.see': 'Jumpa {when}.', 'night.seeTomorrow': 'Jumpa esok.',
     'night.ok': 'Okey, selamat malam', 'night.more': '5 minit lagi',

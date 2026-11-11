@@ -129,3 +129,10 @@ test('exOff (stretches switched off) keeps only short lowercase ids, once each',
   assert.deepEqual(cleanState({ exOff: 'wrist' }).exOff, []);
   assert.ok(cleanState({ exOff: Array.from({ length: 100 }, (_, i) => 'ab' + String.fromCharCode(97 + i % 26) + String.fromCharCode(97 + (i / 26 | 0))) }).exOff.length <= 40);
 });
+
+test('rateAsked is a plain yes/no that defaults to not asked', () => {
+  assert.equal(DEFAULTS.rateAsked, false);
+  assert.equal(cleanState({}).rateAsked, false);
+  assert.equal(cleanState({ rateAsked: true }).rateAsked, true);
+  assert.equal(cleanState({ rateAsked: 'yes' }).rateAsked, false);
+});
