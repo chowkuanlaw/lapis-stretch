@@ -294,7 +294,7 @@
             </section>
             <section class="panel tpanel" aria-labelledby="h-water" id="waterPanel">
               <div class="tp-head"><h2 id="h-water">${T('water.title')}</h2><button class="linkbtn" data-page="progress" data-ptab="water" type="button">${T('btn.seeProgress')}</button></div>
-              <div class="glasses" id="glasses"></div>
+              <div class="glasses" id="glasses" role="img"></div>
               <p class="tp-note" id="waterNote"></p>
               <button class="btn soft small" data-w="water-add" type="button" id="waterBtn">${T('water.drank')}</button>
             </section>
@@ -645,7 +645,7 @@
   function renderProgress(s) {
     const days = lastDays(7), sum = days.reduce((a, d) => a + d.n, 0), tr = todayRec();
     $('#progSub').textContent = ptab === 'water' ? T('prog.subWater') : T('prog.sub');
-    ['stretches', 'water'].forEach(id => { $('#ptab-' + id).hidden = ptab !== id; $('#tab-' + id).setAttribute('aria-selected', String(ptab === id)); $('#tab-' + id).setAttribute('aria-pressed', String(ptab === id)); });
+    ['stretches', 'water'].forEach(id => { $('#ptab-' + id).hidden = ptab !== id; $('#tab-' + id).setAttribute('aria-selected', String(ptab === id)); });
     $('#stToday').textContent = tr.total;
     $('#stWeek').textContent = sum;
     $('#stBest').textContent = Math.max(0, ...days.map(d => d.n));
@@ -726,7 +726,7 @@
     document.querySelectorAll('.day[data-set]').forEach(b => b.setAttribute('aria-pressed', String((st.workDays || []).includes(+b.dataset.val))));
     document.querySelectorAll('select[data-set]').forEach(sel => { if (document.activeElement !== sel) sel.value = String(st[sel.dataset.set]); });
     document.querySelectorAll('#page-settings .tsels select').forEach(sel => { sel.disabled = (sel.dataset.set.startsWith('work') && !st.workOn) || (sel.dataset.set.startsWith('lunch') && (!st.lunchOn || !st.workOn)) || (sel.dataset.set.startsWith('water') && !st.waterOn); });
-    ['reminders', 'health', 'display', 'about'].forEach(id => { $('#stab-' + id).hidden = stab !== id; $('#stabbtn-' + id).setAttribute('aria-selected', String(stab === id)); $('#stabbtn-' + id).setAttribute('aria-pressed', String(stab === id)); });
+    ['reminders', 'health', 'display', 'about'].forEach(id => { $('#stab-' + id).hidden = stab !== id; $('#stabbtn-' + id).setAttribute('aria-selected', String(stab === id)); });
     $('#goalVal').textContent = st.goal;
     if (document.activeElement !== $('#volIn')) $('#volIn').value = String(st.volume);
     $('#chimeRows').classList.toggle('off', !st.sound);
