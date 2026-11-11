@@ -1,6 +1,6 @@
 # Lapis privacy policy
 
-_Last updated: 17 October 2026_
+_Last updated: 11 November 2026_
 
 Lapis is a desk-stretch reminder for Windows. It is made by one person as a free, open-source app. This page explains what it keeps and what it doesn't. It covers every copy of Lapis: the Microsoft Store version, the installer and the portable zip.
 
@@ -13,6 +13,7 @@ Lapis collects nothing about you. It has no accounts, no analytics, no ads and n
 - Your settings (for example how often to remind you, your working hours, language and kuih).
 - How many stretches and glasses of water you counted each day, kept for about the last 400 days.
 - Which kuih and badges you've collected.
+- Which stretches you've switched off, and (Microsoft Store version only) whether Lapis has already asked you to rate it. It asks once, so it keeps just that yes or no.
 
 These are saved in a file called `state.json`, plus one daily backup copy, in the Lapis folder of your Windows user profile. Nobody else receives them, including the developer.
 
@@ -26,6 +27,8 @@ Lapis never uses your microphone, camera, location, contacts, files or browsing.
 
 - **Microsoft Store version:** Lapis does not connect to the internet. Updates come through the Microsoft Store. Microsoft's own handling of Store downloads is covered by the [Microsoft Privacy Statement](https://privacy.microsoft.com/privacystatement).
 - **Installer and portable versions:** the only connection is a check for a newer version on this project's GitHub releases page (when Lapis starts, once a day, and when you click **Check now**). It sends nothing about you or your stretches. You can turn this off in Settings. GitHub's handling of that request is covered by the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+
+In the Microsoft Store version, clicking **Rate in the Store** (offered once) opens the Store's review page for Lapis. The Store app, not Lapis, then connects to Microsoft. Lapis sends nothing.
 
 If you click a link in Lapis (for example to this project's page), it opens in your web browser like any other link.
 

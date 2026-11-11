@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.13.0 (2026-11-11)
+
+- **Choose your stretches.** On the Stretches page, each stretch has a switch. Turn off any you can't or shouldn't do and Lapis leaves it out of your reminders, the "coming up" list and the "different stretch" button. At least one stretch always stays on. You can still click a switched-off stretch to do it now.
+- **Four new stretches:** deep breathing, arm circles, seated leg raise and calf raises, with "How to" steps in every language. Your kuih acts out all four on the reminder card. The "Try 9 different stretches" and "9 different stretches in one day" kuih goals now count any nine of the thirteen.
+- **Chinese (Simplified) and Tamil.** Every screen, reminder, tray menu, stretch and kuih description now also comes in 中文 and தமிழ். Choose in Settings > Display, or on the welcome screen. They were translated with AI help and haven't yet been checked by a native speaker; corrections are welcome as GitHub issues.
+- **Accessibility.** Automatic accessibility scans (axe) of every page in Light and Dark now run with the tests. Fixed tab buttons announced with the wrong attributes, the water-glass row having no role, and low-contrast text on the month calendar, the kuih origin tag and the working-day buttons in Dark mode. Keyboard-only use of the sidebar and the stretch switches is tested, and every switch has a spoken name.
+- **Microsoft Store copy only:** once, after 50 stretches and a 5-day streak, Lapis asks whether you'd like to rate it. **Rate in the Store** opens the Store's review page; **No thanks** closes it. Either way it never asks again. The GitHub installer and portable copies never ask.
+- Tests: the click-through tests now cover choosing stretches, switching language, the rating question and the accessibility scans (10 tests on top of the 43 unit tests).
+
 ## 1.12.0 (2026-11-10)
 
 - **Watch and copy.** On the reminder card, your kuih now acts out shoulder rolls, stand and reach, the walkaround and the 20-20-20 eye break, and the shoulder roll and stand-and-reach instructions are shorter. Stretches a kuih body can't show accurately (chin tucks, neck, thoracic, twist, wrist) keep their picture and text. The kuih stays still if Windows is set to show fewer animations.

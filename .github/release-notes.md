@@ -11,7 +11,8 @@ The app isn't code-signed, so Windows may show "Windows protected your PC" the f
 **What's in it**
 - Pop-up reminder card every 20 minutes (15–60 configurable) with Start, Snooze, Skip and a timer
 - Desktop countdown widget and a tray icon
-- Nine desk stretches with "How to" guides, plus a daily and weekly tally; for four of them your kuih acts out the move
+- Thirteen desk stretches with "How to" guides, plus a daily and weekly tally; switch off any you can't do, and your kuih acts out eight of them
+- English, Bahasa Melayu, Chinese and Tamil
 - Timer restarts after 5 minutes away, or when you lock or sleep your PC
 - No tracking; settings and counts stay on your PC in `%APPDATA%\Lapis\state.json`. The only network traffic is the update check, which you can turn off in Settings
 

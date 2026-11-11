@@ -15,7 +15,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Tray icon.** Left-click to open Lapis, right-click to pause or quit. A ring around the kuih fills up as the next stretch gets closer. Closing the window keeps reminders running.
 - **Pause for a while.** Pause for 30 minutes, 1 or 2 hours, until tomorrow, or until you resume, from the tray, the widget or the sidebar.
 - **A tidy main window.** A sidebar with five pages: **Today** (countdown, daily goal, water, your next kuih, what's coming up), **Progress** (week chart, best day, streak, a month calendar, and water), **Stretches**, **Your kuih** and **Settings**.
-- **Quick setup on first launch.** Say hello, choose English or Bahasa Melayu, pick your kuih, choose how often, set your working day and water reminders, done.
+- **Quick setup on first launch.** Say hello, choose your language (English, Bahasa Melayu, 中文 or தமிழ்), pick your kuih, choose how often, set your working day and water reminders, done.
 - **Working hours.** Reminds you only during your working days and hours (Monday to Friday, 9 to 6 by default) and skips lunch. Outside them Lapis rests, and the widget says when it's back.
 - **Quiet in meetings.** While an app is full screen or presenting, or Windows Do not disturb is on, reminders wait and come 2 minutes after you're done.
 - **Water reminders.** Every hour your kuih holds up a glass of water. Tap **Done, I drank** to count it toward your 8 glasses a day.
@@ -27,8 +27,8 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Ramadan mode.** During the fasting month, water reminders pause and the walkaround (which ends with a drink) is left out until Raya.
 - **Collect the kuih.** Start with four kuih and meet the other 24 as you stretch, from your first 5 stretches to a 1,000-stretch milestone.
 - **Festive outfits.** For Hari Raya, Chinese New Year, Deepavali, Kaamatan, Gawai, Merdeka, Malaysia Day and Christmas, your kuih dresses up for the few days before and on the day itself.
-- **English or Bahasa Melayu.** Every screen, reminder and the tray menu.
-- **Nine stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, and a 2-minute walkaround every few rounds. Each has a "How to" guide, and for shoulder rolls, stand and reach, the walkaround and the eye break your kuih acts out the move on the reminder card.
+- **Four languages.** English, Bahasa Melayu, Chinese (中文) and Tamil (தமிழ்) for every screen, reminder, stretch and the tray menu. The Chinese and Tamil text was translated with AI help and is waiting for a native-speaker check; please [open an issue](../../issues/new/choose) with corrections.
+- **Thirteen stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, deep breathing, arm circles, seated leg raise, calf raises, and a 2-minute walkaround every few rounds. Each has a "How to" guide, and your kuih acts out shoulder rolls, stand and reach, the walkaround, the eye break, deep breathing, arm circles, leg raises and calf raises on the reminder card. **Choose your stretches:** switch off any you can't or shouldn't do (at least one stays on).
 - **Time away counts as a break.** After 5 minutes of no keyboard or mouse activity, or when you lock your PC for a minute or more or sleep it, the timer restarts and any reminder that was waiting is cleared, so you're not nagged the moment you sit back down.
 - **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime sound and volume, text size, Light or Dark mode, widget on or off, optional Windows notification, start with Windows, language, and **Reset my data**.
 - **Pick your kuih.** 28 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
@@ -65,6 +65,8 @@ To stay quiet in meetings, Lapis asks Windows two things when a reminder is due:
 
 The only network traffic is the update check against this repository's GitHub releases: when Lapis starts, once a day, and when you click **Check now**. It sends nothing about you or your stretches, just the standard request any download makes. Turn off **Update automatically** in Settings and Lapis only goes online when you click **Check now**.
 
+The Microsoft Store copy asks once, after 50 stretches and a 5-day streak, whether you'd like to rate it. **Rate in the Store** opens the Store's review page (the Store app does the connecting, not Lapis); Lapis remembers only that it asked. The other copies never ask.
+
 **Reset my data** in Settings clears your history, collected kuih and badges from your PC, including the daily backup copy (it asks you to click twice). When you uninstall Lapis, it asks whether to remove your data too; choose No to keep it for a reinstall. It's all in the `%APPDATA%\Lapis` folder.
 
 The full privacy policy is in [PRIVACY.md](PRIVACY.md). See [SECURITY.md](SECURITY.md) for how the app is locked down and how to report a security problem.
@@ -84,7 +86,7 @@ npm ci
 npm start
 ```
 
-Run the tests: `npm test` for the unit tests, and `npm run test:e2e` for the click-through tests, which start the real app and use it the way a person would (on Linux they need a display, for example `xvfb-run -a npm run test:e2e`).
+Run the tests: `npm test` for the unit tests, and `npm run test:e2e` for the click-through and accessibility tests, which start the real app and use it the way a person would (on Linux they need a display, for example `xvfb-run -a npm run test:e2e`).
 
 Build the installer (on Windows):
 
