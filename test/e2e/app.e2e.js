@@ -151,7 +151,7 @@ const keen = () => {
 };
 
 test('Store copy: asks for a rating once, and Rate or No thanks ends it', async () => {
-  const L = await launch(keen(), { LAPIS_TEST_STORE: '1' });
+  const L = await launch(Object.assign(keen(), { quietMeetings: false }), { LAPIS_TEST_STORE: '1', LAPIS_TEST_PRESENT: '1' });
   try {
     const pop = await L.view('popup');
     await pop.locator('[data-w="rate-go"]').waitFor({ timeout: 20000 });

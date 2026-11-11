@@ -41,6 +41,8 @@ const GOLD_CHANCE = 1 / 200;
 // Microsoft Store copy (1.12.0): the Store installs updates and starts Lapis at sign-in, so Lapis never
 // checks for updates itself and makes no network requests at all.
 const STORE = process.windowsStore === true || (!require('electron').app.isPackaged && !!process.env.LAPIS_TEST_STORE);
+// Tests only (never in an installed copy): treat the person as at the PC even when the machine reports it idle, as a CI runner does.
+const TEST_PRESENT = !require('electron').app.isPackaged && process.env.LAPIS_TEST_PRESENT === '1';
 const MEETING_RECHECK = 60e3, AFTER_MEETING = 120e3, WATER_LATER = 15 * 60e3;
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true } }]);
 
@@ -258,7 +260,7 @@ function run() {
     else if (STORE && !S.rateAsked && !R.resting && !S.paused && ratingReady()) want = 'rate';
     if (!want || R.notices.some(n => n.type === want)) return;
     let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) { /* ignore */ }
-    if (idle >= 60 || R.locked) { R.nextEggCheck = now + 30e3; return; } // only while you're using the PC
+    if ((idle >= 60 && !TEST_PRESENT) || R.locked) { R.nextEggCheck = now + 30e3; return; } // only while you're using the PC
     R.eggCheck = true;
     (S.quietMeetings ? isQuietTime() : Promise.resolve(false)).then(quiet => {
       R.eggCheck = false;
