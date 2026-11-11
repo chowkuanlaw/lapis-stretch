@@ -154,7 +154,12 @@ test('Store copy: asks for a rating once, and Rate or No thanks ends it', async 
   const L = await launch(Object.assign(keen(), { quietMeetings: false }), { LAPIS_TEST_STORE: '1', LAPIS_TEST_PRESENT: '1' });
   try {
     const pop = await L.view('popup');
-    await pop.locator('[data-w="rate-go"]').waitFor({ timeout: 20000 });
+    // Other notices can come first (the "go to sleep" one shows when a CI runner's clock is past 11 pm); dismiss them.
+    for (let i = 0; i < 100 && !(await pop.locator('[data-w="rate-go"]').isVisible()); i++) {
+      if (await pop.locator('[data-w="notice-close"]').isVisible()) await pop.locator('[data-w="notice-close"]').click();
+      await wait(250);
+    }
+    await pop.locator('[data-w="rate-go"]').waitFor({ timeout: 5000 });
     await pop.locator('[data-w="notice-close"]').click();
     assert.equal((await L.saved()).rateAsked, true, 'remembered, so it is never asked again');
     assert.deepEqual(L.errors, []);
