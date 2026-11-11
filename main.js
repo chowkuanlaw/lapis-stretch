@@ -118,7 +118,9 @@ function run() {
   function today() { const k = dayKey(new Date()); return S.history[k] || (S.history[k] = { total: 0, by: {} }); }
   // Ramadan mode: no water reminders, and the walk (which ends with a drink) is left out of the cycle.
   const puasa = () => (S.ramadanOn ? ramadanOn(new Date()) : null);
-  function skipWalk() { if (puasa()) { let n = 0; while (CYCLE[S.idx % CYCLE.length] === 'walk' && n++ < CYCLE.length) S.idx++; } }
+  // A stretch is in the rotation unless you turned it off (1.13.0), or it's the walkaround during Ramadan.
+  function exOn(id) { return !S.exOff.includes(id) && !(puasa() && id === 'walk'); }
+  function skipOff() { let n = 0; while (!exOn(CYCLE[S.idx % CYCLE.length]) && n++ < CYCLE.length) S.idx++; }
   function upNext() { return BY[CYCLE[S.idx % CYCLE.length]]; }
   const exName = ex => I18N.tx(S.lang, ex, 'name');
 
@@ -333,7 +335,7 @@ function run() {
     broadcast();
   }
   function schedule(ms) { S.nextDue = Date.now() + ms; if (S.paused) S.pausedLeft = ms; save(); }
-  function advance() { if (R.cur === upNext().id) S.idx++; skipWalk(); }
+  function advance() { if (R.cur === upNext().id) S.idx++; skipOff(); }
   function finish() {
     R.skips = 0; R.snoozed = false;
     const rec = today(); rec.total++; rec.by[R.cur] = (rec.by[R.cur] || 0) + 1;
@@ -347,8 +349,8 @@ function run() {
   function snooze() { R.snoozed = true; schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 3500; broadcast(); }
   function different() {
     const base = R.cur || upNext().id; let i = S.idx;
-    do { i++; } while (CYCLE[i % CYCLE.length] === base || (puasa() && CYCLE[i % CYCLE.length] === 'walk'));
-    S.idx = i; save();
+    for (let n = 0; n < CYCLE.length; n++) { i++; const id = CYCLE[i % CYCLE.length]; if (id !== base && exOn(id)) { S.idx = i; break; } }
+    save();
     if (R.mode === 'due') R.cur = upNext().id;
     broadcast();
   }
@@ -498,7 +500,18 @@ function run() {
       case 'interval': S.interval = [15, 20, 30, 45, 60].includes(+value) ? +value : 20; if (R.mode === 'waiting') schedule(S.interval * 60e3); break;
       case 'snooze': S.snooze = [5, 10, 15].includes(+value) ? +value : 10; break;
       case 'sound': case 'toast': case 'awayReset': case 'quietMeetings': case 'summaryOn': case 'wrapOn': S[key] = !!value; break;
-      case 'ramadanOn': S.ramadanOn = !!value; skipWalk(); break;
+      case 'ramadanOn': S.ramadanOn = !!value; skipOff(); break;
+      case 'exOn': { // turn one stretch on or off; at least one stays on
+        const id = String(value && value.id || '');
+        if (!BY[id]) break;
+        const off = new Set(S.exOff);
+        if (value.on) off.delete(id); else off.add(id);
+        if (CYCLE.every(c => off.has(c))) break;
+        S.exOff = [...off].filter(x => BY[x]);
+        skipOff();
+        if (R.mode === 'waiting') R.cur = null;
+        break;
+      }
       case 'trayRing': S.trayRing = !!value; break;
       case 'streakSaver': S.streakSaver = !!value; collectionUpdate(false); break;
       case 'textSize': if (!own(TEXT_SIZES, value)) return; S.textSize = value; applyTextSize(); break;
@@ -558,7 +571,7 @@ function run() {
         else if (R.awaySince) backFromAway(now);
       }
     } else if (R.awaySince) { R.awaySince = null; broadcast(); }
-    if (R.mode === 'waiting') skipWalk();
+    if (R.mode === 'waiting') skipOff();
 
     if (R.mode === 'waiting' && !S.paused && !R.awaySince && !R.resting && !R.quietCheck && now >= S.nextDue) dueOrHold();
     else if (R.mode === 'due' && !R.awaySince && now - R.dueAt > (R.rechimes + 1) * 5 * 60e3) { R.rechimes++; chime('due'); }

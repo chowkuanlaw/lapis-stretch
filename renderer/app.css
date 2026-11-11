@@ -246,6 +246,18 @@ body.view-main{height:100vh;overflow:hidden}
 .lib.big .mini{height:130px}
 .lib.big .mini svg{height:118px}
 .lib small{font-size:12.5px;color:var(--muted);line-height:1.4}
+/* 1.13.0: each stretch can be left out of reminders */
+.lib .excard{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--bg);border-radius:16px;overflow:hidden;transition:border-color .15s,transform .15s}
+.lib .excard:hover{border-color:var(--pandan);transform:translateY(-2px)}
+.lib .excard .exgo{border:0;border-radius:0;background:none;flex:1}
+.lib .excard .exgo:hover{transform:none}
+.lib .exon{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.lib .excard.off .mini,.lib .excard.off .exgo b{opacity:.5}
+.switch.sm{width:36px;height:22px}
+.switch.sm::after{width:16px;height:16px}
+.switch.sm[aria-checked="true"]::after{transform:translateX(14px)}
+.switch[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .kuih-layout{display:flex;gap:22px;align-items:flex-start}
 .kuih-sel{width:240px;flex:none;display:flex;flex-direction:column;gap:12px;position:sticky;top:0}
 .kuih-big{background:var(--pandan-soft);border-radius:16px;height:220px;display:grid;place-items:center}

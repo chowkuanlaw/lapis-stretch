@@ -121,3 +121,11 @@ test('Reset my data leaves no copy of the old history behind', () => {
   writeStateFile(dir, { history: {}, goal: 9 }); // later saves start a fresh backup from the reset data
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'state.bak.json'), 'utf8')), { history: {} });
 });
+
+test('exOff (stretches switched off) keeps only short lowercase ids, once each', () => {
+  assert.deepEqual(DEFAULTS.exOff, []);
+  assert.deepEqual(cleanState({}).exOff, []);
+  assert.deepEqual(cleanState({ exOff: ['wrist', 'wrist', 'eyes', 'X', '<b>', 5, 'a'.repeat(30)] }).exOff, ['wrist', 'eyes']);
+  assert.deepEqual(cleanState({ exOff: 'wrist' }).exOff, []);
+  assert.ok(cleanState({ exOff: Array.from({ length: 100 }, (_, i) => 'ab' + String.fromCharCode(97 + i % 26) + String.fromCharCode(97 + (i / 26 | 0))) }).exOff.length <= 40);
+});

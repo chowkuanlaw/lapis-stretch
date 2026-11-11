@@ -46,7 +46,8 @@ async function launch(state) {
   return { app, view, saved, errors, close };
 }
 
-const settled = { onboarded: true, firstRun: false, seenVersion: require('../../package.json').version };
+// Working hours off, so reminders behave the same whatever time of day the test runs.
+const settled = { onboarded: true, firstRun: false, workOn: false, seenVersion: require('../../package.json').version };
 
 test('welcome screen: every choice can be clicked and is saved', async () => {
   const L = await launch(null); // a brand-new user
@@ -113,6 +114,31 @@ test('a stretch can be started and finished, from the main window and the pop-up
     const s = await L.saved();
     const today = Object.values(s.history || {}).reduce((n, d) => n + (d.total || 0), 0);
     assert.equal(today, 1, 'one stretch counted');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+test('a stretch can be switched off for reminders, and the last one stays on', async () => {
+  const L = await launch(settled);
+  try {
+    const w = await L.view('main');
+    await w.locator('.nav-item[data-page="stretches"]').click();
+    const sw = id => w.locator(`[data-exon="${id}"]`);
+    await sw('wrist').waitFor({ timeout: 3000 });
+    await sw('wrist').click();
+    await assert.doesNotReject(w.locator('[data-exon="wrist"][aria-checked="false"]').waitFor({ timeout: 3000 }), 'switch turns off');
+    assert.ok((await L.saved()).exOff.includes('wrist'), 'saved');
+    await sw('wrist').click();
+    await assert.doesNotReject(w.locator('[data-exon="wrist"][aria-checked="true"]').waitFor({ timeout: 3000 }), 'switch turns back on');
+    assert.deepEqual((await L.saved()).exOff, []);
+
+    // Switch everything off except one: that one can't be switched off.
+    const ids = await w.locator('[data-exon]').evaluateAll(n => n.map(x => x.dataset.exon));
+    for (const id of ids.slice(1)) { await sw(id).click(); await wait(80); }
+    await assert.doesNotReject(w.locator(`[data-exon="${ids[0]}"][aria-disabled="true"]`).waitFor({ timeout: 3000 }), 'last one is locked on');
+    await sw(ids[0]).click({ force: true });
+    const s = await L.saved();
+    assert.ok(!s.exOff.includes(ids[0]), 'the last stretch stays on');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });

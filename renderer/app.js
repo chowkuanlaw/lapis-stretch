@@ -129,6 +129,15 @@
   }
   /* 1.12.0: the kuih acts out the stretch on the reminder card (see lapisMove in mascot.js).
      About 15 frames a second, only while a moving tile is on screen and the window is visible. */
+  // Stretches page (1.13.0): each stretch can be left out of your reminders; at least one stays on.
+  function renderLib() {
+    const off = st.exOff || [], onCount = EX.filter(e => CYCLE.includes(e.id) && !off.includes(e.id)).length;
+    $('#lib').innerHTML = EX.map(e => {
+      const on = !off.includes(e.id), last = on && onCount <= 1;
+      return `<div class="excard${on ? '' : ' off'}"><button type="button" class="exgo" data-ex="${e.id}"><div class="mini">${lapis(e.pose, doing(e))}</div><b>${exName(e)}</b><span>${tx(e, 'dose')}</span><small>${tx(e, 'cue')}</small></button>` +
+        `<div class="exon"><span id="exl-${e.id}">${T('str.inRem')}</span><button class="switch sm" role="switch" type="button" aria-labelledby="exl-${e.id} exn-${e.id}" aria-checked="${on}" data-exon="${e.id}"${last ? ` aria-disabled="true" title="${esc(T('str.lastOn'))}"` : ''}></button><span class="sr" id="exn-${e.id}">${exName(e)}</span></div></div>`;
+    }).join('');
+  }
   function reduceMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
   let moveRaf = 0, moveT0 = 0, moveLast = 0;
   function startMoves() {
@@ -171,6 +180,8 @@
     if (pt) { ptab = pt.dataset.ptab; if (st) renderMain(); return; }
     const ob = e.target.closest('[data-ob]');
     if (ob) { obAction(ob.dataset.ob); return; }
+    const xo = e.target.closest('[data-exon]');
+    if (xo) { if (xo.getAttribute('aria-disabled') !== 'true') api.act('set', { key: 'exOn', value: { id: xo.dataset.exon, on: xo.getAttribute('aria-checked') !== 'true' } }); return; }
     const a = e.target.closest('[data-act]');
     if (a) { api.act(a.dataset.act); return; }
     const x = e.target.closest('[data-ex]');
@@ -480,12 +491,12 @@
 
   let heroKey = '', kuihKey = '', comingKey = '';
   function renderKuihParts() {
-    const key = [st.kuih, L(), outfit()].join('|');
+    const key = [st.kuih, L(), outfit(), (st.exOff || []).join()].join('|');
     if (kuihKey === key) return;
     kuihKey = key;
     const k = KUIH_BY[st.kuih] || KUIH_BY.lapis;
     $('#logo').innerHTML = lapis('wave', k.name);
-    $('#lib').innerHTML = EX.map(e => `<button type="button" data-ex="${e.id}"><div class="mini">${lapis(e.pose, doing(e))}</div><b>${exName(e)}</b><span>${tx(e, 'dose')}</span><small>${tx(e, 'cue')}</small></button>`).join('');
+    renderLib();
     $('#kuihBig').innerHTML = lapis('wave', k.name);
     $('#kuihName').textContent = k.name;
     $('#kuihOrigin').textContent = tx(k, 'origin');
@@ -573,11 +584,11 @@
     } else if (st.ramadan) $('#festText').textContent = T('ram.banner', { n: st.ramadan.day });
   }
   function renderComing() {
-    const n = CYCLE.length, key = [st.idx, st.kuih, L(), outfit(), !!st.ramadan].join('|');
+    const n = CYCLE.length, key = [st.idx, st.kuih, L(), outfit(), !!st.ramadan, (st.exOff || []).join()].join('|');
     if (key === comingKey) return;
     comingKey = key;
     const ids = [];
-    for (let i = 1; ids.length < 4 && i <= n * 2; i++) { const id = CYCLE[(st.idx + i) % n]; if (!(st.ramadan && id === 'walk')) ids.push(id); }
+    for (let i = 1; ids.length < 4 && i <= n * 2; i++) { const id = CYCLE[(st.idx + i) % n]; if (!(st.ramadan && id === 'walk') && !(st.exOff || []).includes(id)) ids.push(id); }
     $('#coming').innerHTML = ids.map(id => { const e = BY[id]; return `<button type="button" class="coming-item" data-ex="${e.id}" title="${esc(T('coming.do', { ex: exName(e) }))}"><span class="ci-img">${lapis(e.pose, doing(e))}</span><b>${exName(e)}</b></button>`; }).join('');
   }
 
