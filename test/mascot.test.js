@@ -33,7 +33,7 @@ test('unknown kuih or pose fall back safely', () => {
 });
 
 test('1.12.0 and 1.13.0: the animated stretches draw cleanly at every moment, for every kuih', () => {
-  const MOVING = ['shoulders', 'reach', 'walk', 'eyes', 'breathe', 'arms', 'legs', 'calf']; // the last four are 1.13.0
+  const MOVING = ['shoulders', 'reach', 'walk', 'eyes', 'breathe', 'arms', 'legs', 'calf', 'chin', 'neck', 'thoracic', 'twist', 'wrist']; // 1.12.0, 1.13.0, 1.14.0
   for (const id of MOVING) {
     assert.ok(D.EX.some(e => e.id === id), id + ' is a real stretch');
     const mv = W.lapisMove(id);
@@ -48,7 +48,8 @@ test('1.12.0 and 1.13.0: the animated stretches draw cleanly at every moment, fo
     }
   }
   // a kuih has no neck, spine or wrists, so these stay as still pictures with text
-  for (const id of ['chin', 'neck', 'thoracic', 'twist', 'wrist']) assert.equal(W.lapisMove(id), null, id + ' is not animated');
+  for (const e of D.EX) assert.ok(W.lapisMove(e.id), e.id + ' is animated (1.14.0: all of them)');
+  assert.equal(W.lapisMove('nope'), null);
   assert.equal(W.lapisMove('constructor'), null);
 });
 

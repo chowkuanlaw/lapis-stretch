@@ -28,7 +28,7 @@ A small Windows desktop app that reminds you to stretch while you work. Every 20
 - **Collect the kuih.** Start with four kuih and meet the other 24 as you stretch, from your first 5 stretches to a 1,000-stretch milestone.
 - **Festive outfits.** For Hari Raya, Chinese New Year, Deepavali, Kaamatan, Gawai, Merdeka, Malaysia Day and Christmas, your kuih dresses up for the few days before and on the day itself.
 - **Four languages.** English, Bahasa Melayu, Chinese (中文) and Tamil (தமிழ்) for every screen, reminder, stretch and the tray menu. The Chinese and Tamil text was translated with AI help and is waiting for a native-speaker check; please [open an issue](../../issues/new/choose) with corrections.
-- **Thirteen stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, deep breathing, arm circles, seated leg raise, calf raises, and a 2-minute walkaround every few rounds. Each has a "How to" guide, and your kuih acts out shoulder rolls, stand and reach, the walkaround, the eye break, deep breathing, arm circles, leg raises and calf raises on the reminder card. **Choose your stretches:** switch off any you can't or shouldn't do (at least one stays on).
+- **Thirteen stretches.** Chin tucks, neck side stretch, thoracic extension, shoulder rolls, seated twist, wrist stretch, a 20-20-20 eye break, stand and reach, deep breathing, arm circles, seated leg raise, calf raises, and a 2-minute walkaround every few rounds. Each has a "How to" guide, and your kuih acts out every one of them on the reminder card. **Choose your stretches:** switch off any you can't or shouldn't do (at least one stays on).
 - **Time away counts as a break.** After 5 minutes of no keyboard or mouse activity, or when you lock your PC for a minute or more or sleep it, the timer restarts and any reminder that was waiting is cleared, so you're not nagged the moment you sit back down.
 - **Settings.** Remind every 15–60 minutes, snooze 5–15 minutes, working hours, meetings, water, daily goal, chime sound and volume, text size, Light or Dark mode, widget on or off, optional Windows notification, start with Windows, language, and **Reset my data**.
 - **Pick your kuih.** 28 Malaysian kuih: Malay, Chinese & Nyonya, Indian, and Sabah & Sarawak. Your kuih shows up on reminders, the desktop widget, the stretch list and the tray icon. Prefer to have them all now? Turn off **Collect kuih** in Settings.
@@ -137,7 +137,7 @@ package.json       app details, plus the installer settings under "build"
 
 ## Feedback
 
-Found a bug or have a stretch you'd like Lapis to suggest? [Open an issue](../../issues/new/choose).
+Found a bug or have a stretch you'd like Lapis to suggest? Use **Send feedback** in Settings > About, or [open an issue](../../issues/new/choose).
 
 ## Licence
 

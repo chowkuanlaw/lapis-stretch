@@ -194,3 +194,23 @@ test('language can be switched between English, Malay, Chinese and Tamil', async
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
+
+test('Send feedback opens the GitHub form with only the Lapis and Windows version', async () => {
+  const L = await launch(settled);
+  try {
+    // Catch the link instead of opening a browser.
+    await L.app.evaluate(({ shell }) => { shell.openExternal = url => { global.__opened = url; return Promise.resolve(); }; });
+    const w = await L.view('main');
+    await w.locator('.nav-item[data-page="settings"]').click();
+    await w.locator('[data-stab="about"]').click();
+    await w.locator('[data-w="feedback"]').click();
+    let url = '';
+    for (let i = 0; i < 20 && !url; i++) { url = await L.app.evaluate(() => global.__opened || ''); await wait(100); }
+    const u = new URL(url);
+    assert.equal(u.origin + u.pathname, 'https://github.com/chowkuanlaw/lapis-stretch/issues/new');
+    assert.deepEqual([...u.searchParams.keys()].sort(), ['template', 'version', 'windows']);
+    assert.equal(u.searchParams.get('template'), 'feedback.yml');
+    assert.equal(u.searchParams.get('version'), require('../../package.json').version);
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});

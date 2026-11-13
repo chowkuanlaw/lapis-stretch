@@ -1,0 +1,35 @@
+name: Feedback from the app
+description: Opened by "Send feedback" in Lapis Settings. Tell us what's wrong, what you'd like, or what you enjoy.
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make Lapis better. Please don't include personal or work information.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of feedback?
+      options:
+        - Something isn't working
+        - An idea or a stretch to add
+        - A translation that reads wrong
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Tell us more
+      description: For a problem, what did you expect and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Lapis version
+      description: Filled in by the app.
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Filled in by the app.

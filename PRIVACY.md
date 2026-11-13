@@ -30,6 +30,8 @@ Lapis never uses your microphone, camera, location, contacts, files or browsing.
 
 In the Microsoft Store version, clicking **Rate in the Store** (offered once) opens the Store's review page for Lapis. The Store app, not Lapis, then connects to Microsoft. Lapis sends nothing.
 
+**Send feedback** (Settings > About) opens a GitHub form in your browser with two things filled in: your Lapis version and your Windows version number. You see the form before anything is submitted, and Lapis itself sends nothing.
+
 If you click a link in Lapis (for example to this project's page), it opens in your web browser like any other link.
 
 ## Removing your data

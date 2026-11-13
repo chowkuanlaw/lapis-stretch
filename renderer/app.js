@@ -431,6 +431,7 @@
               <div>
                 <div class="set"><div class="lbl">${T('set.version')} <span id="version"></span><small id="updateMsg" aria-live="polite"></small></div><button class="btn ghost" data-w="check-update" id="checkBtn" type="button">${T('set.check')}</button></div>
                 ${switchRow('autoUpdate', T('set.autoUpdate'), T('set.autoUpdateSub'))}
+                <div class="set"><div class="lbl">${T('set.feedback')}<small>${T('set.feedbackSub')}</small></div><button class="btn ghost" data-w="feedback" type="button">${T('set.feedbackBtn')}</button></div>
                 <div class="set"><div class="lbl">${T('set.reset')}<small id="resetMsg" aria-live="polite">${T('set.resetSub')}</small></div><button class="btn ghost" id="resetBtn" type="button">${T('set.resetBtn')}</button></div>
               </div>
               <div class="about-text"><p class="note-p">${T('set.aboutText')}</p><button class="btn ghost" data-ob="open" type="button">${T('set.welcome')}</button></div>

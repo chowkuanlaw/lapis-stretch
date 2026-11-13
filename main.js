@@ -501,6 +501,12 @@ function run() {
     setImmediate(() => autoUpdater.quitAndInstall(true, true)); // silent install, then reopen Lapis
   }
   function openReleases() { shell.openExternal(RELEASES_URL); }
+  /* 1.14.0: "Send feedback" opens a GitHub issue form in the browser with only the Lapis and Windows
+     version filled in (both shown to the person before they submit). Nothing is sent by Lapis itself. */
+  function openFeedback() {
+    const q = new URLSearchParams({ template: 'feedback.yml', version: app.getVersion() + (STORE ? ' (Microsoft Store)' : ''), windows: os.release() });
+    shell.openExternal(`https://github.com/${REPO}/issues/new?${q}`);
+  }
 
   function setSetting(key, value) {
     const half = v => Number.isInteger(+v) && +v % 30 === 0;
@@ -843,6 +849,7 @@ function run() {
       case 'test-chime': chime('due'); break;
       case 'check-update': checkForUpdate(true); break;
       case 'open-release': openReleases(); break;
+      case 'feedback': openFeedback(); break;
       case 'install-update': installUpdate(); break;
       case 'egg': startEgg(a, BrowserWindow.fromWebContents(evt.sender)); break;
       case 'egg-done': endEgg(); break;

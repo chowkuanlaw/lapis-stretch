@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.0 (not yet released)
+
+- **Your kuih acts out every stretch.** Chin tucks, neck side stretch, thoracic extension, seated twist and wrist stretch now move too. A kuih has no neck or wrists, so it uses its whole body: it slides back for chin tucks, tilts each way for the neck, lifts tall with hands behind its head, turns each way for the twist, and pulls back each hand in turn for the wrist stretch.
+- **Send feedback.** Settings > About has a button that opens a short form on GitHub in your browser, with only your Lapis and Windows version filled in. Lapis itself sends nothing; you see everything before you submit (a free GitHub account is needed).
+
 ## 1.13.0 (2026-11-11)
 
 - **Choose your stretches.** On the Stretches page, each stretch has a switch. Turn off any you can't or shouldn't do and Lapis leaves it out of your reminders, the "coming up" list and the "different stretch" button. At least one stretch always stays on. You can still click a switched-off stretch to do it now.

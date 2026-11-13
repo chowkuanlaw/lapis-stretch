@@ -473,14 +473,38 @@
   };
 
   /* ---------- 1.12.0: the kuih acts out the stretch ----------
-     Only stretches a kuih body can show honestly are animated (no neck, spine or wrists to show
-     chin tucks, neck, thoracic, twist or wrist stretches; 1.13.0 adds breathing, arm circles, leg and calf raises). Each is a loop of key poses; frames
+     1.13.0 added breathing, arm circles, leg and calf raises. 1.14.0 animates the last five: a kuih has
+     no neck, spine or wrists, so it shows them with its whole body (slide back, tilt, lean, turn) and its arms. Each is a loop of key poses; frames
      in between are eased. lapisMove(id) gives { period, at(seconds) } or null. */
   const IL = IDLE_ARMS[0], IR = IDLE_ARMS[1], LL = IDLE_LEGS[0], LR = IDLE_LEGS[1];
   const UPL = [[33, 58], [28, 30], [38, 4]], UPR = [[87, 58], [92, 30], [82, 4]];
-  const key = (t, o) => Object.assign({ t, L: IL, R: IR, legs: [LL, LR], tx: 0, ty: 0, rot: 0, s: 1, face: '', extra: '' }, o || {});
+  const key = (t, o) => Object.assign({ t, L: IL, R: IR, legs: [LL, LR], tx: 0, ty: 0, rot: 0, s: 1, sx: 1, face: '', extra: '' }, o || {});
   const EYE_LINE = '<path class="fx dash" d="M100 44 L126 34"/>', EYE_ARM = [[87, 60], [98, 50], [80, 38]];
+  // 1.14.0 poses for the last five stretches (arms are [shoulder, elbow, hand] points).
+  const CHIN_ARROW = '<path class="fx" d="M116 46 H99"/><polyline class="fx" points="104,40 98,46 104,52"/>';
+  const NECK_R = [[87, 60], [96, 38], [80, 14]], NECK_L = [[33, 60], [24, 38], [40, 14]];
+  const TH_L = [[33, 58], [20, 36], [42, 16]], TH_R = [[87, 58], [100, 36], [78, 16]];
+  const TW_L = [[33, 60], [52, 74], [80, 74]], TW_R = [[87, 60], [100, 72], [104, 86]];
+  const TW_L2 = [[33, 60], [20, 72], [16, 86]], TW_R2 = [[87, 60], [68, 74], [40, 74]];
+  const TW_ARROW_R = '<path class="fx" d="M34 4 Q60 -8 86 4"/><polyline class="fx" points="79,-1 86,4 79,9"/>';
+  const TW_ARROW_L = '<path class="fx" d="M86 4 Q60 -8 34 4"/><polyline class="fx" points="41,-1 34,4 41,9"/>';
+  const WR_L = [[33, 60], [60, 68], [104, 56]], WR_R_OPEN = [[87, 60], [106, 60], [114, 56]], WR_R = [[87, 60], [106, 60], [108, 44]];
+  const WR_R2 = [[87, 60], [60, 68], [16, 56]], WR_L2_OPEN = [[33, 60], [14, 60], [6, 56]], WR_L2 = [[33, 60], [14, 60], [12, 44]];
   const MOVES = {
+    chin: { period: 4, keys: [key(0),
+      key(0.8, { tx: -8, s: 0.97, extra: CHIN_ARROW }), key(2.6, { tx: -8, s: 0.97, extra: CHIN_ARROW }), key(3.4), key(4)] },
+    neck: { period: 10, keys: [key(0),
+      key(1, { rot: -13, R: NECK_R }), key(4, { rot: -13, R: NECK_R }), key(5),
+      key(6, { rot: 13, L: NECK_L }), key(9, { rot: 13, L: NECK_L }), key(10)] },
+    thoracic: { period: 4.4, keys: [key(0, { L: TH_L, R: TH_R }),
+      key(1.6, { L: TH_L, R: TH_R, ty: -5, s: 1.04, face: 'happy' }), key(2.6, { L: TH_L, R: TH_R, ty: -5, s: 1.04, face: 'happy' }),
+      key(4.4, { L: TH_L, R: TH_R })] },
+    twist: { period: 9, keys: [key(0),
+      key(1, { sx: 0.86, rot: 2, L: TW_L, R: TW_R, extra: TW_ARROW_R }), key(3.5, { sx: 0.86, rot: 2, L: TW_L, R: TW_R, extra: TW_ARROW_R }), key(4.5),
+      key(5.5, { sx: 0.86, rot: -2, L: TW_L2, R: TW_R2, extra: TW_ARROW_L }), key(8, { sx: 0.86, rot: -2, L: TW_L2, R: TW_R2, extra: TW_ARROW_L }), key(9)] },
+    wrist: { period: 8, keys: [key(0),
+      key(0.8, { L: WR_L, R: WR_R_OPEN }), key(1.6, { L: WR_L, R: WR_R }), key(3.2, { L: WR_L, R: WR_R }), key(4),
+      key(4.8, { L: WR_L2_OPEN, R: WR_R2 }), key(5.6, { L: WR_L2, R: WR_R2 }), key(7.2, { L: WR_L2, R: WR_R2 }), key(8)] },
     shoulders: { period: 2.6, keys: [key(0),
       key(0.7, { ty: -7, L: [[33, 60], [22, 71], [21, 84]], R: [[87, 60], [98, 71], [99, 84]] }),
       key(1.3, { ty: -4, s: 0.965, L: [[33, 60], [17, 72], [19, 86]], R: [[87, 60], [103, 72], [101, 86]] }),
@@ -521,10 +545,10 @@
       const t = ((secs % m.period) + m.period) % m.period, ks = m.keys;
       let i = 0; while (i < ks.length - 2 && t >= ks[i + 1].t) i++;
       const a = ks[i], b = ks[i + 1], f = ease(Math.min(1, Math.max(0, (t - a.t) / ((b.t - a.t) || 1)))), near = f < 0.5 ? a : b;
-      const tx = mix(a.tx, b.tx, f), ty = mix(a.ty, b.ty, f), rot = mix(a.rot, b.rot, f), s = mix(a.s, b.s, f);
+      const tx = mix(a.tx, b.tx, f), ty = mix(a.ty, b.ty, f), rot = mix(a.rot, b.rot, f), s = mix(a.s, b.s, f), sx = mix(a.sx, b.sx, f);
       return { arms: [mixPts(a.L, b.L, f), mixPts(a.R, b.R, f)], legs: [mixPts(a.legs[0], b.legs[0], f), mixPts(a.legs[1], b.legs[1], f)],
         face: near.face, extra: near.extra,
-        body: `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) rotate(${rot.toFixed(2)} 60 100) translate(60 100) scale(${s.toFixed(3)}) translate(-60 -100)` };
+        body: `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) rotate(${rot.toFixed(2)} 60 100) translate(60 100) scale(${(s * sx).toFixed(3)} ${s.toFixed(3)}) translate(-60 -100)` };
     } };
   };
 })();
