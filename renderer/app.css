@@ -184,6 +184,7 @@ body.view-widget,body.view-popup{background:transparent;overflow:hidden;user-sel
 .lapis.k3grab{cursor:grabbing}
 .lapis .k3over,.lapis .k3under{transition:opacity .12s}
 .bob{animation:bob 2.6s ease-in-out infinite;transform-origin:50% 100%}
+.on-battery .bob{animation:none}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) rotate(-1.5deg)}}
 .pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{from{transform:scale(.94) translateY(8px);opacity:.3}to{transform:none;opacity:1}}

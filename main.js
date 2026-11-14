@@ -302,6 +302,7 @@ function run() {
       ramadan: puasa(), backMins: Date.now() < R.backUntil ? R.backMins : 0,
       golden: R.golden && (R.mode === 'due' || R.mode === 'active' || R.mode === 'done'),
       resetDone: Date.now() < R.resetUntil,
+      onBattery: !!R.onBattery,
       // Kuih moods (1.9.0): a little sad after 3 skipped reminders in a row, sleepy after a snooze, proud at the goal.
       mood: R.skips >= 3 ? 'sad' : R.snoozed ? 'drowsy' : today().total >= S.goal ? 'proud' : '',
       codeMsg: Date.now() < R.codeMsgUntil ? R.codeMsg : null,
@@ -681,6 +682,17 @@ function run() {
     loadView(widgetWin, 'widget');
     widgetWin.once('ready-to-show', () => { keepWidgetOnScreen(); if (S.widget && !R.widgetHidden) widgetWin.showInactive(); });
     let moveT;
+    // 1.14.0: the widget's 3D kuih looks towards the mouse. Only while the widget shows, the mouse has moved,
+    // 3D kuih are on and the PC isn't on battery; it sends just the pointer's spot relative to the widget.
+    let lastCursor = '';
+    const follow = setInterval(() => {
+      if (!widgetWin || widgetWin.isDestroyed()) { clearInterval(follow); return; }
+      if (!widgetWin.isVisible() || S.kuih3d === false || R.onBattery) return;
+      const p = screen.getCursorScreenPoint(), b = widgetWin.getBounds(), key = p.x + ',' + p.y;
+      if (key === lastCursor) return;
+      lastCursor = key;
+      widgetWin.webContents.send('cursor', { x: p.x - b.x, y: p.y - b.y, w: b.width });
+    }, 100);
     widgetWin.on('move', () => {
       clearTimeout(moveT);
       moveT = setTimeout(() => { if (widgetWin && !widgetWin.isDestroyed()) { const [x, y] = widgetWin.getPosition(); S.widgetPos = { x, y }; save(); } }, 400);
@@ -916,6 +928,11 @@ function run() {
     powerMonitor.on('resume', restartCountdown);
     powerMonitor.on('lock-screen', () => { R.locked = Date.now(); });
     powerMonitor.on('unlock-screen', () => { R.locked = 0; tick(); });
+    // 1.14.0: on battery the kuih stop their idle animation (they still move for reminders and when touched)
+    const battery = () => { try { R.onBattery = powerMonitor.isOnBatteryPower() || (!app.isPackaged && process.env.LAPIS_TEST_BATTERY === '1'); } catch (e) { R.onBattery = false; } };
+    battery();
+    powerMonitor.on('on-battery', () => { battery(); broadcast(); });
+    powerMonitor.on('on-ac', () => { battery(); broadcast(); });
     screen.on('display-removed', () => { if (widgetWin && !onSomeDisplay(S.widgetPos)) { S.widgetPos = null; const wa = screen.getPrimaryDisplay().workArea; widgetWin.setPosition(wa.x + wa.width - WIDGET_W - 12, wa.y + 12); } });
     setInterval(tick, 1000);
     broadcast();

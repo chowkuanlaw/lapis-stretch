@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('lapis', {
   getState: () => ipcRenderer.invoke('get-state'),
   act: (type, payload) => ipcRenderer.send('action', Object.assign({ type }, payload || {})),
   onState: cb => ipcRenderer.on('state', (_e, s) => cb(s)),
-  onChime: cb => ipcRenderer.on('chime', (_e, kind) => cb(kind))
+  onChime: cb => ipcRenderer.on('chime', (_e, kind) => cb(kind)),
+  onCursor: cb => ipcRenderer.on('cursor', (_e, p) => cb(p))
 });
