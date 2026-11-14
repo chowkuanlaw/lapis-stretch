@@ -23,6 +23,11 @@ async function win(app, name) {
   throw new Error('no ' + name + ' window');
 }
 async function scan(w, label) {
+  // Let entrance animations finish first (the reminder card fades in over half a second), so the scan sees the text
+  // as people do. Scanned mid-fade, its half-transparent text fails colour contrast. Endless ones (the kuih's bob) aren't waited for.
+  await w.evaluate(() => Promise.all(document.getAnimations()
+    .filter(a => Number.isFinite(a.effect.getComputedTiming().endTime))
+    .map(a => a.finished.catch(() => {}))));
   await w.evaluate(AXE);
   const r = await w.evaluate(() => axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'] }));
   return r.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')
