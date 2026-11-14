@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "electron-updater": "6.8.12",
-    "koffi": "3.3.4"
+    "koffi": "3.3.7"
   },
   "devDependencies": {
     "axe-core": "^4.10.2",
