@@ -527,6 +527,7 @@ function run() {
         break;
       }
       case 'trayRing': S.trayRing = !!value; break;
+      case 'kuih3d': S.kuih3d = !!value; break;
       case 'streakSaver': S.streakSaver = !!value; collectionUpdate(false); break;
       case 'textSize': if (!own(TEXT_SIZES, value)) return; S.textSize = value; applyTextSize(); break;
       case 'widgetHideFull': S.widgetHideFull = !!value; R.nextFullCheck = 0; break;

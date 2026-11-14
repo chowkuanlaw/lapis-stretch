@@ -127,7 +127,7 @@ main.js            timer, state, tray, updates and the app windows (runs in the 
 quiet.js           the "quiet in meetings" checks (full screen, presenting, Do not disturb)
 state.js           the settings defaults, and reading state.json back safely
 preload.js         the small bridge the windows use to talk to main.js
-renderer/          the UI: index.html, app.css, app.js, the mascot drawing, stretches and kuih (data.js), English and Malay text (i18n.js), fonts
+renderer/          the UI: index.html, app.css, app.js, the mascot drawing (mascot.js) and its 3D version (mascot3d.js), stretches and kuih (data.js), English and Malay text (i18n.js), fonts, and three.js (vendor/)
 assets/            app and tray icons
 scripts/           portable build script, exe icon and Electron fuses
 installer/         the uninstaller's "also remove my data?" question
@@ -145,6 +145,6 @@ Lapis is released under the [MIT licence](LICENSE): you're free to use, change a
 
 ## Credits
 
-Fonts: [Baloo 2](https://github.com/EkType/Baloo2), [Figtree](https://github.com/erikdkennedy/figtree) and [DM Mono](https://github.com/googlefonts/dm-mono), under the SIL Open Font License (see `renderer/fonts/LICENSES.txt`). Built with [Electron](https://www.electronjs.org/).
+Fonts: [Baloo 2](https://github.com/EkType/Baloo2), [Figtree](https://github.com/erikdkennedy/figtree) and [DM Mono](https://github.com/googlefonts/dm-mono), under the SIL Open Font License (see `renderer/fonts/LICENSES.txt`). The 3D kuih use [three.js](https://threejs.org/) r128, under the MIT License (see `renderer/vendor/LICENSE-three.txt`). Built with [Electron](https://www.electronjs.org/).
 
 Stretch guidance is general wellness information, not medical advice. Stop any stretch that hurts.

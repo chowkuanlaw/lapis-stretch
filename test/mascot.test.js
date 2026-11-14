@@ -60,3 +60,37 @@ test('1.13.0: every stretch has a still pose that draws cleanly for every kuih',
     assert.ok(svg.startsWith('<svg'), e.id);
   }
 });
+
+// 1.14.0: the pieces the 3D kuih (mascot3d.js) is built from come from the same drawings, so they must be complete too.
+test('3D layers, art and faces are well-formed for every kuih, pose and outfit', () => {
+  const R = W.LapisRig, closed = (s, what) => {
+    assert.ok(!/undefined|NaN/.test(s), what + ' has no undefined or NaN');
+    assert.equal((s.match(/<g[\s>]/g) || []).length, (s.match(/<\/g>/g) || []).length, what + ': groups are closed');
+  };
+  for (const k of W.LAPIS_KUIH) {
+    for (const outfit of [undefined, ...W.LAPIS_OUTFITS]) for (const golden of [false, true]) {
+      const art = R.artSVG(k.id, outfit, golden, 512);
+      assert.ok(art.startsWith('<svg xmlns=') && art.endsWith('</svg>'), `${k.id} ${outfit} art`);
+      closed(art, `${k.id} ${outfit} ${golden} art`);
+    }
+    for (const pose of POSES) for (const outfit of [undefined, ...W.LAPIS_OUTFITS]) {
+      const L = R.layers(pose, k.id, outfit, pose === 'idle');
+      assert.equal(L.sid, k.id);
+      assert.equal(L.viewBox.length, 4);
+      closed(L.over + L.under, `${k.id} ${pose} ${outfit} layers`);
+      assert.ok(L.p && typeof L.p === 'object', `${k.id} ${pose} resolves to a pose`);
+    }
+  }
+  for (const kind of ['', 'happy', 'closed', 'droopy']) for (const mouth of [undefined, 'none', 'flat', 'sad', 'yawn']) {
+    const f = R.faceSVG(kind, mouth);
+    assert.ok(f.startsWith('<svg xmlns=') && !/class="/.test(f), `face ${kind} ${mouth} is styled inline`);
+  }
+});
+
+test('a stretch move frame gives the 3D layers a pose too', () => {
+  for (const id of ['chin', 'neck', 'twist', 'walk', 'breathe']) {
+    const m = W.lapisMove(id);
+    const L = W.LapisRig.layers(m.at(1.3), 'lapis', 'raya', false);
+    assert.ok(L.p.arms && L.p.legs && /rotate/.test(L.p.body), id);
+  }
+});

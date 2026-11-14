@@ -472,6 +472,41 @@
     return `<svg class="lapis${g ? ' golden' : ''}" viewBox="-8 -${o ? 30 : 14} 136 ${o ? 182 : 166}" role="img" aria-label="${label || K.name}">${g ? GOLD(id) : ''}<g class="${bob ? 'bob' : ''}"><g class="stk">${figure(p, true, id, K, sid, o)}</g><g>${figure(p, false, id, K, sid, o, g)}</g></g>${g ? `<g class="sparkles">${SPARKLES}</g>` : ''}</svg>`;
   };
 
+  /* ---------- 1.14.0: the pieces the 3D kuih (mascot3d.js) is built from ----------
+     The 3D kuih uses the same shapes, art, poses, outfits and props as the drawing above, so both always match.
+     layers() splits one drawing into what the 3D body wears (its art and festive clothes, as a texture)
+     and what stays flat: a layer behind it (the golden glow) and one in front (hats, held props, arrows, sparkles). */
+  const STYLE = s => s.replace(/class="eye"/g, `fill="${INK}"`)
+    .replace(/class="line"/g, `fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"`)
+    .replace(/class="blush"/g, 'fill="#F58FAE" opacity=".85"');
+  window.LapisRig = {
+    KUIH, IDLE_ARMS, IDLE_LEGS, INK,
+    resolve(pose, skin) {
+      const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid];
+      const p0 = pose && typeof pose === 'object' ? pose : Object.prototype.hasOwnProperty.call(POSES, pose) ? POSES[pose] : POSES.idle;
+      return typeof p0 === 'function' ? p0(K) : p0;
+    },
+    // a face on its own, styled inline, for drawing onto the 3D kuih
+    faceSVG: (kind, mouth) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 30 60 60" width="384" height="384">${STYLE(face(kind, mouth))}</svg>`,
+    // the kuih's art (and festive clothes, and the golden look) as a standalone picture, 0..120 on both axes
+    artSVG(skin, outfit, golden, size) {
+      const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid], id = ++uid, O2 = Object.prototype.hasOwnProperty.call(OUTFITS, outfit) ? OUTFITS[outfit] : null;
+      let s = K.art(id);
+      if (O2) s += `<clipPath id="c${id}">${K.sil}</clipPath>` + O2.body(hem(K), id, sid);
+      if (golden) { const gd = GOLD(id); s = gd.slice(0, gd.indexOf('</defs>') + 7) + `<g filter="url(#gd${id})">${s}</g>`; }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="${size}" height="${size}">${s}</svg>`;
+    },
+    layers(pose, skin, outfit, golden) {
+      const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid], id = ++uid, p = this.resolve(pose, sid);
+      const o = Object.prototype.hasOwnProperty.call(OUTFITS, outfit) ? outfit : null, O2 = o && OUTFITS[o], g = !!golden;
+      const arms = p.arms || IDLE_ARMS, rh = arms[1][arms[1].length - 1], d = (K.half || 28) - 28;
+      const held = p.prop ? PROPS[p.prop](rh[0] + d, rh[1]) : (O2 && O2.prop && !p.front ? O2.prop(rh[0] + d, rh[1] - 6) : '');
+      const worn = (O2 && O2.face ? O2.face(K.faceDy || 0) : '') + (O2 ? O2.hat(crown(sid)) : '');
+      const over = (held || worn ? `<g transform="${p.body || ''}">${held}${worn}</g>` : '') + (p.extra || '') + (g ? `<g class="sparkles">${SPARKLES}</g>` : '');
+      return { sid, K, p, outfit: o, golden: g, viewBox: [-8, o ? -30 : -14, 136, o ? 182 : 166], under: g ? GOLD(id) : '', over, flat: !!(held || worn) };
+    }
+  };
+
   /* ---------- 1.12.0: the kuih acts out the stretch ----------
      1.13.0 added breathing, arm circles, leg and calf raises. 1.14.0 animates the last five: a kuih has
      no neck, spine or wrists, so it shows them with its whole body (slide back, tilt, lean, turn) and its arms. Each is a loop of key poses; frames

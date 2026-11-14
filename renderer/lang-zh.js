@@ -366,6 +366,8 @@
       "theme.auto": "跟随 Windows",
       "theme.light": "浅色",
       "theme.dark": "深色",
+      "set.kuih3d": "3D 糕点",
+      "set.kuih3dSub": "以 3D 角色显示你的糕点。关闭后显示经典的平面图画",
       "set.trayRing": "托盘图标上的倒计时",
       "set.trayRingSub": "下次拉伸越近，你的糕点周围的圆环就越满",
       "set.hideFull": "全屏时隐藏小工具",
