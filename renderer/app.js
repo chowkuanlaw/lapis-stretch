@@ -23,7 +23,11 @@
   const flagCode = () => !!st && st.flagDay === dayKey(new Date());
   const outfit = () => { if (night()) return 'pyjama'; if (flagCode()) return 'merdeka'; const f = festival(); return f ? f.id : undefined; };
   // Draw with the kuih the user picked (Kuih Lapis until the first state arrives).
-  const lapis = (pose, label, bob, skin, golden) => window.lapisSVG(pose, label, bob, skin || (st && st.kuih) || 'lapis', outfit(), golden);
+  // 1.14.0: 3D kuih (mascot3d.js) unless turned off in Settings or the PC can't draw 3D; the flat drawing otherwise.
+  const use3d = () => (!st || st.kuih3d !== false) && !!(window.lapis3d && window.lapis3d.ok());
+  const lapis = (pose, label, bob, skin, golden) => (use3d() ? window.lapis3d.svg : window.lapisSVG)(pose, label, bob, skin || (st && st.kuih) || 'lapis', outfit(), golden);
+  // everything that redraws the kuih when the outfit changes also redraws it when 2D or 3D is switched
+  const look = () => String(outfit()) + (use3d() ? '|3d' : '');
   const kuihName = () => (KUIH_BY[(st && st.kuih) || 'lapis'] || KUIH_BY.lapis).name;
   const doing = e => T('doing', { k: kuihName(), ex: exName(e).toLowerCase() });
 
@@ -116,7 +120,7 @@
       ${m === 'active' ? '<div class="bar"><i data-bar></i></div>' : ''}`;
   }
   function renderCard(el, compact) {
-    const key = [st.mode, st.cur, st.upNext, st.paused, st.switched, todayRec().total, st.snooze, st.kuih, L(), outfit(), st.golden].join('|');
+    const key = [st.mode, st.cur, st.upNext, st.paused, st.switched, todayRec().total, st.snooze, st.kuih, L(), look(), st.golden].join('|');
     if (key === cardKey) return;
     if (st.mode === 'due' && !cardKey.startsWith('due')) howOpen = false;
     cardKey = key;
@@ -150,7 +154,10 @@
         moveLast = now;
         tiles.forEach(t => {
           const mv = window.lapisMove(t.dataset.move);
-          if (mv) t.innerHTML = lapis(mv.at((now - moveT0) / 1000), doing(curEx()), false, null, st.golden);
+          if (!mv) return;
+          const pose = mv.at((now - moveT0) / 1000);
+          // a 3D kuih is posed in place; a flat one is drawn again
+          if (!(window.lapis3d && window.lapis3d.frame(t, pose))) t.innerHTML = lapis(pose, doing(curEx()), false, null, st.golden);
         });
       }
       moveRaf = requestAnimationFrame(frame);
@@ -416,7 +423,7 @@
                 <div class="set"><div class="lbl">${T('set.lang')}</div>${langSeg()}</div>
                 <div class="set"><div class="lbl">${T('set.textSize')}</div><div class="seg" role="group" aria-label="${esc(T('set.textSize'))}">${['normal', 'large', 'larger'].map(m => `<button type="button" data-set="textSize" data-sval="${m}">${T('text.' + m)}</button>`).join('')}</div></div>
                 <div class="set"><div class="lbl">${T('set.theme')}</div><div class="seg" role="group" aria-label="${esc(T('set.theme'))}">${['auto', 'light', 'dark'].map(m => `<button type="button" data-set="theme" data-sval="${m}">${T('theme.' + m)}</button>`).join('')}</div></div>
-                ${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('widgetHideFull', T('set.hideFull'), T('set.hideFullSub'))}${switchRow('trayRing', T('set.trayRing'), T('set.trayRingSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
+                ${window.lapis3d && window.lapis3d.ok() ? switchRow('kuih3d', T('set.kuih3d'), T('set.kuih3dSub')) : ''}${switchRow('widget', T('set.widget'), T('set.widgetSub'))}${switchRow('widgetOnTop', T('set.onTop'), T('set.onTopSub'))}${switchRow('widgetHideFull', T('set.hideFull'), T('set.hideFullSub'))}${switchRow('trayRing', T('set.trayRing'), T('set.trayRingSub'))}${switchRow('autostart', T('set.autostart'), T('set.autostartSub'))}
                 <div class="set store-start" hidden><div class="lbl">${T('set.autostart')}<small>${T('set.storeStart')}</small></div></div>
               </section>
               <section class="panel settings"><h2>${T('set.collect')}</h2>
@@ -492,7 +499,7 @@
 
   let heroKey = '', kuihKey = '', comingKey = '';
   function renderKuihParts() {
-    const key = [st.kuih, L(), outfit(), (st.exOff || []).join()].join('|');
+    const key = [st.kuih, L(), look(), (st.exOff || []).join()].join('|');
     if (kuihKey === key) return;
     kuihKey = key;
     const k = KUIH_BY[st.kuih] || KUIH_BY.lapis;
@@ -545,7 +552,7 @@
   function renderNextKuih(s) {
     const collecting = st.collect && !st.codeUnlocked;
     const next = collecting ? RULES.find(r => !isAvailable(r.id)) : null;
-    const key = next ? next.id + '|' + L() + '|' + outfit() : 'all|' + st.kuih + '|' + L() + '|' + outfit();
+    const key = next ? next.id + '|' + L() + '|' + look() : 'all|' + st.kuih + '|' + L() + '|' + look();
     if ($('#nkImg').dataset.key !== key) {
       $('#nkImg').dataset.key = key;
       $('#nkImg').innerHTML = next ? lapis('idle', '', false, next.id) : lapis('cheer', kuihName());
@@ -585,7 +592,7 @@
     } else if (st.ramadan) $('#festText').textContent = T('ram.banner', { n: st.ramadan.day });
   }
   function renderComing() {
-    const n = CYCLE.length, key = [st.idx, st.kuih, L(), outfit(), !!st.ramadan, (st.exOff || []).join()].join('|');
+    const n = CYCLE.length, key = [st.idx, st.kuih, L(), look(), !!st.ramadan, (st.exOff || []).join()].join('|');
     if (key === comingKey) return;
     comingKey = key;
     const ids = [];
@@ -715,7 +722,7 @@
     $('#heroActions').hidden = st.mode !== 'waiting';
     $('#heroActions').classList.toggle('resting', !!(st.resting && !st.paused));
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : st.quiet ? 'shh' : (st.paused || st.away || st.resting) ? 'sleep' : moodPose();
-    if (pose + outfit() + st.golden !== heroKey) { heroKey = pose + outfit() + st.golden; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
+    if (pose + look() + st.golden !== heroKey) { heroKey = pose + look() + st.golden; $('#heroMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#ring').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     renderToday(s);
     renderComing();
@@ -829,7 +836,7 @@
     if (trayKuih !== st.kuih) { trayKuih = st.kuih; wPoseKey = ''; }
     syncTray();
     const pose = st.mode === 'due' ? 'wave' : st.mode === 'done' ? 'cheer' : st.mode === 'active' ? curEx().pose : waterAsk() ? 'glass' : st.quiet ? 'shh' : st.mode === 'snoozed' || st.paused || st.away || st.resting ? 'sleep' : moodPose();
-    if (pose + outfit() + st.golden !== wPoseKey) { wPoseKey = pose + outfit() + st.golden; $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
+    if (pose + look() + st.golden !== wPoseKey) { wPoseKey = pose + look() + st.golden; $('#wMascot').innerHTML = lapis(pose, kuihName(), st.mode !== 'active', null, st.golden); }
     $('#widget').classList.toggle('due', st.mode === 'due' || st.mode === 'active');
     $('#widget').classList.toggle('water', waterAsk());
     const p = $('#wPause');
@@ -1216,10 +1223,12 @@
   let built = false;
   function onState(s) {
     if (!s) return;
-    const relang = !st || st.lang !== s.lang;
+    const relang = !st || st.lang !== s.lang, was3d = st ? use3d() : null;
     st = s;
+    // switching between 3D and Classic 2D kuih (1.14.0) rebuilds the window, like a language change
+    const relook = was3d !== null && was3d !== use3d();
     document.documentElement.lang = I.LANG_TAGS[L()] || L();
-    if (!built || (relang && view !== 'egg')) {
+    if (!built || ((relang || relook) && view !== 'egg')) {
       cardKey = ''; heroKey = ''; kuihKey = ''; comingKey = ''; wPoseKey = ''; noticeKey = '';
       B[0](); built = true;
     }
@@ -1230,7 +1239,7 @@
   let lastOutfit = '';
   setInterval(() => {
     if (!st || !built) return;
-    const o = String(outfit());
+    const o = look();
     if (o !== lastOutfit) { const first = !lastOutfit; lastOutfit = o; if (!first && view !== 'egg') B[1](); }
     B[2]();
   }, 500);

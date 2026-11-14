@@ -1,7 +1,8 @@
 # Changelog
 
-## 1.14.0 (not yet released)
+## 1.14.0 (2026-11-14)
 
+- **3D kuih.** All 28 kuih are now 3D characters everywhere they appear: the reminder pop-up, the desktop widget, the Today page, the collection and the stretch cards. Round kuih are real shapes (Onde-onde and Ladoo are balls, Kuih Celorot is a cone, Kuih Koci a pyramid, Kuih Cincin a ring you can see through), pastries like Karipap are puffed up, and flat cakes like Kuih Lapis are thick slabs. Each one keeps its own artwork, golden look, moods and props, and still acts out every stretch. Festive hats are 3D too (songkok, CNY cap, jasmine garland, siga, hornbill feathers, Merdeka headband, Santa hat and the late-night nightcap), and each kuih has a plain back in its own colours. **Drag any kuih to turn it, or flick it to make it spin**; it slows down and turns back to face you. Dragging never counts as a click, so it won't pick a kuih or start a stretch. Prefer the old look? Turn off **3D kuih** in Settings > Display. PCs that can't draw 3D graphics keep the flat drawings automatically. The tray icon stays flat.
 - **Your kuih acts out every stretch.** Chin tucks, neck side stretch, thoracic extension, seated twist and wrist stretch now move too. A kuih has no neck or wrists, so it uses its whole body: it slides back for chin tucks, tilts each way for the neck, lifts tall with hands behind its head, turns each way for the twist, and pulls back each hand in turn for the wrist stretch.
 - **Send feedback.** Settings > About has a button that opens a short form on GitHub in your browser, with only your Lapis and Windows version filled in. Lapis itself sends nothing; you see everything before you submit (a free GitHub account is needed).
 

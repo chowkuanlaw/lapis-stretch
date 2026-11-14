@@ -34,6 +34,7 @@ repository and choose **Report a vulnerability**. Please don't open a public iss
   own pages from a private `lapis://app/` protocol that serves files from the app's `renderer`
   folder and nothing else.
 - A strict Content Security Policy blocks remote scripts, network requests, plugins and frames.
+- The 3D kuih are drawn with a copy of three.js (r128, MIT) bundled in `renderer/vendor/`, so no code is loaded from the internet.
 - Windows can't open new windows, navigate away, embed webviews or download files, and every
   browser permission (camera, microphone, location, notifications...) is denied.
 - The main process accepts messages only from Lapis's own pages, validates every value it

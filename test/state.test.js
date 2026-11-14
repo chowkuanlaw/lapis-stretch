@@ -136,3 +136,9 @@ test('rateAsked is a plain yes/no that defaults to not asked', () => {
   assert.equal(cleanState({ rateAsked: true }).rateAsked, true);
   assert.equal(cleanState({ rateAsked: 'yes' }).rateAsked, false);
 });
+
+test('3D kuih (1.14.0) are on unless turned off, and only a true/false is kept', () => {
+  assert.equal(cleanState({}).kuih3d, true);
+  assert.equal(cleanState({ kuih3d: false }).kuih3d, false);
+  for (const bad of ['no', 0, null, {}]) assert.equal(cleanState({ kuih3d: bad }).kuih3d, true);
+});

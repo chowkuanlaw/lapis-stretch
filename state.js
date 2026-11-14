@@ -27,7 +27,9 @@ const DEFAULTS = {
   // 1.8.0
   seenVersion: '', theme: 'auto', trayRing: true, pauseUntil: 0, chimeStyle: 'bell', volume: 70, widgetHideFull: true,
   // 1.9.0
-  streakSaver: true, textSize: 'normal'
+  streakSaver: true, textSize: 'normal',
+  // 1.14.0: 3D kuih (off shows the classic flat drawings)
+  kuih3d: true
 };
 const TEXT_SIZES = { normal: 1, large: 1.15, larger: 1.3 };
 const THEMES = ['auto', 'light', 'dark'];
@@ -44,7 +46,7 @@ function cleanState(saved) {
   pick('interval', [15, 20, 30, 45, 60].includes(saved.interval) ? saved.interval : undefined);
   pick('snooze', [5, 10, 15].includes(saved.snooze) ? saved.snooze : undefined);
   for (const k of ['sound', 'toast', 'widget', 'widgetOnTop', 'autostart', 'awayReset', 'paused', 'firstRun', 'autoUpdate', 'onboarded',
-    'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn', 'remix', 'trayRing', 'widgetHideFull', 'streakSaver']) {
+    'workOn', 'lunchOn', 'quietMeetings', 'waterOn', 'summaryOn', 'collect', 'codeUnlocked', 'collectInit', 'ramadanOn', 'wrapOn', 'remix', 'trayRing', 'widgetHideFull', 'streakSaver', 'kuih3d']) {
     if (typeof saved[k] === 'boolean') out[k] = saved[k];
   }
   pick('pausedLeft', num(saved.pausedLeft, 0, 24 * 3600e3));

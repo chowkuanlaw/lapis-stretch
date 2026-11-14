@@ -15,14 +15,14 @@ const { _electron: electron } = require('playwright');
 const ROOT = path.join(__dirname, '..', '..');
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-async function launch(state, extraEnv) {
+async function launch(state, extraEnv, extraArgs) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'lapis-e2e-'));
   const dir = path.join(home, 'Lapis');
   fs.mkdirSync(dir, { recursive: true });
   if (state) fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify(state));
   const env = Object.assign({}, process.env, { XDG_CONFIG_HOME: home }, extraEnv || {});
   delete env.NODE_OPTIONS; // Electron refuses some Node options (e.g. --use-openssl-ca)
-  const app = await electron.launch({ args: [ROOT, '--no-sandbox'], env, timeout: 60000 });
+  const app = await electron.launch({ args: [ROOT, '--no-sandbox', ...(extraArgs || [])], env, timeout: 60000 });
   const errors = [];
   const watch = page => {
     page.on('pageerror', e => errors.push(String(e && e.message || e)));
@@ -98,6 +98,53 @@ test('every page opens, and Settings changes are saved', async () => {
     if (await health.count()) await health.click();
     await w.locator('button[data-step="goal"][data-d="1"]').click();
     assert.equal((await L.saved()).goal, 9, 'daily goal + works');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+// 1.14.0: the 3D kuih. Test machines have no graphics card, so Chromium's software renderer stands in for one.
+// (Without it, as in the other tests, the app keeps the flat drawings: that fallback is covered everywhere else.)
+const SOFT_3D = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+test('3D kuih: drawn on every page, and Classic 2D in Settings switches them back', async () => {
+  const L = await launch(settled, null, SOFT_3D);
+  try {
+    const w = await L.view('main');
+    await assert.doesNotReject(w.locator('#heroMascot svg.k3on').waitFor({ timeout: 15000 }), 'the kuih on Today turns 3D');
+    await w.locator('.nav-item[data-page="kuih"]').click();
+    await assert.doesNotReject(w.locator('#kuihBig svg.k3on').waitFor({ timeout: 15000 }), 'the big kuih on Your kuih turns 3D');
+    const pop = await L.view('popup');
+    await w.locator('.nav-item[data-page="today"]').click();
+    await w.locator('[data-act="now"]').first().click();
+    await assert.doesNotReject(pop.locator('#card .tile svg.k3on').waitFor({ timeout: 15000 }), 'the reminder card kuih turns 3D');
+    await w.locator('.nav-item[data-page="settings"]').click();
+    await w.locator('[data-stab="display"]').click();
+    await w.locator('.switch[data-set="kuih3d"]').click();
+    assert.equal((await L.saved()).kuih3d, false, 'Classic 2D is saved');
+    await w.locator('.nav-item[data-page="today"]').click();
+    await assert.doesNotReject(w.locator('#heroMascot svg.lapis:not(.k3d)').waitFor({ timeout: 5000 }), 'the kuih is flat again');
+    assert.equal(await w.locator('svg.k3d').count(), 0, 'no 3D kuih left');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+test('3D kuih: drag one to spin it; a drag is not a click, a click still is', async () => {
+  const L = await launch(Object.assign({}, settled, { collect: false }), null, SOFT_3D);
+  try {
+    const w = await L.view('main');
+    await w.locator('.nav-item[data-page="kuih"]').click();
+    const tile = w.locator('#page-kuih .ktile[data-sval="onde"]');
+    const pic = tile.locator('svg.k3on');
+    await pic.waitFor({ timeout: 20000 });
+    const yaw = () => pic.evaluate(s => s.__k3.yaw);
+    const b = await pic.boundingBox(), x = b.x + b.width / 2, y = b.y + b.height / 2;
+    await w.mouse.move(x, y); await w.mouse.down();
+    for (let i = 1; i <= 8; i++) await w.mouse.move(x + i * 12, y);
+    assert.ok(Math.abs(await yaw()) > 1, 'the kuih turns as it is dragged');
+    await w.mouse.up();
+    assert.notEqual((await L.saved()).kuih, 'onde', 'dragging did not pick the kuih');
+    await assert.doesNotReject(w.waitForFunction(s => s.__k3.yaw === 0 && !s.__k3.spin, await pic.elementHandle(), { timeout: 15000 }), 'it settles facing front');
+    await tile.click();
+    assert.equal((await L.saved()).kuih, 'onde', 'a plain click still picks it');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
