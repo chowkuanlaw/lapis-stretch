@@ -149,6 +149,29 @@ test('3D kuih: drag one to spin it; a drag is not a click, a click still is', as
   } finally { await L.close(); }
 });
 
+test('3D kuih: the easter-egg dance turns and twirls in 3D, and the falling kuih tumble', async () => {
+  const L = await launch(Object.assign({}, settled, { sound: false, kuih: 'onde' }), null, SOFT_3D);
+  try {
+    const w = await L.view('main');
+    await w.evaluate(() => window.lapis.act('egg', {}));
+    const egg = await L.view('egg');
+    const dancer = egg.locator('#eggKuih svg.k3on');
+    await dancer.waitFor({ timeout: 15000 });
+    await egg.locator('#egg.dancing').waitFor({ timeout: 5000 });
+    // over a few beats the dancer faces both sides and twirls, rather than being mirrored flat
+    const yaws = [];
+    for (let i = 0; i < 6; i++) { await new Promise(r => setTimeout(r, 300)); yaws.push(await dancer.evaluate(s => s.__k3.yaw)); }
+    assert.ok(Math.max(...yaws) - Math.min(...yaws) > 0.5, 'the dancer turns: ' + yaws.map(y => y.toFixed(2)).join(' '));
+    assert.equal(await egg.locator('#eggFlip.flip').count(), 0, 'no flat mirroring');
+    const drop = egg.locator('.egg-drop svg.k3on').first();
+    await drop.waitFor({ timeout: 15000 });
+    const y0 = await drop.evaluate(s => s.__k3.yaw);
+    await new Promise(r => setTimeout(r, 500));
+    assert.ok(Math.abs(await drop.evaluate(s => s.__k3.yaw) - y0) > 0.3, 'a falling kuih tumbles');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
 test('a stretch can be started and finished, from the main window and the pop-up', async () => {
   const L = await launch(settled);
   try {

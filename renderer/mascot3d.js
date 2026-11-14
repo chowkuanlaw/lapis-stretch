@@ -463,7 +463,7 @@
     const bob = live ? 0.5 - 0.5 * Math.cos(t * Math.PI * 2 / 2.6) : 0;   // the drawing's gentle bob, every 2.6 s
     c.root.position.set(0, bob * 3 * S, 0); c.root.rotation.set(0, (v.sway && live ? Math.sin(t * 0.7) * 0.16 : 0) + v.yaw, bob * -0.026);
     // hats, props and arrows are flat, so they fade out while the kuih is turned away and come back as it faces you
-    const away = Math.abs(Math.atan2(Math.sin(v.yaw), Math.cos(v.yaw))), fade = away < 0.12 ? '' : String(Math.max(0, 1 - (away - 0.12) / 0.3));
+    const away = Math.abs(Math.atan2(Math.sin(v.yaw), Math.cos(v.yaw))), fade = away < 0.45 ? '' : String(Math.max(0, 1 - (away - 0.45) / 0.35));
     if (v.fade !== fade) { v.fade = fade; v.svg.querySelectorAll('.k3over,.k3under').forEach(g => { g.style.opacity = fade; }); }
     place(c.arms[0], X, 0); place(c.arms[1], X, 9); place(c.legs[0], X, 18); place(c.legs[1], X, 27);
     const blink = live && !v.face && v.blinking > now;
@@ -496,7 +496,7 @@
     canvas.style.cssText = 'display:block;width:100%;height:100%';
     const v = { svg, canvas, ctx: canvas.getContext('2d'), X: new Float32Array(N), V: new Float32Array(N), T: new Float32Array(N), sq: 0, sqv: 0, t0: performance.now(),
       blinkAt: performance.now() + 1500 + Math.random() * 3000, blinking: 0, settle: 0, last: 0, dirty: true, shown: false,
-      yaw: 0, yawV: 0, spin: false };
+      yaw: 0, yawV: 0, spin: false, yawHome: 0, fric: 1.6, forever: false };
     return Object.assign(v, spec);
   }
   function hydrate(svg) {
@@ -518,6 +518,8 @@
     } else {
       v = newView(svg, Object.assign({}, spec, { fo, ckey }));
       v.front = 0; setTarget(v, spec.p); v.X.set(v.T);
+      const ask = cont && WANT.get(cont);
+      if (ask) { WANT.delete(cont); ask(v); }
     }
     v.p = spec.p; v.dirty = true;
     svg.__k3 = v;
@@ -583,10 +585,12 @@
   let grab = null, eatClick = 0;
   function spinStep(v, dt) {
     if (grab && grab.v === v) return;            // the pointer is holding it
-    if (Math.abs(v.yawV) > 2.2) { v.yaw += v.yawV * dt; v.yawV *= Math.exp(-1.6 * dt); return; }   // free spin, slowing down
-    const home = Math.round(v.yaw / (2 * Math.PI)) * 2 * Math.PI;   // the nearest turn that faces front
+    if (v.forever) { v.yaw += v.yawV * dt; return; }   // tumbling for as long as it is asked to (the egg's falling kuih)
+    if (Math.abs(v.yawV) > 2.2) { v.yaw += v.yawV * dt; v.yawV *= Math.exp(-v.fric * dt); return; }   // free spin, slowing down
+    // then it settles at the nearest whole turn of where it should face (straight on, or turned for a dance step)
+    const T = 2 * Math.PI, home = v.yawHome + Math.round((v.yaw - v.yawHome) / T) * T;
     v.yawV += (60 * (home - v.yaw) - 11 * v.yawV) * dt; v.yaw += v.yawV * dt;
-    if (Math.abs(home - v.yaw) < 0.002 && Math.abs(v.yawV) < 0.02) { v.yaw = 0; v.yawV = 0; v.spin = false; }
+    if (Math.abs(home - v.yaw) < 0.002 && Math.abs(v.yawV) < 0.02) { v.yaw = v.yawHome; v.yawV = 0; v.spin = false; v.fric = 1.6; }
   }
   document.addEventListener('pointerdown', e => {
     if (e.button !== 0 || grab) return;
@@ -635,6 +639,20 @@
       `<g class="k3over">${L.over}</g></svg>`;
   };
   // A stretch move on the reminder card: pose the picture already in `el` frame by frame. False if `el` has no 3D kuih.
+  /* For the easter-egg dance: turn a kuih to face a side, twirl it, or keep it tumbling.
+     el is the element the kuih sits in; if its 3D picture isn't ready yet, the wish waits for it. */
+  const WANT = new WeakMap();
+  function ask(el, fn) {
+    if (!el) return false;
+    const svg = el.querySelector('svg.k3d'), v = (svg && svg.__k3) || VIEWS.get(el);
+    if (!svg && !v) return false;
+    if (v) { fn(v); v.spin = true; v.dirty = true; wake(); } else WANT.set(el, w => { fn(w); w.spin = true; });
+    return true;
+  }
+  api.turn = (el, yaw) => ask(el, v => { v.yawHome = yaw; v.forever = false; });
+  api.twirl = (el, dir) => ask(el, v => { v.forever = false; v.fric = 4; v.yawV = (dir < 0 ? -1 : 1) * 22; });   // about one full turn in half a second
+  api.tumble = (el, speed) => ask(el, v => { v.forever = !!speed; v.yawV = speed; v.live = true; });
+
   api.frame = function (el, pose) {
     const svg = el && el.querySelector('svg.k3d');
     if (!svg) return false;

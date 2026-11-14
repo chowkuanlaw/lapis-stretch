@@ -1035,8 +1035,10 @@
     $('#eggConfetti').innerHTML = reduce ? '' : others.map((o, i) => {
       const left = (i / others.length) * 100 + Math.random() * 5, size = 56 + Math.round(Math.random() * 46);
       const dur = (3.2 + Math.random() * 2.2).toFixed(2), delay = (Math.random() * 2.5).toFixed(2), turn = Math.random() < 0.5 ? -1 : 1;
-      return `<div class="egg-drop" style="left:${left.toFixed(1)}%;--s:${size}px;--d:${dur}s;--w:${delay}s;--r:${turn * 540}deg">${lapis('idle', '', false, o.id)}</div>`;
+      // 3D kuih tumble round as they fall, so they only tip a little sideways; flat ones spin like paper
+      return `<div class="egg-drop" data-turn="${turn}" style="left:${left.toFixed(1)}%;--s:${size}px;--d:${dur}s;--w:${delay}s;--r:${turn * (use3d() ? 60 : 540)}deg">${lapis('idle', '', false, o.id)}</div>`;
     }).join('');
+    if (use3d()) document.querySelectorAll('.egg-drop').forEach(d => window.lapis3d.tumble(d, +d.dataset.turn * (2.5 + Math.random() * 2.5)));
     $('#egg').classList.add('on');
     eggSpinTo(ox, oy, reduce, false);
     if (st.sound) chime('due');
@@ -1059,9 +1061,15 @@
     if (reduce) egg.classList.add('calm');
     if (st.sound) playSong(style);
     let beat = 0;
+    const in3d = use3d();
     const show = () => {
       k.innerHTML = lapis(D.moves[beat % D.moves.length], '', false, skin);
-      flip.classList.toggle('flip', Math.floor(beat / D.flipEvery) % 2 === 1 && !reduce);
+      const side = Math.floor(beat / D.flipEvery) % 2 === 1;
+      if (in3d && !reduce) {
+        // 3D kuih: turn the body to face each side in time with the music, and twirl every fourth beat
+        window.lapis3d.turn(k, side ? 0.4 : -0.4);
+        if (beat % 4 === 3) window.lapis3d.twirl(k, side ? -1 : 1);
+      } else flip.classList.toggle('flip', side && !reduce);   // flat kuih: mirror it, as before
       $('#eggFoot').textContent = T('egg.left', { n: Math.max(1, 8 - Math.floor(beat / 2)) });
     };
     show();
