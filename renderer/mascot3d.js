@@ -200,11 +200,141 @@
   function art(sid, outfit, golden) {
     const key = sid + '|' + (outfit || '') + '|' + (golden ? 1 : 0);
     if (!ARTS[key]) ARTS[key] = picture(R.artSVG(sid, outfit, golden, 512)).then(img => {
-      const c = document.createElement('canvas'); c.width = c.height = 512; c.getContext('2d').drawImage(img, 0, 0);
-      const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-      return t;
+      const c = document.createElement('canvas'); c.width = c.height = 512;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+      const tex = t => { t.encoding = T3.sRGBEncoding; t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); return t; };
+      return { front: tex(new T3.CanvasTexture(c)), back: tex(new T3.CanvasTexture(backOf(x))) };
     });
     return ARTS[key];
+  }
+  // The back of a kuih: each row of its art averaged into one colour, so layers and bands carry round
+  // but the front's details (shine, buttons, a pattern's face) don't show through mirrored.
+  function backOf(x) {
+    const d = x.getImageData(0, 0, 512, 512).data, out = document.createElement('canvas'); out.width = 4; out.height = 512;
+    const o = out.getContext('2d'), rows = [];
+    for (let y = 0; y < 512; y++) {
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let q = 0; q < 512; q += 2) {
+        const i = (y * 512 + q) * 4;
+        if (d[i + 3] < 200 || (d[i] < 70 && d[i + 1] < 70 && d[i + 2] < 70)) continue;   // skip empty space and the ink outline
+        r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+      }
+      rows.push(n > 3 ? [r / n, g / n, b / n] : null);
+    }
+    let last = null;
+    for (let y = 0; y < 512; y++) if (rows[y]) last = rows[y]; else rows[y] = last;
+    last = null;
+    for (let y = 511; y >= 0; y--) if (rows[y]) last = rows[y]; else rows[y] = last;
+    rows.forEach((c, y) => { o.fillStyle = c ? `rgb(${c.map(Math.round).join(',')})` : '#888'; o.fillRect(0, y, 4, 1); });
+    return out;
+  }
+
+  /* ---------- festive hats, in 3D ----------
+     Built in drawing units round the point where the hat sits, from the same shapes and colours as the drawn hats. */
+  const lin = hex => new T3.Color(hex).convertSRGBToLinear();
+  const ROWS = {};
+  const rowsOf = sid => ROWS[sid] || (ROWS[sid] = silRows(R.KUIH[sid].sil));
+  function hat3d(outfit, sid, sh) {
+    if (!outfit) return null;
+    const [topY, flat] = R.top(sid), crown = R.crown(sid), o = SOLID[sid];
+    const round = !flat || (o && o.t !== 'pillow');
+    // how deep the head is front to back, so a cap is no deeper than the kuih
+    const depth = (o && o.t === 'lathe') ? null : (o && o.t === 'torus' ? o.r : sh.front / S);
+    const g = new T3.Group();
+    const toon = (hex, two) => new T3.MeshToonMaterial({ color: lin(hex), gradientMap: grad, side: two ? T3.DoubleSide : T3.FrontSide });
+    const add = (geo, hex, opts) => {
+      opts = opts || {};
+      const m = new T3.Mesh(geo, toon(hex, opts.two)); g.add(m);
+      if (opts.ink !== false) g.add(new T3.Mesh(opts.hull || inflate(geo, 0.045), outlineMat));
+      return m;
+    };
+    const V = (x, y, z) => new T3.Vector3((x - 60) * S, -y * S, (z || 0) * S);
+    // a cap sits where the head is as wide as the cap (round kuih), or on the flat top
+    const base = capR => {
+      if (!round) return topY + 0.5;
+      const rows = rowsOf(sid), r = rows.find(w => w[1] >= capR * 0.92);
+      return r ? r[0] : topY + 6;
+    };
+    const zs = capR => (depth ? Math.min(1, depth / capR) : (o && o.z) || 1);
+    // a band that arcs over the top: lifted so its middle sits just above the head
+    const archLift = (y0, yc) => { const apex = crown + (y0 + 2 * yc + y0) / 4; return Math.min(0, (topY - 0.5) - apex); };
+    function cone(pts, r0, r1, hex, stripes) {   // a cone that bends along a curve (Santa hat, nightcap)
+      const curve = new T3.CatmullRomCurve3(pts.map(p => V(p[0], p[1]))), segs = 28, rad = 22, fr = curve.computeFrenetFrames(segs, false);
+      const pos = [], uv = [], idx = [];
+      for (let i = 0; i <= segs; i++) {
+        const t = i / segs, p = curve.getPointAt(t), r = (r0 + (r1 - r0) * Math.pow(t, 0.8)) * S, N = fr.normals[i], B = fr.binormals[i];
+        for (let j = 0; j <= rad; j++) {
+          const a = j / rad * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a);
+          pos.push(p.x + r * (c * N.x + sn * B.x), p.y + r * (c * N.y + sn * B.y), p.z + r * (c * N.z + sn * B.z)); uv.push(j / rad, t);
+        }
+      }
+      for (let i = 0; i < segs; i++) for (let j = 0; j < rad; j++) { const a = i * (rad + 1) + j, b = a + rad + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+      let geo = new T3.BufferGeometry();
+      geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+      // make sure the outside faces out
+      const p1 = new T3.Vector3().fromBufferAttribute(geo.attributes.position, rad + 1), n1 = new T3.Vector3().fromBufferAttribute(geo.attributes.normal, rad + 1);
+      if (p1.sub(curve.getPointAt(1 / segs)).dot(n1) < 0) { for (let i = 0; i < idx.length; i += 3) { const k = idx[i]; idx[i] = idx[i + 1]; idx[i + 1] = k; } geo.setIndex(idx); geo.computeVertexNormals(); }
+      const m = add(geo, hex);
+      if (stripes) { const c = document.createElement('canvas'); c.width = 64; c.height = 128; const x = c.getContext('2d'); x.fillStyle = hex; x.fillRect(0, 0, 64, 128); x.strokeStyle = stripes; x.lineWidth = 6; for (let k = -2; k < 6; k++) { x.beginPath(); x.moveTo(0, k * 28); x.lineTo(64, k * 28 + 22); x.stroke(); } const tx = new T3.CanvasTexture(c); tx.encoding = T3.sRGBEncoding; m.material.map = tx; m.material.color.set(0xffffff); }
+      return m;
+    }
+    const ring = (y, R0, tube, hex, zsc) => { const geo = new T3.TorusGeometry(R0 * S, tube * S, 10, 40); geo.rotateX(Math.PI / 2); geo.scale(1, 1, zsc); geo.translate(0, -y * S, 0); add(geo, hex); };
+    const ball = (x, y, r, hex, z) => { const geo = new T3.SphereGeometry(r * S, 14, 10); geo.translate((x - 60) * S, -y * S, (z || 0) * S); add(geo, hex); };
+    const tube = (pts, r, hex, z, ink) => { const curve = new T3.QuadraticBezierCurve3(...pts.map(p => V(p[0], p[1], z))); add(new T3.TubeGeometry(curve, 24, r * S, 10, false), hex, { ink }); };
+    let y0 = 0;   // where the hat sits, relative to the drawing's hat line
+    if (outfit === 'raya') {   // songkok: black velvet, a little narrower at the top
+      const b = base(17) - crown, z = zs(17), geo = new T3.CylinderGeometry(15 * S, 17 * S, 14 * S, 36);
+      geo.scale(1, 1, z); geo.translate(0, -(b - 7) * S, 0); add(geo, '#1C1A1F');
+      ring(b - 10, 15.6, 0.7, '#4A4552', z);
+    } else if (outfit === 'cny') {   // black cap with a red knot
+      const b = base(16) - crown, z = zs(16), geo = new T3.SphereGeometry(16 * S, 30, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+      geo.scale(1, 1, z); geo.translate(0, -b * S, 0); add(geo, '#1C1A1F', { two: true });
+      ball(60, b - 18, 4, '#D7263D');
+    } else if (outfit === 'kaamatan') {   // siga: woven black band with gold and red, and a pointed flap
+      const b = base(18) - crown, z = zs(18), geo = new T3.CylinderGeometry(17 * S, 18 * S, 11 * S, 40);
+      geo.scale(1, 1, z); geo.translate(0, -(b - 5.5) * S, 0);
+      const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
+      x.fillStyle = '#1F1A17'; x.fillRect(0, 0, 256, 64); x.fillStyle = '#E2B43A'; x.fillRect(0, 12, 256, 4); x.fillRect(0, 26, 256, 4);
+      x.strokeStyle = '#D7263D'; x.lineWidth = 3; x.beginPath(); for (let k = 0; k <= 32; k++) x.lineTo(k * 8, k % 2 ? 40 : 48); x.stroke();
+      const tx = new T3.CanvasTexture(c); tx.encoding = T3.sRGBEncoding; tx.wrapS = T3.RepeatWrapping; tx.repeat.set(2, 1);
+      const m = add(geo, '#ffffff'); m.material.map = tx;
+      const flap = new T3.Shape([new T3.Vector2(14 * S, (11 - b) * S), new T3.Vector2(24 * S, (22 - b) * S), new T3.Vector2(20 * S, (8 - b) * S)]);
+      const fg = new T3.ExtrudeGeometry(flap, { depth: 0.06, bevelEnabled: false }); fg.translate(0, 0, -0.03); add(fg, '#1F1A17', { ink: false });
+    } else if (outfit === 'xmas' || outfit === 'pyjama') {   // Santa hat, or the floppy nightcap (it droops the other way)
+      const R0 = outfit === 'xmas' ? 18 : 19, b = base(R0) - crown, z = zs(R0), m = outfit === 'xmas' ? 1 : -1;
+      const P = (dx, dy) => [60 + m * dx, b + dy];
+      const hat = cone(outfit === 'xmas' ? [P(0, -1), P(4, -14), P(12, -22), P(24, -14), P(28, -5)] : [P(0, -1), P(4, -14), P(12, -20), P(30, -14), P(36, 2)],
+        R0, 2.2, outfit === 'xmas' ? '#D7263D' : '#5C6BC0', outfit === 'xmas' ? null : '#C5CAE9');
+      g.children.forEach(ch => { ch.scale.z = z; });   // the cone and its outline
+      ring(b - 1, R0, outfit === 'xmas' ? 4 : 3, outfit === 'xmas' ? '#FFFDF5' : '#C5CAE9', z);
+      const tip = outfit === 'xmas' ? P(30, -3) : P(38, 6); ball(tip[0], tip[1], 5, outfit === 'xmas' ? '#FFFDF5' : '#FFF3B0');
+    } else if (outfit === 'merdeka') {   // red and white headband over the top, ribbons at the side
+      y0 = archLift(5, -4);
+      tube([[41, 5 + y0], [60, -4 + y0], [79, 5 + y0]], 3, '#FFFFFF', 0);
+      tube([[41, 4.5 + y0], [60, -4.5 + y0], [79, 4.5 + y0]], 1.1, '#CC0001', 2.3, false);
+      tube([[41, 4.5 + y0], [60, -4.5 + y0], [79, 4.5 + y0]], 1.1, '#CC0001', -2.3, false);
+      tube([[78, 4 + y0], [88, 2 + y0], [91, 10 + y0]], 1.5, '#CC0001', 0);
+      tube([[78, 6 + y0], [86, 10 + y0], [87, 18 + y0]], 1.5, '#CC0001', 0);
+      ball(79, 5 + y0, 3, '#CC0001');
+    } else if (outfit === 'gawai') {   // beaded band and three hornbill feathers
+      y0 = archLift(4, -4);
+      tube([[42, 4 + y0], [60, -4 + y0], [78, 4 + y0]], 2.6, '#D7263D', 0);
+      [46, 52, 58, 64, 70, 76].forEach((x, i) => { const t = (x - 42) / 36, yy = (1 - t) * (1 - t) * 4 + 2 * (1 - t) * t * -4 + t * t * 4; ball(x, yy + y0, 1.6, ['#F4C542', '#1F1A17', '#FFFDF5'][i % 3], 2.4); });
+      [[-10, -24, -14], [0, -32, 0], [10, -24, 14]].forEach(([dx, h, r]) => {
+        // the drawn feather (h is negative: up), with y turned to point up
+        const fs = new T3.Shape().moveTo(-3.5 * S, 0).quadraticCurveTo(-5 * S, -h / 2 * S, 0, -h * S).quadraticCurveTo(5 * S, -h / 2 * S, 3.5 * S, 0).lineTo(-3.5 * S, 0);
+        const wing = new T3.ExtrudeGeometry(fs, { depth: 0.05, bevelEnabled: false }), hull = new T3.ExtrudeGeometry(fs, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.035, bevelSegments: 1 });
+        const place = geo => { geo.translate(0, 0, -0.025); geo.rotateZ(-r * Math.PI / 180); geo.translate(dx * S, -(y0 - 1) * S, 0); return geo; };
+        add(place(wing), '#FFFDF5', { hull: place(hull) });
+        const tipS = new T3.Shape().moveTo(-2.6 * S, -h * 0.62 * S).quadraticCurveTo(0, -h * 1.02 * S, 2.6 * S, -h * 0.62 * S).quadraticCurveTo(0, -h * 0.86 * S, -2.6 * S, -h * 0.62 * S);   // its black tip
+        add(place(new T3.ExtrudeGeometry(tipS, { depth: 0.07, bevelEnabled: false })), '#1F1A17', { ink: false });
+      });
+    } else if (outfit === 'deepavali') {   // a jasmine garland over the top
+      tube([[40, 4], [60, -10], [80, 4]], 1, '#2F7D32', 0, false);
+      [-4, -3, -2, -1, 0, 1, 2, 3, 4].forEach(i => ball(60 + i * 5, 4 - 14 * (1 - (i / 4.4) ** 2), 3.4, i === 0 ? '#F7931E' : '#FFFDF5'));
+    } else return null;
+    g.position.set(0, (100 - crown) * S, 0);
+    return g;
   }
   const FACES = {};
   function faceImg(kind, mouth) {
@@ -214,6 +344,17 @@
       picture(R.faceSVG(kind, mouth)).then(img => { FACES[key].img = img; ALL.forEach(v => { v.dirty = true; }); wake(); }, () => {});
     }
     return FACES[key].img;
+  }
+
+  function bodyMaterial(t) {
+    const m = new T3.MeshToonMaterial({ map: t.front, gradientMap: grad });
+    m.onBeforeCompile = sh => {
+      sh.uniforms.backMap = { value: t.back };
+      sh.vertexShader = 'varying float vObjZ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vObjZ = position.z;');
+      sh.fragmentShader = 'uniform sampler2D backMap;\nvarying float vObjZ;\n' + sh.fragmentShader.replace('#include <map_fragment>',
+        'vec4 texelColor = mix(texture2D(backMap, vUv), texture2D(map, vUv), smoothstep(-0.12, 0.12, vObjZ));\n  texelColor = mapTexelToLinear(texelColor);\n  diffuseColor *= texelColor;');
+    };
+    return m;
   }
 
   /* ---------- a kuih character, one per kuih + outfit + golden look, shared by all its pictures ---------- */
@@ -230,17 +371,18 @@
   function character(sid, outfit, golden) {
     const key = sid + '|' + (outfit || '') + '|' + (golden ? 1 : 0);
     if (!CHARS[key]) {
-      const c = CHARS[key] = { key, sid, ready: false };
+      const c = CHARS[key] = { key, sid, outfit, ready: false };
       art(sid, outfit, golden).then(tex => { c.tex = tex; wake(); }, () => { c.failed = true; });
     }
     return CHARS[key];
   }
   function build(c) {
-    const sid = c.sid, tex = c.tex, sh = shape(sid);
+    const sid = c.sid, sh = shape(sid);
     c.root = new T3.Group(); c.body = new T3.Group(); c.squash = new T3.Group();
     c.body.matrixAutoUpdate = false;
     c.root.add(c.body); c.body.add(c.squash);
-    c.squash.add(new T3.Mesh(sh.geo, new T3.MeshToonMaterial({ map: tex, gradientMap: grad })));
+    c.squash.add(new T3.Mesh(sh.geo, bodyMaterial(c.tex)));
+    const hat = hat3d(c.outfit, sid, sh); if (hat) c.squash.add(hat);
     c.squash.add(new T3.Mesh(sh.hull, outlineMat));
     c.fc = document.createElement('canvas'); c.fc.width = c.fc.height = 256; c.fx = c.fc.getContext('2d');
     c.ftex = new T3.CanvasTexture(c.fc); c.ftex.encoding = T3.sRGBEncoding; c.shown = '';
@@ -483,7 +625,7 @@
     const flat = window.lapisSVG(pose, label, bob, skin, outfit, golden);
     if (!gl()) return flat;
     watch();
-    const L = R.layers(pose, skin, outfit, golden), id = String(++seq), vb = L.viewBox;
+    const L = R.layers(pose, skin, outfit, golden, { noHat: true }), id = String(++seq), vb = L.viewBox;
     SPECS.set(id, { sid: L.sid, K: L.K, p: L.p, outfit: L.outfit, golden: L.golden, live: !!bob, sway: !L.over, vb, d: (L.K.half || 28) - 28 });
     if (SPECS.size > 400) SPECS.delete(SPECS.keys().next().value);   // pictures made but never shown
     const inner = flat.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
@@ -500,7 +642,7 @@
     if (v && v.ch) {
       setTarget(v, R.resolve(pose, v.sid)); v.X.set(v.T); v.dirty = true; wake();
       // the flat layer (hat, arrows) moves with the body, as in the drawing
-      const over = svg.querySelector('.k3over'), L = R.layers(pose, v.sid, v.outfit, v.golden);
+      const over = svg.querySelector('.k3over'), L = R.layers(pose, v.sid, v.outfit, v.golden, { noHat: true });
       if (over && over.__html !== L.over) { over.innerHTML = L.over; over.__html = L.over; }
     }
     return true;

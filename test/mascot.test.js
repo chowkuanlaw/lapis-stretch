@@ -94,3 +94,12 @@ test('a stretch move frame gives the 3D layers a pose too', () => {
     assert.ok(L.p.arms && L.p.legs && /rotate/.test(L.p.body), id);
   }
 });
+
+test('the 3D kuih wears a 3D hat, so the flat layer can leave the drawn hat out', () => {
+  const R = W.LapisRig;
+  for (const outfit of W.LAPIS_OUTFITS) {
+    const withHat = R.layers('idle', 'lapis', outfit, false), without = R.layers('idle', 'lapis', outfit, false, { noHat: true });
+    assert.ok(without.over.length < withHat.over.length, outfit + ': the hat is left out');
+  }
+  for (const k of W.LAPIS_KUIH) { const [y, flat] = R.top(k.id); assert.ok(y > 0 && y < 60 && (flat === 0 || flat === 1), k.id + ' has a top edge'); }
+});
