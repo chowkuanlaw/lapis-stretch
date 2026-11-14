@@ -229,6 +229,7 @@
      Text keys (i18n.js) for each version, newest first. The card after an update lists
      the items between the version you last saw and the one you're on now. */
   const NEWS = [
+    { v: '1.14.0', keys: ['news.1.14.0.a', 'news.1.14.0.b', 'news.1.14.0.c'] },
     { v: '1.13.0', keys: ['news.1.13.0.a', 'news.1.13.0.b', 'news.1.13.0.c', 'news.1.13.0.d'] },
     { v: '1.12.0', keys: ['news.1.12.0.a', 'news.1.12.0.b'] },
     { v: '1.11.0', keys: ['news.1.11.0.a', 'news.1.11.0.b', 'news.1.11.0.c'] },
