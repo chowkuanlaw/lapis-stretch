@@ -319,7 +319,10 @@
     const breath = live ? Math.sin(t * 1.8) * 0.01 : 0, sy = 1 + v.sq * 0.05 + breath, sw = 1 / Math.sqrt(sy);
     c.squash.scale.set(sw, sy, sw);
     const bob = live ? 0.5 - 0.5 * Math.cos(t * Math.PI * 2 / 2.6) : 0;   // the drawing's gentle bob, every 2.6 s
-    c.root.position.set(0, bob * 3 * S, 0); c.root.rotation.set(0, v.sway && live ? Math.sin(t * 0.7) * 0.16 : 0, bob * -0.026);
+    c.root.position.set(0, bob * 3 * S, 0); c.root.rotation.set(0, (v.sway && live ? Math.sin(t * 0.7) * 0.16 : 0) + v.yaw, bob * -0.026);
+    // hats, props and arrows are flat, so they fade out while the kuih is turned away and come back as it faces you
+    const away = Math.abs(Math.atan2(Math.sin(v.yaw), Math.cos(v.yaw))), fade = away < 0.12 ? '' : String(Math.max(0, 1 - (away - 0.12) / 0.3));
+    if (v.fade !== fade) { v.fade = fade; v.svg.querySelectorAll('.k3over,.k3under').forEach(g => { g.style.opacity = fade; }); }
     place(c.arms[0], X, 0); place(c.arms[1], X, 9); place(c.legs[0], X, 18); place(c.legs[1], X, 27);
     const blink = live && !v.face && v.blinking > now;
     drawFace(c, blink ? 'closed' : v.face, v.mouth);
@@ -350,7 +353,8 @@
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'display:block;width:100%;height:100%';
     const v = { svg, canvas, ctx: canvas.getContext('2d'), X: new Float32Array(N), V: new Float32Array(N), T: new Float32Array(N), sq: 0, sqv: 0, t0: performance.now(),
-      blinkAt: performance.now() + 1500 + Math.random() * 3000, blinking: 0, settle: 0, last: 0, dirty: true, shown: false };
+      blinkAt: performance.now() + 1500 + Math.random() * 3000, blinking: 0, settle: 0, last: 0, dirty: true, shown: false,
+      yaw: 0, yawV: 0, spin: false };
     return Object.assign(v, spec);
   }
   function hydrate(svg) {
@@ -410,7 +414,8 @@
       const moving = v.settle > now, live = v.live && !reduce();
       if (live && now > v.blinkAt) { v.blinking = now + 130; v.blinkAt = now + 2600 + Math.random() * 2600; }
       if (moving) step(v, dt);
-      if (moving || live) again = true;
+      if (v.spin) { spinStep(v, dt); v.dirty = true; }
+      if (moving || live || v.spin) again = true;
       if (!v.dirty && !moving && !(live && now - v.last >= 1000 / 24)) return;
       if (draw(v, now)) { v.dirty = false; v.last = now; }
     });
@@ -429,6 +434,49 @@
     new MutationObserver(ms => { ms.forEach(m => m.addedNodes.forEach(scan)); if (queue.length) wake(); }).observe(document.body, { childList: true, subtree: true });
     scan(document.body); if (queue.length) wake();
   }
+
+  /* ---------- drag a kuih to turn it; flick it to spin ----------
+     It spins on, slows down, and settles facing you again. A drag never counts as a click on the button around it. */
+  const TURN = 0.022;   // radians per pixel dragged
+  let grab = null, eatClick = 0;
+  function spinStep(v, dt) {
+    if (grab && grab.v === v) return;            // the pointer is holding it
+    if (Math.abs(v.yawV) > 2.2) { v.yaw += v.yawV * dt; v.yawV *= Math.exp(-1.6 * dt); return; }   // free spin, slowing down
+    const home = Math.round(v.yaw / (2 * Math.PI)) * 2 * Math.PI;   // the nearest turn that faces front
+    v.yawV += (60 * (home - v.yaw) - 11 * v.yawV) * dt; v.yaw += v.yawV * dt;
+    if (Math.abs(home - v.yaw) < 0.002 && Math.abs(v.yawV) < 0.02) { v.yaw = 0; v.yawV = 0; v.spin = false; }
+  }
+  document.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || grab) return;
+    const svg = e.target.closest && e.target.closest('svg.k3on'), v = svg && svg.__k3;
+    if (!v || !v.ch) return;
+    grab = { v, svg, id: e.pointerId, x: e.clientX, yaw: v.yaw, lastX: e.clientX, lastT: performance.now(), vel: 0, moved: false };
+  }, true);
+  document.addEventListener('pointermove', e => {
+    if (!grab || e.pointerId !== grab.id) return;
+    const dx = e.clientX - grab.x;
+    if (!grab.moved && Math.abs(dx) < 5) return;
+    if (!grab.moved) { grab.moved = true; try { grab.svg.setPointerCapture(e.pointerId); } catch (_) { /* gone */ } grab.svg.classList.add('k3grab'); }
+    const now = performance.now(), dt = Math.max(1, now - grab.lastT);
+    grab.vel = grab.vel * 0.6 + ((e.clientX - grab.lastX) * TURN / (dt / 1000)) * 0.4;
+    grab.lastX = e.clientX; grab.lastT = now;
+    grab.v.yaw = grab.yaw + dx * TURN; grab.v.spin = true; grab.v.dirty = true; wake();
+    e.preventDefault();
+  }, true);
+  const letGo = e => {
+    if (!grab || e.pointerId !== grab.id) return;
+    const g = grab; grab = null;
+    g.svg.classList.remove('k3grab');
+    if (!g.moved) return;
+    eatClick = performance.now() + 400;           // the click that follows a drag is not a click
+    const still = performance.now() - g.lastT > 80; // let go after stopping: no flick
+    g.v.yawV = reduce() || still ? 0 : Math.max(-40, Math.min(40, g.vel));
+    g.v.spin = true; wake();
+  };
+  document.addEventListener('pointerup', letGo, true);
+  document.addEventListener('pointercancel', letGo, true);
+  document.addEventListener('click', e => { if (performance.now() < eatClick) { eatClick = 0; e.preventDefault(); e.stopPropagation(); } }, true);
+  document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('svg.k3on')) e.preventDefault(); }, true);
 
   /* ---------- what app.js calls ---------- */
   api.svg = function (pose, label, bob, skin, outfit, golden) {

@@ -127,6 +127,28 @@ test('3D kuih: drawn on every page, and Classic 2D in Settings switches them bac
   } finally { await L.close(); }
 });
 
+test('3D kuih: drag one to spin it; a drag is not a click, a click still is', async () => {
+  const L = await launch(Object.assign({}, settled, { collect: false }), null, SOFT_3D);
+  try {
+    const w = await L.view('main');
+    await w.locator('.nav-item[data-page="kuih"]').click();
+    const tile = w.locator('#page-kuih .ktile[data-sval="onde"]');
+    const pic = tile.locator('svg.k3on');
+    await pic.waitFor({ timeout: 20000 });
+    const yaw = () => pic.evaluate(s => s.__k3.yaw);
+    const b = await pic.boundingBox(), x = b.x + b.width / 2, y = b.y + b.height / 2;
+    await w.mouse.move(x, y); await w.mouse.down();
+    for (let i = 1; i <= 8; i++) await w.mouse.move(x + i * 12, y);
+    assert.ok(Math.abs(await yaw()) > 1, 'the kuih turns as it is dragged');
+    await w.mouse.up();
+    assert.notEqual((await L.saved()).kuih, 'onde', 'dragging did not pick the kuih');
+    await assert.doesNotReject(w.waitForFunction(s => s.__k3.yaw === 0 && !s.__k3.spin, await pic.elementHandle(), { timeout: 15000 }), 'it settles facing front');
+    await tile.click();
+    assert.equal((await L.saved()).kuih, 'onde', 'a plain click still picks it');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
 test('a stretch can be started and finished, from the main window and the pop-up', async () => {
   const L = await launch(settled);
   try {

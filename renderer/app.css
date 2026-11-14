@@ -179,6 +179,10 @@ body.view-widget,body.view-popup{background:transparent;overflow:hidden;user-sel
 .lapis .k3fo{overflow:visible;pointer-events:none}
 .lapis.k3d:not(.k3on) .k3over,.lapis.k3d:not(.k3on) .k3under{display:none}
 .lapis.k3on .k2d{display:none}
+/* drag a 3D kuih to turn it, flick it to spin */
+.lapis.k3on{cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.lapis.k3grab{cursor:grabbing}
+.lapis .k3over,.lapis .k3under{transition:opacity .12s}
 .bob{animation:bob 2.6s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) rotate(-1.5deg)}}
 .pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
