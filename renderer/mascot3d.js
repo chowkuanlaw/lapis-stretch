@@ -632,7 +632,8 @@
     }
     function loop(now) {
       raf = 0;
-      const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      // dt is capped so springs stay steady after a slow frame; rdt is the real time passed (up to 0.5 s)
+      const rdt = Math.min(0.5, (now - (last || now)) / 1000), dt = Math.min(0.05, rdt); last = now;
       let again = false;
       // bring new pictures in, a few milliseconds' worth per frame so the window stays responsive
       const t0 = performance.now();
@@ -654,7 +655,7 @@
         const moving = v.settle > now, live = v.live && !reduce() && !saver;
         if (live && now > v.blinkAt) { v.blinking = now + 130; v.blinkAt = now + 2600 + Math.random() * 2600; }
         if (moving) step(v, dt);
-        if (v.spin) { spinStep(v, dt); v.dirty = true; }
+        if (v.spin) { spinStep(v, dt, rdt); v.dirty = true; }
         if (v.looking) {   // turning to follow the mouse, eased
           const k = Math.min(1, dt * 7); v.lookX += (v.lookTX - v.lookX) * k; v.lookY += (v.lookTY - v.lookY) * k; v.dirty = true;
           if (Math.abs(v.lookTX - v.lookX) < 0.002 && Math.abs(v.lookTY - v.lookY) < 0.002) { v.lookX = v.lookTX; v.lookY = v.lookTY; v.looking = false; }
@@ -683,9 +684,10 @@
        It spins on, slows down, and settles facing you again. A drag never counts as a click on the button around it. */
     const TURN = 0.022;   // radians per pixel dragged
     let grab = null, eatClick = 0;
-    function spinStep(v, dt) {
+    function spinStep(v, dt, rdt) {
       if (grab && grab.v === v) return;            // the pointer is holding it
-      if (v.forever) { v.yaw += v.yawV * dt; return; }   // tumbling for as long as it is asked to (the egg's falling kuih)
+      // tumbling for as long as it is asked to (the egg's falling kuih), at its real speed even when frames are slow
+      if (v.forever) { v.yaw += v.yawV * (rdt || dt); return; }
       if (Math.abs(v.yawV) > 2.2) { v.yaw += v.yawV * dt; v.yawV *= Math.exp(-v.fric * dt); return; }   // free spin, slowing down
       // then it settles at the nearest whole turn of where it should face (straight on, or turned for a dance step)
       const T = 2 * Math.PI, home = v.yawHome + Math.round((v.yaw - v.yawHome) / T) * T;
