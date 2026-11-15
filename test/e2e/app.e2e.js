@@ -38,9 +38,14 @@ async function launch(state, extraEnv, extraArgs) {
     }
     throw new Error('no ' + name + ' window');
   };
-  const saved = async () => {
-    await wait(900); // saves are written straight after each change
-    return JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'));
+  // The app writes state.json 0.3 s after the last change. With `until`, wait (up to 6 s) for the file to show the
+  // change, so a slow test machine can't read it too early; without, read it once after a short wait.
+  const read = () => { try { return JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')); } catch (e) { return null; } };
+  const saved = async until => {
+    await wait(until ? 300 : 900);
+    let s = read();
+    for (let t = 0; until && !(s && until(s)) && t < 6000; t += 150) { await wait(150); s = read(); }
+    return s;
   };
   const close = async () => { await app.close().catch(() => {}); fs.rmSync(home, { recursive: true, force: true }); };
   return { app, view, saved, errors, close };
@@ -97,7 +102,7 @@ test('every page opens, and Settings changes are saved', async () => {
     const health = w.locator('[data-stab="health"]');
     if (await health.count()) await health.click();
     await w.locator('button[data-step="goal"][data-d="1"]').click();
-    assert.equal((await L.saved()).goal, 9, 'daily goal + works');
+    assert.equal((await L.saved(s => s.goal === 9)).goal, 9, 'daily goal + works');
     // 1.14.0: without 3D graphics (as here) the 3D library is never loaded
     assert.equal(await w.evaluate(() => typeof window.THREE), 'undefined', 'three.js not loaded without 3D');
     assert.deepEqual(L.errors, []);
@@ -121,7 +126,7 @@ test('3D kuih: drawn on every page, and Classic 2D in Settings switches them bac
     await w.locator('.nav-item[data-page="settings"]').click();
     await w.locator('[data-stab="display"]').click();
     await w.locator('.switch[data-set="kuih3d"]').click();
-    assert.equal((await L.saved()).kuih3d, false, 'Classic 2D is saved');
+    assert.equal((await L.saved(s => s.kuih3d === false)).kuih3d, false, 'Classic 2D is saved');
     await w.locator('.nav-item[data-page="today"]').click();
     await assert.doesNotReject(w.locator('#heroMascot svg.lapis:not(.k3d)').waitFor({ timeout: 5000 }), 'the kuih is flat again');
     assert.equal(await w.locator('svg.k3d').count(), 0, 'no 3D kuih left');
@@ -146,7 +151,7 @@ test('3D kuih: drag one to spin it; a drag is not a click, a click still is', as
     assert.notEqual((await L.saved()).kuih, 'onde', 'dragging did not pick the kuih');
     await assert.doesNotReject(w.waitForFunction(s => s.__k3.yaw === 0 && !s.__k3.spin, await pic.elementHandle(), { timeout: 15000 }), 'it settles facing front');
     await tile.click();
-    assert.equal((await L.saved()).kuih, 'onde', 'a plain click still picks it');
+    assert.equal((await L.saved(s => s.kuih === 'onde')).kuih, 'onde', 'a plain click still picks it');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
@@ -231,10 +236,10 @@ test('a stretch can be switched off for reminders, and the last one stays on', a
     await sw('wrist').waitFor({ timeout: 3000 });
     await sw('wrist').click();
     await assert.doesNotReject(w.locator('[data-exon="wrist"][aria-checked="false"]').waitFor({ timeout: 3000 }), 'switch turns off');
-    assert.ok((await L.saved()).exOff.includes('wrist'), 'saved');
+    assert.ok((await L.saved(s => (s.exOff || []).includes('wrist'))).exOff.includes('wrist'), 'saved');
     await sw('wrist').click();
     await assert.doesNotReject(w.locator('[data-exon="wrist"][aria-checked="true"]').waitFor({ timeout: 3000 }), 'switch turns back on');
-    assert.deepEqual((await L.saved()).exOff, []);
+    assert.deepEqual((await L.saved(s => (s.exOff || []).length === 0)).exOff, []);
 
     // Switch everything off except one: that one can't be switched off.
     const ids = await w.locator('[data-exon]').evaluateAll(n => n.map(x => x.dataset.exon));
@@ -265,7 +270,7 @@ test('Store copy: asks for a rating once, and Rate or No thanks ends it', async 
     }
     await pop.locator('[data-w="rate-go"]').waitFor({ timeout: 5000 });
     await pop.locator('[data-w="notice-close"]').click();
-    assert.equal((await L.saved()).rateAsked, true, 'remembered, so it is never asked again');
+    assert.equal((await L.saved(s => s.rateAsked === true)).rateAsked, true, 'remembered, so it is never asked again');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
@@ -294,7 +299,7 @@ test('language can be switched between English, Malay, Chinese and Tamil', async
       await assert.doesNotReject(w.locator('.nav-item[data-page="today"]', { hasText: today }).waitFor({ timeout: 3000 }), lang + ' shows in the sidebar');
       assert.equal(await w.evaluate(() => document.documentElement.lang), { en: 'en', ms: 'ms', zh: 'zh-Hans', ta: 'ta' }[lang]);
     }
-    assert.equal((await L.saved()).lang, 'en');
+    assert.equal((await L.saved(s => s.lang === 'en')).lang, 'en');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
