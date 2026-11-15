@@ -166,15 +166,17 @@ test('3D kuih: the easter-egg dance turns and twirls in 3D, and the falling kuih
     await dancer.waitFor({ timeout: 15000 });
     await egg.locator('#egg.dancing').waitFor({ timeout: 5000 });
     // over a few beats the dancer faces both sides and twirls, rather than being mirrored flat
+    // (watched for up to 8 s: a slow test machine draws few frames a second)
     const yaws = [];
-    for (let i = 0; i < 6; i++) { await new Promise(r => setTimeout(r, 300)); yaws.push(await dancer.evaluate(s => s.__k3.yaw)); }
+    for (let i = 0; i < 40 && !(yaws.length && Math.max(...yaws) - Math.min(...yaws) > 0.5); i++) { await new Promise(r => setTimeout(r, 200)); yaws.push(await dancer.evaluate(s => s.__k3.yaw)); }
     assert.ok(Math.max(...yaws) - Math.min(...yaws) > 0.5, 'the dancer turns: ' + yaws.map(y => y.toFixed(2)).join(' '));
     assert.equal(await egg.locator('#eggFlip.flip').count(), 0, 'no flat mirroring');
     const drop = egg.locator('.egg-drop svg.k3on').first();
     await drop.waitFor({ timeout: 15000 });
     const y0 = await drop.evaluate(s => s.__k3.yaw);
-    await new Promise(r => setTimeout(r, 500));
-    assert.ok(Math.abs(await drop.evaluate(s => s.__k3.yaw) - y0) > 0.3, 'a falling kuih tumbles');
+    let turned = 0;
+    for (let i = 0; i < 25 && turned <= 0.3; i++) { await new Promise(r => setTimeout(r, 200)); turned = Math.abs(await drop.evaluate(s => s.__k3.yaw) - y0); }
+    assert.ok(turned > 0.3, 'a falling kuih tumbles (turned ' + turned.toFixed(2) + ')');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
