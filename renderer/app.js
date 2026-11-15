@@ -157,7 +157,7 @@
           if (!mv) return;
           const pose = mv.at((now - moveT0) / 1000);
           // a 3D kuih is posed in place; a flat one is drawn again
-          if (!(window.lapis3d && window.lapis3d.frame(t, pose))) t.innerHTML = lapis(pose, doing(curEx()), false, null, st.golden);
+          if (!(window.lapis3d && window.lapis3d.frame(t, pose, t.dataset.move))) t.innerHTML = lapis(pose, doing(curEx()), false, null, st.golden);
         });
       }
       moveRaf = requestAnimationFrame(frame);
@@ -1229,10 +1229,24 @@
   // and rebuilt when the language changes.
   const B = { main: [buildMain, renderMain, tickMain], widget: [buildWidget, renderWidget, tickWidget], popup: [buildPopup, renderPopup, () => tickCard($('#card'))], egg: [buildEgg, renderEgg, () => {}] }[view] || [buildMain, renderMain, tickMain];
   let built = false;
+  // draw every kuih again (3D just became available)
+  function redraw() {
+    cardKey = ''; heroKey = ''; kuihKey = ''; comingKey = ''; wPoseKey = ''; noticeKey = '';
+    B[0](); B[1]();
+  }
   function onState(s) {
     if (!s) return;
     const relang = !st || st.lang !== s.lang, was3d = st ? use3d() : null;
     st = s;
+    // 1.14.0: the 3D library loads only when 3D kuih are wanted; once it is ready the window is drawn again in 3D.
+    // The dance waits for it (up to 2 s) so it starts in 3D rather than switching halfway.
+    const L3 = window.lapis3d;
+    if (L3 && st.kuih3d !== false && !L3.ok()) {
+      const ready = L3.want().then(ok => { if (ok && st && built && view !== 'egg') redraw(); return ok; });
+      if (!built && view === 'egg' && !s.__waited) { s.__waited = true; Promise.race([ready, new Promise(r => setTimeout(r, 2000))]).then(() => onState(s)); return; }
+    }
+    if (L3) L3.powerSave(!!st.onBattery);
+    document.body.classList.toggle('on-battery', !!st.onBattery);   // the flat kuih's bob stops too
     // switching between 3D and Classic 2D kuih (1.14.0) rebuilds the window, like a language change
     const relook = was3d !== null && was3d !== use3d();
     document.documentElement.lang = I.LANG_TAGS[L()] || L();
@@ -1241,6 +1255,18 @@
       B[0](); built = true;
     }
     B[1]();
+  }
+  /* 1.14.0: the 3D kuih looks towards the mouse: in the widget (Lapis passes it the pointer, wherever it is on screen)
+     and on the Today page. Not on battery. */
+  const lookAt = (el, px, py) => {
+    if (!el || !window.lapis3d || !st || st.onBattery) return;
+    const r = el.getBoundingClientRect(); if (!r.width) return;
+    window.lapis3d.look(el, (px - (r.left + r.width / 2)) / 260, (py - (r.top + r.height * 0.4)) / 260);
+  };
+  if (view === 'widget' && api.onCursor) api.onCursor(p => { const k = p.w ? innerWidth / p.w : 1; lookAt($('#wMascot'), p.x * k, p.y * k); });
+  if (view === 'main') {
+    document.addEventListener('mousemove', e => lookAt($('#heroMascot'), e.clientX, e.clientY));
+    document.documentElement.addEventListener('mouseleave', () => { const h = $('#heroMascot'); if (h && window.lapis3d) window.lapis3d.look(h, 0, 0); });
   }
   api.onState(onState);
   api.getState().then(onState);

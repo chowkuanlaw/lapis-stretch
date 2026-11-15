@@ -483,6 +483,8 @@
     KUIH, IDLE_ARMS, IDLE_LEGS, INK,
     // where headwear sits: the kuih's top edge, and whether that top is flat; crown() is the drawing's hat line
     top: sid => TOPS[sid] || [20, 1], crown,
+    // the Jalur Gemilang on its own, w drawing units wide, for the 3D flag
+    flagSVG: (w, px) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 ${w + 2} ${w / 2 + 2}" width="${px}" height="${px / 2}">${jalur(w)}</svg>`,
     resolve(pose, skin) {
       const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid];
       const p0 = pose && typeof pose === 'object' ? pose : Object.prototype.hasOwnProperty.call(POSES, pose) ? POSES[pose] : POSES.idle;
@@ -498,12 +500,12 @@
       if (golden) { const gd = GOLD(id); s = gd.slice(0, gd.indexOf('</defs>') + 7) + `<g filter="url(#gd${id})">${s}</g>`; }
       return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="${size}" height="${size}">${s}</svg>`;
     },
-    // opts.noHat: leave the hat out (the 3D kuih wears a 3D one)
+    // opts.noHat / opts.noProp: leave the hat or the held prop out (the 3D kuih has 3D ones)
     layers(pose, skin, outfit, golden, opts) {
       const sid = KUIH[skin] ? skin : 'lapis', K = KUIH[sid], id = ++uid, p = this.resolve(pose, sid);
       const o = Object.prototype.hasOwnProperty.call(OUTFITS, outfit) ? outfit : null, O2 = o && OUTFITS[o], g = !!golden;
       const arms = p.arms || IDLE_ARMS, rh = arms[1][arms[1].length - 1], d = (K.half || 28) - 28;
-      const held = p.prop ? PROPS[p.prop](rh[0] + d, rh[1]) : (O2 && O2.prop && !p.front ? O2.prop(rh[0] + d, rh[1] - 6) : '');
+      const held = opts && opts.noProp ? '' : p.prop ? PROPS[p.prop](rh[0] + d, rh[1]) : (O2 && O2.prop && !p.front ? O2.prop(rh[0] + d, rh[1] - 6) : '');
       const worn = (O2 && O2.face ? O2.face(K.faceDy || 0) : '') + (O2 && !(opts && opts.noHat) ? O2.hat(crown(sid)) : '');
       const over = (held || worn ? `<g transform="${p.body || ''}">${held}${worn}</g>` : '') + (p.extra || '') + (g ? `<g class="sparkles">${SPARKLES}</g>` : '');
       return { sid, K, p, outfit: o, golden: g, viewBox: [-8, o ? -30 : -14, 136, o ? 182 : 166], under: g ? GOLD(id) : '', over, flat: !!(held || worn) };

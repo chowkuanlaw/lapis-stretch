@@ -98,6 +98,8 @@ test('every page opens, and Settings changes are saved', async () => {
     if (await health.count()) await health.click();
     await w.locator('button[data-step="goal"][data-d="1"]').click();
     assert.equal((await L.saved()).goal, 9, 'daily goal + works');
+    // 1.14.0: without 3D graphics (as here) the 3D library is never loaded
+    assert.equal(await w.evaluate(() => typeof window.THREE), 'undefined', 'three.js not loaded without 3D');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
@@ -168,6 +170,38 @@ test('3D kuih: the easter-egg dance turns and twirls in 3D, and the falling kuih
     const y0 = await drop.evaluate(s => s.__k3.yaw);
     await new Promise(r => setTimeout(r, 500));
     assert.ok(Math.abs(await drop.evaluate(s => s.__k3.yaw) - y0) > 0.3, 'a falling kuih tumbles');
+    assert.deepEqual(L.errors, []);
+  } finally { await L.close(); }
+});
+
+test('3D kuih: on battery the idle kuih holds still, and moves again on mains power', async () => {
+  // how many times the Today kuih was drawn during one second
+  const redraws = async w => { const pic = w.locator('#heroMascot svg.k3on'); await pic.waitFor({ timeout: 15000 }); await new Promise(r => setTimeout(r, 800)); const a = await pic.evaluate(s => s.__k3.last); await new Promise(r => setTimeout(r, 1000)); return (await pic.evaluate(s => s.__k3.last)) !== a; };
+  const B = await launch(settled, { LAPIS_TEST_BATTERY: '1' }, SOFT_3D);
+  try {
+    const w = await B.view('main');
+    assert.equal(await redraws(w), false, 'on battery: no idle redraws');
+    assert.equal(await w.evaluate(() => document.body.classList.contains('on-battery')), true);
+    assert.deepEqual(B.errors, []);
+  } finally { await B.close(); }
+  const L = await launch(settled, null, SOFT_3D);
+  try {
+    assert.equal(await redraws(await L.view('main')), true, 'on mains power: the kuih breathes and bobs');
+  } finally { await L.close(); }
+});
+
+test('3D kuih: the Today kuih looks towards the mouse', async () => {
+  const L = await launch(settled, null, SOFT_3D);
+  try {
+    const w = await L.view('main');
+    const pic = w.locator('#heroMascot svg.k3on');
+    await pic.waitFor({ timeout: 15000 });
+    const b = await pic.boundingBox(), y = b.y + b.height / 2;
+    const look = () => pic.evaluate(s => s.__k3.lookX);
+    await w.mouse.move(b.x - 300, y); await new Promise(r => setTimeout(r, 900));
+    assert.ok(await look() < -0.5, 'turns left towards the mouse');
+    await w.mouse.move(b.x + b.width + 300, y); await new Promise(r => setTimeout(r, 900));
+    assert.ok(await look() > 0.5, 'turns right towards the mouse');
     assert.deepEqual(L.errors, []);
   } finally { await L.close(); }
 });
